@@ -10,7 +10,8 @@ function is_admin_logged_in() {
 function admin_login($email, $password) {
     global $conn;
     
-    $stmt = $conn->prepare("SELECT * FROM users WHERE email = ? AND is_admin = 1");
+    // In PostgreSQL, use TRUE for boolean values instead of 1
+    $stmt = $conn->prepare("SELECT * FROM users WHERE email = ? AND is_admin = TRUE");
     $stmt->execute([$email]);
     $admin = $stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -49,7 +50,7 @@ function require_admin() {
 // Get admin details by ID
 function get_admin_by_id($admin_id) {
     global $conn;
-    $stmt = $conn->prepare("SELECT * FROM users WHERE user_id = ? AND is_admin = 1");
+    $stmt = $conn->prepare("SELECT * FROM users WHERE user_id = ? AND is_admin = TRUE");
     $stmt->execute([$admin_id]);
     $admin = $stmt->fetch(PDO::FETCH_ASSOC);
     

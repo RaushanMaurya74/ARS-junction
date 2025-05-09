@@ -45,10 +45,9 @@ function register_user($name, $email, $password, $phone = null) {
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
     
     $stmt = $conn->prepare("INSERT INTO users (name, email, password, phone) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("ssss", $name, $email, $hashed_password, $phone);
     
-    if ($stmt->execute()) {
-        $user_id = $stmt->insert_id;
+    if ($stmt->execute([$name, $email, $hashed_password, $phone])) {
+        $user_id = $conn->lastInsertId();
         
         // Create session for the new user
         $_SESSION['user_id'] = $user_id;
@@ -58,7 +57,7 @@ function register_user($name, $email, $password, $phone = null) {
         
         return array('success' => true, 'user_id' => $user_id);
     } else {
-        return array('success' => false, 'message' => 'Registration failed: ' . $conn->error);
+        return array('success' => false, 'message' => 'Registration failed');
     }
 }
 
