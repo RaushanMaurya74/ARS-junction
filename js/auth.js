@@ -1,0 +1,282 @@
+/**
+ * Authentication functionality for ARS JUNCTION Food Ordering Platform
+ */
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Facebook SDK
+    if (typeof FB !== 'undefined') {
+        FB.init({
+            appId      : 'your-facebook-app-id', // Replace with real app ID when available
+            cookie     : true,
+            xfbml      : true,
+            version    : 'v12.0'
+        });
+    }
+    
+    // Handle login form submission
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            // Validate form
+            if (!validateEmail(email)) {
+                showToast('Please enter a valid email address', 'danger');
+                return;
+            }
+            
+            if (password.trim() === '') {
+                showToast('Please enter your password', 'danger');
+                return;
+            }
+            
+            // Submit form
+            this.submit();
+        });
+    }
+    
+    // Handle registration form submission
+    const registerForm = document.getElementById('register-form');
+    if (registerForm) {
+        registerForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            // Validate form
+            if (name.trim() === '') {
+                showToast('Please enter your name', 'danger');
+                return;
+            }
+            
+            if (!validateEmail(email)) {
+                showToast('Please enter a valid email address', 'danger');
+                return;
+            }
+            
+            if (password.trim() === '') {
+                showToast('Please enter a password', 'danger');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showToast('Password must be at least 6 characters long', 'danger');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showToast('Passwords do not match', 'danger');
+                return;
+            }
+            
+            // Submit form
+            this.submit();
+        });
+    }
+    
+    // Handle profile update form submission
+    const profileForm = document.getElementById('profile-form');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+            
+            // Validate form
+            if (name.trim() === '') {
+                showToast('Please enter your name', 'danger');
+                return;
+            }
+            
+            if (phone.trim() !== '' && !validatePhone(phone)) {
+                showToast('Please enter a valid phone number', 'danger');
+                return;
+            }
+            
+            // Submit form
+            this.submit();
+        });
+    }
+    
+    // Handle password change form submission
+    const passwordForm = document.getElementById('password-form');
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            // Validate form
+            if (currentPassword.trim() === '') {
+                showToast('Please enter your current password', 'danger');
+                return;
+            }
+            
+            if (newPassword.trim() === '') {
+                showToast('Please enter a new password', 'danger');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                showToast('New password must be at least 6 characters long', 'danger');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                showToast('New passwords do not match', 'danger');
+                return;
+            }
+            
+            // Submit form
+            this.submit();
+        });
+    }
+    
+    // Facebook login button
+    const fbLoginBtn = document.getElementById('facebook-login');
+    if (fbLoginBtn) {
+        fbLoginBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            if (typeof FB !== 'undefined') {
+                FB.login(function(response) {
+                    if (response.authResponse) {
+                        // Get user info from Facebook
+                        FB.api('/me', {fields: 'name,email'}, function(userInfo) {
+                            // Send to backend for authentication/registration
+                            socialLogin('facebook', userInfo.id, userInfo.name, userInfo.email);
+                        });
+                    } else {
+                        showToast('Facebook login cancelled or failed', 'warning');
+                    }
+                }, {scope: 'email'});
+            } else {
+                showToast('Facebook SDK not loaded', 'danger');
+            }
+        });
+    }
+    
+    // Google login button
+    const googleLoginBtn = document.getElementById('google-login');
+    if (googleLoginBtn && typeof google !== 'undefined') {
+        // Initialize Google Sign-In
+        google.accounts.id.initialize({
+            client_id: 'your-google-client-id', // Replace with real client ID when available
+            callback: handleGoogleSignIn
+        });
+        
+        google.accounts.id.renderButton(
+            document.getElementById('google-login-container'),
+            { theme: 'outline', size: 'large', width: '100%' }
+        );
+        
+        // Manual button for custom styling
+        googleLoginBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            google.accounts.id.prompt();
+        });
+    }
+});
+
+/**
+ * Handle Google Sign-In response
+ */
+function handleGoogleSignIn(response) {
+    // Decode the JWT token to get user info
+    const payload = parseJwt(response.credential);
+    
+    if (payload) {
+        // Send to backend for authentication/registration
+        socialLogin('google', payload.sub, payload.name, payload.email);
+    } else {
+        showToast('Failed to process Google login', 'danger');
+    }
+}
+
+/**
+ * Social login (Facebook/Google) handler
+ */
+function socialLogin(provider, socialId, name, email) {
+    // AJAX request to handle social login
+    fetch('api/social_login.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `provider=${provider}&social_id=${socialId}&name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Redirect to specified page or default to home
+            window.location.href = data.redirect || 'index.php';
+        } else {
+            showToast(data.message || 'Social login failed', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('An error occurred during social login', 'danger');
+    });
+}
+
+/**
+ * Parse JWT token (for Google Sign-In)
+ */
+function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        console.error('Error parsing JWT:', e);
+        return null;
+    }
+}
+
+/**
+ * Validate email format
+ */
+function validateEmail(email) {
+    const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(String(email).toLowerCase());
+}
+
+/**
+ * Validate phone number format
+ */
+function validatePhone(phone) {
+    const re = /^\d{10}$/; // Basic validation for 10-digit phone number
+    return re.test(String(phone));
+}
+
+/**
+ * Toggle password visibility
+ */
+function togglePasswordVisibility(inputId, toggleBtnId) {
+    const passwordInput = document.getElementById(inputId);
+    const toggleBtn = document.getElementById(toggleBtnId);
+    
+    if (passwordInput && toggleBtn) {
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+        } else {
+            passwordInput.type = 'password';
+            toggleBtn.innerHTML = '<i class="fas fa-eye"></i>';
+        }
+    }
+}
