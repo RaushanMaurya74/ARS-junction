@@ -23,6 +23,7 @@ require_once 'auth.php';
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
     <div class="container">
         <a class="navbar-brand" href="index.php">
+            <img src="images/logo.png" alt="ARS JUNCTION Logo" height="40" class="me-2">
             <span class="text-warning fw-bold">ARS</span> JUNCTION
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">

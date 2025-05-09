@@ -11,21 +11,16 @@ function admin_login($email, $password) {
     global $conn;
     
     $stmt = $conn->prepare("SELECT * FROM users WHERE email = ? AND is_admin = 1");
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $stmt->execute([$email]);
+    $admin = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if ($result->num_rows === 1) {
-        $admin = $result->fetch_assoc();
+    if ($admin && password_verify($password, $admin['password'])) {
+        // Password is correct, create admin session
+        $_SESSION['admin_id'] = $admin['user_id'];
+        $_SESSION['admin_name'] = $admin['name'];
+        $_SESSION['admin_email'] = $admin['email'];
         
-        if (password_verify($password, $admin['password'])) {
-            // Password is correct, create admin session
-            $_SESSION['admin_id'] = $admin['user_id'];
-            $_SESSION['admin_name'] = $admin['name'];
-            $_SESSION['admin_email'] = $admin['email'];
-            
-            return $admin;
-        }
+        return $admin;
     }
     
     return false;
@@ -55,15 +50,10 @@ function require_admin() {
 function get_admin_by_id($admin_id) {
     global $conn;
     $stmt = $conn->prepare("SELECT * FROM users WHERE user_id = ? AND is_admin = 1");
-    $stmt->bind_param("i", $admin_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $stmt->execute([$admin_id]);
+    $admin = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if ($result->num_rows > 0) {
-        return $result->fetch_assoc();
-    } else {
-        return null;
-    }
+    return $admin ?: null;
 }
 
 // Get all orders for admin

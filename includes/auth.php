@@ -73,14 +73,11 @@ function social_login($name, $email, $social_id, $social_type) {
     
     // Check if user exists with this social id
     $stmt = $conn->prepare("SELECT * FROM users WHERE social_id = ? AND social_type = ?");
-    $stmt->bind_param("ss", $social_id, $social_type);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $stmt->execute([$social_id, $social_type]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if ($result->num_rows === 1) {
+    if ($user) {
         // User exists, log them in
-        $user = $result->fetch_assoc();
-        
         $_SESSION['user_id'] = $user['user_id'];
         $_SESSION['user_name'] = $user['name'];
         $_SESSION['user_email'] = $user['email'];
@@ -90,17 +87,13 @@ function social_login($name, $email, $social_id, $social_type) {
     } else {
         // Check if email exists but without social login
         $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        $stmt->execute([$email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if ($result->num_rows === 1) {
+        if ($user) {
             // Email exists, update with social info
-            $user = $result->fetch_assoc();
-            
             $stmt = $conn->prepare("UPDATE users SET social_id = ?, social_type = ? WHERE user_id = ?");
-            $stmt->bind_param("ssi", $social_id, $social_type, $user['user_id']);
-            $stmt->execute();
+            $stmt->execute([$social_id, $social_type, $user['user_id']]);
             
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['user_name'] = $user['name'];
@@ -111,10 +104,9 @@ function social_login($name, $email, $social_id, $social_type) {
         } else {
             // New user, create account
             $stmt = $conn->prepare("INSERT INTO users (name, email, password, social_id, social_type) VALUES (?, ?, '', ?, ?)");
-            $stmt->bind_param("ssss", $name, $email, $social_id, $social_type);
             
-            if ($stmt->execute()) {
-                $user_id = $stmt->insert_id;
+            if ($stmt->execute([$name, $email, $social_id, $social_type])) {
+                $user_id = $conn->lastInsertId();
                 
                 $_SESSION['user_id'] = $user_id;
                 $_SESSION['user_name'] = $name;
@@ -123,7 +115,7 @@ function social_login($name, $email, $social_id, $social_type) {
                 
                 return array('success' => true, 'user_id' => $user_id, 'new_user' => true);
             } else {
-                return array('success' => false, 'message' => 'Social login failed: ' . $conn->error);
+                return array('success' => false, 'message' => 'Social login failed');
             }
         }
     }
