@@ -223,31 +223,23 @@ function admin_get_all_menu_items($limit = 100, $offset = 0, $restaurant_id = nu
            JOIN restaurants r ON m.restaurant_id = r.restaurant_id 
            JOIN categories c ON m.category_id = c.category_id ";
     
+    $params = [];
+    
     if ($restaurant_id !== null) {
         $sql .= "WHERE m.restaurant_id = ? ";
+        $params[] = $restaurant_id;
     }
     
     $sql .= "ORDER BY m.name 
             LIMIT ? OFFSET ?";
     
+    $params[] = $limit;
+    $params[] = $offset;
+    
     $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
     
-    if ($restaurant_id !== null) {
-        $stmt->bind_param("iii", $restaurant_id, $limit, $offset);
-    } else {
-        $stmt->bind_param("ii", $limit, $offset);
-    }
-    
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $items = array();
-    if ($result->num_rows > 0) {
-        while($row = $result->fetch_assoc()) {
-            $items[] = $row;
-        }
-    }
-    return $items;
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 // Add new menu item for admin
@@ -259,19 +251,19 @@ function admin_add_menu_item($data) {
     $name = clean_input($data['name']);
     $description = clean_input($data['description']);
     $price = floatval($data['price']);
-    $is_vegetarian = isset($data['is_vegetarian']) ? 1 : 0;
-    $is_spicy = isset($data['is_spicy']) ? 1 : 0;
-    $is_available = isset($data['is_available']) ? 1 : 0;
-    $is_featured = isset($data['is_featured']) ? 1 : 0;
+    // Use TRUE/FALSE for PostgreSQL boolean values
+    $is_vegetarian = isset($data['is_vegetarian']) ? 'TRUE' : 'FALSE';
+    $is_spicy = isset($data['is_spicy']) ? 'TRUE' : 'FALSE';
+    $is_available = isset($data['is_available']) ? 'TRUE' : 'FALSE';
+    $is_featured = isset($data['is_featured']) ? 'TRUE' : 'FALSE';
     
     $stmt = $conn->prepare("INSERT INTO menu_items (restaurant_id, category_id, name, description, price, is_vegetarian, is_spicy, is_available, is_featured) 
                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("iissdiiii", $restaurant_id, $category_id, $name, $description, $price, $is_vegetarian, $is_spicy, $is_available, $is_featured);
     
-    if ($stmt->execute()) {
-        return array('success' => true, 'item_id' => $stmt->insert_id);
+    if ($stmt->execute([$restaurant_id, $category_id, $name, $description, $price, $is_vegetarian, $is_spicy, $is_available, $is_featured])) {
+        return array('success' => true, 'item_id' => $conn->lastInsertId());
     } else {
-        return array('success' => false, 'message' => 'Failed to add menu item: ' . $conn->error);
+        return array('success' => false, 'message' => 'Failed to add menu item');
     }
 }
 
@@ -284,21 +276,21 @@ function admin_update_menu_item($item_id, $data) {
     $name = clean_input($data['name']);
     $description = clean_input($data['description']);
     $price = floatval($data['price']);
-    $is_vegetarian = isset($data['is_vegetarian']) ? 1 : 0;
-    $is_spicy = isset($data['is_spicy']) ? 1 : 0;
-    $is_available = isset($data['is_available']) ? 1 : 0;
-    $is_featured = isset($data['is_featured']) ? 1 : 0;
+    // Use TRUE/FALSE for PostgreSQL boolean values
+    $is_vegetarian = isset($data['is_vegetarian']) ? 'TRUE' : 'FALSE';
+    $is_spicy = isset($data['is_spicy']) ? 'TRUE' : 'FALSE';
+    $is_available = isset($data['is_available']) ? 'TRUE' : 'FALSE';
+    $is_featured = isset($data['is_featured']) ? 'TRUE' : 'FALSE';
     
     $stmt = $conn->prepare("UPDATE menu_items 
                          SET restaurant_id = ?, category_id = ?, name = ?, description = ?, price = ?, 
                              is_vegetarian = ?, is_spicy = ?, is_available = ?, is_featured = ? 
                          WHERE item_id = ?");
-    $stmt->bind_param("iissdiiiii", $restaurant_id, $category_id, $name, $description, $price, $is_vegetarian, $is_spicy, $is_available, $is_featured, $item_id);
     
-    if ($stmt->execute()) {
+    if ($stmt->execute([$restaurant_id, $category_id, $name, $description, $price, $is_vegetarian, $is_spicy, $is_available, $is_featured, $item_id])) {
         return array('success' => true);
     } else {
-        return array('success' => false, 'message' => 'Failed to update menu item: ' . $conn->error);
+        return array('success' => false, 'message' => 'Failed to update menu item');
     }
 }
 
@@ -306,12 +298,11 @@ function admin_update_menu_item($item_id, $data) {
 function admin_delete_menu_item($item_id) {
     global $conn;
     $stmt = $conn->prepare("DELETE FROM menu_items WHERE item_id = ?");
-    $stmt->bind_param("i", $item_id);
     
-    if ($stmt->execute()) {
+    if ($stmt->execute([$item_id])) {
         return array('success' => true);
     } else {
-        return array('success' => false, 'message' => 'Failed to delete menu item: ' . $conn->error);
+        return array('success' => false, 'message' => 'Failed to delete menu item');
     }
 }
 
@@ -326,29 +317,20 @@ function admin_get_all_reviews($limit = 100, $offset = 0) {
            LIMIT ? OFFSET ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ii", $limit, $offset);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $stmt->execute([$limit, $offset]);
     
-    $reviews = array();
-    if ($result->num_rows > 0) {
-        while($row = $result->fetch_assoc()) {
-            $reviews[] = $row;
-        }
-    }
-    return $reviews;
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 // Delete review for admin
 function admin_delete_review($review_id) {
     global $conn;
     $stmt = $conn->prepare("DELETE FROM reviews WHERE review_id = ?");
-    $stmt->bind_param("i", $review_id);
     
-    if ($stmt->execute()) {
+    if ($stmt->execute([$review_id])) {
         return array('success' => true);
     } else {
-        return array('success' => false, 'message' => 'Failed to delete review: ' . $conn->error);
+        return array('success' => false, 'message' => 'Failed to delete review');
     }
 }
 ?>

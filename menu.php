@@ -13,7 +13,7 @@ $sql = "SELECT m.*, r.name as restaurant_name, c.name as category_name
        FROM menu_items m 
        JOIN restaurants r ON m.restaurant_id = r.restaurant_id 
        JOIN categories c ON m.category_id = c.category_id 
-       WHERE m.is_available = 1 AND r.is_active = 1";
+       WHERE m.is_available = TRUE AND r.is_active = TRUE";
 
 // Add category filter if selected
 if ($category_filter > 0) {
@@ -21,13 +21,8 @@ if ($category_filter > 0) {
 }
 
 $sql .= " ORDER BY m.category_id, m.name";
-$result = $conn->query($sql);
-$menu_items = array();
-if ($result->num_rows > 0) {
-    while($row = $result->fetch_assoc()) {
-        $menu_items[] = $row;
-    }
-}
+$stmt = $conn->query($sql);
+$menu_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Handle search query
 $search_query = '';

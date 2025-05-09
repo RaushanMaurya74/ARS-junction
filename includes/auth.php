@@ -141,12 +141,10 @@ function update_user_profile($user_id, $data) {
     
     $sql = "UPDATE users SET ";
     $params = array();
-    $types = "";
     
     if ($name !== null) {
         $sql .= "name = ?, ";
         $params[] = $name;
-        $types .= "s";
         // Update session name too
         if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $user_id) {
             $_SESSION['user_name'] = $name;
@@ -156,31 +154,26 @@ function update_user_profile($user_id, $data) {
     if ($phone !== null) {
         $sql .= "phone = ?, ";
         $params[] = $phone;
-        $types .= "s";
     }
     
     if ($address !== null) {
         $sql .= "address = ?, ";
         $params[] = $address;
-        $types .= "s";
     }
     
     if ($city !== null) {
         $sql .= "city = ?, ";
         $params[] = $city;
-        $types .= "s";
     }
     
     if ($state !== null) {
         $sql .= "state = ?, ";
         $params[] = $state;
-        $types .= "s";
     }
     
     if ($zip_code !== null) {
         $sql .= "zip_code = ?, ";
         $params[] = $zip_code;
-        $types .= "s";
     }
     
     // Remove the trailing comma and space
@@ -188,17 +181,13 @@ function update_user_profile($user_id, $data) {
     
     $sql .= " WHERE user_id = ?";
     $params[] = $user_id;
-    $types .= "i";
     
     $stmt = $conn->prepare($sql);
     
-    // Dynamically bind parameters
-    $stmt->bind_param($types, ...$params);
-    
-    if ($stmt->execute()) {
+    if ($stmt->execute($params)) {
         return array('success' => true);
     } else {
-        return array('success' => false, 'message' => 'Profile update failed: ' . $conn->error);
+        return array('success' => false, 'message' => 'Profile update failed');
     }
 }
 
@@ -208,13 +197,10 @@ function change_password($user_id, $current_password, $new_password) {
     
     // Get the current user
     $stmt = $conn->prepare("SELECT password FROM users WHERE user_id = ?");
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $stmt->execute([$user_id]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if ($result->num_rows === 1) {
-        $user = $result->fetch_assoc();
-        
+    if ($user) {
         // Verify current password
         if (password_verify($current_password, $user['password'])) {
             // Hash the new password
@@ -222,12 +208,11 @@ function change_password($user_id, $current_password, $new_password) {
             
             // Update password
             $stmt = $conn->prepare("UPDATE users SET password = ? WHERE user_id = ?");
-            $stmt->bind_param("si", $hashed_password, $user_id);
             
-            if ($stmt->execute()) {
+            if ($stmt->execute([$hashed_password, $user_id])) {
                 return array('success' => true);
             } else {
-                return array('success' => false, 'message' => 'Password update failed: ' . $conn->error);
+                return array('success' => false, 'message' => 'Password update failed');
             }
         } else {
             return array('success' => false, 'message' => 'Current password is incorrect');
