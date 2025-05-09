@@ -3,6 +3,23 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
+    // First get API keys from server
+    fetch('api/get_api_keys.php')
+    .then(response => response.json())
+    .then(apiKeys => {
+        // Store API keys globally
+        window.socialApiKeys = apiKeys;
+        
+        // Initialize social login providers with API keys
+        initializeSocialLogins(apiKeys);
+    })
+    .catch(error => {
+        console.error('Error fetching API keys:', error);
+    });
+});
+
+// Initialize social login providers
+function initializeSocialLogins(apiKeys) {
     // Load Facebook SDK asynchronously
     (function(d, s, id) {
         var js, fjs = d.getElementsByTagName(s)[0];
@@ -15,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Facebook SDK initialization
     window.fbAsyncInit = function() {
         FB.init({
-            appId      : '1234567890123456', // Facebook App ID (placeholder - will be replaced with real one)
+            appId      : apiKeys.facebook_app_id,
             cookie     : true,
             xfbml      : true,
             version    : 'v17.0'
@@ -186,10 +203,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Initialize Google Sign-In when script is loaded
         googleScript.onload = function() {
-            if (typeof google !== 'undefined') {
+            if (typeof google !== 'undefined' && window.socialApiKeys) {
                 // Initialize Google Sign-In
                 google.accounts.id.initialize({
-                    client_id: '123456789012-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com', // Replace with real client ID when available
+                    client_id: window.socialApiKeys.google_client_id,
                     callback: handleGoogleSignIn,
                     auto_select: false
                 });

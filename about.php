@@ -125,24 +125,7 @@ require_once 'includes/header.php';
                         <div class="mb-3">
                             <i class="fas fa-user-circle display-1 text-primary"></i>
                         </div>
-                        <h4 class="card-title">Amit Singh</h4>
-                        <p class="card-text text-muted">Founder & CEO</p>
-                        <p class="card-text">A passionate entrepreneur with a vision to transform food delivery in Bihar.</p>
-                        <div class="social-icons mt-3">
-                            <a href="#" class="text-dark me-2"><i class="fab fa-linkedin"></i></a>
-                            <a href="#" class="text-dark me-2"><i class="fab fa-twitter"></i></a>
-                            <a href="#" class="text-dark"><i class="fas fa-envelope"></i></a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4 mb-4">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <i class="fas fa-user-circle display-1 text-primary"></i>
-                        </div>
-                        <h4 class="card-title">Rahul Singh</h4>
+                        <h4 class="card-title">Aniket Kumar Singh </h4>
                         <p class="card-text text-muted">Operations Manager</p>
                         <p class="card-text">An operations expert ensuring smooth delivery and customer satisfaction.</p>
                         <div class="social-icons mt-3">
@@ -159,7 +142,24 @@ require_once 'includes/header.php';
                         <div class="mb-3">
                             <i class="fas fa-user-circle display-1 text-primary"></i>
                         </div>
-                        <h4 class="card-title">Shreya Jha</h4>
+                        <h4 class="card-title">Raushan Kumar Maurya</h4>
+                        <p class="card-text text-muted">Founder & CEO</p>
+                        <p class="card-text">A passionate entrepreneur with a vision to transform food delivery in Bihar.</p>
+                        <div class="social-icons mt-3">
+                            <a href="#" class="text-dark me-2"><i class="fab fa-linkedin"></i></a>
+                            <a href="#" class="text-dark me-2"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="text-dark"><i class="fas fa-envelope"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="fas fa-user-circle display-1 text-primary"></i>
+                        </div>
+                        <h4 class="card-title">Suraj Kumar</h4>
                         <p class="card-text text-muted">Customer Relations</p>
                         <p class="card-text">Dedicated to providing exceptional support and resolving customer queries.</p>
                         <div class="social-icons mt-3">
