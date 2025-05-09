@@ -174,25 +174,46 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Google login button
+    // Load Google Sign-In API
     const googleLoginBtn = document.getElementById('google-login');
-    if (googleLoginBtn && typeof google !== 'undefined') {
-        // Initialize Google Sign-In
-        google.accounts.id.initialize({
-            client_id: 'your-google-client-id', // Replace with real client ID when available
-            callback: handleGoogleSignIn
-        });
+    if (googleLoginBtn) {
+        // Load Google Identity Services JavaScript library
+        const googleScript = document.createElement('script');
+        googleScript.src = 'https://accounts.google.com/gsi/client';
+        googleScript.async = true;
+        googleScript.defer = true;
+        document.head.appendChild(googleScript);
         
-        google.accounts.id.renderButton(
-            document.getElementById('google-login-container'),
-            { theme: 'outline', size: 'large', width: '100%' }
-        );
-        
-        // Manual button for custom styling
-        googleLoginBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            google.accounts.id.prompt();
-        });
+        // Initialize Google Sign-In when script is loaded
+        googleScript.onload = function() {
+            if (typeof google !== 'undefined') {
+                // Initialize Google Sign-In
+                google.accounts.id.initialize({
+                    client_id: '123456789012-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com', // Replace with real client ID when available
+                    callback: handleGoogleSignIn,
+                    auto_select: false
+                });
+                
+                // Custom button triggers Google Sign-In prompt
+                googleLoginBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (typeof google !== 'undefined' && google.accounts) {
+                        google.accounts.id.prompt();
+                    } else {
+                        showToast('Google Sign-In not loaded yet. Please try again in a moment.', 'warning');
+                    }
+                });
+                
+                // Also render the standard Google button (hidden, but available as fallback)
+                const googleContainer = document.getElementById('google-login-container');
+                if (googleContainer) {
+                    google.accounts.id.renderButton(
+                        googleContainer,
+                        { theme: 'outline', size: 'large', width: '100%' }
+                    );
+                }
+            }
+        };
     }
 });
 

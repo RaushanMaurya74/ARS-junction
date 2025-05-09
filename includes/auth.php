@@ -16,22 +16,17 @@ function authenticate_user($email, $password) {
     global $conn;
     
     $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $stmt->execute([$email]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if ($result->num_rows === 1) {
-        $user = $result->fetch_assoc();
+    if ($user && password_verify($password, $user['password'])) {
+        // Password is correct, create session
+        $_SESSION['user_id'] = $user['user_id'];
+        $_SESSION['user_name'] = $user['name'];
+        $_SESSION['user_email'] = $user['email'];
+        $_SESSION['is_admin'] = $user['is_admin'];
         
-        if (password_verify($password, $user['password'])) {
-            // Password is correct, create session
-            $_SESSION['user_id'] = $user['user_id'];
-            $_SESSION['user_name'] = $user['name'];
-            $_SESSION['user_email'] = $user['email'];
-            $_SESSION['is_admin'] = $user['is_admin'];
-            
-            return $user;
-        }
+        return $user;
     }
     
     return false;
