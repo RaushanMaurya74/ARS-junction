@@ -1,15 +1,18 @@
 <?php
+// Start session and include required files, but don't output anything yet
+require_once 'includes/db_connect.php';
+require_once 'includes/functions.php';
+require_once 'includes/auth.php';
+
 $page_title = "Login";
-require_once 'includes/header.php';
+$error = '';
+$email = '';
 
 // Redirect if already logged in
 if (is_logged_in()) {
     header("Location: index.php");
     exit;
 }
-
-$error = '';
-$email = '';
 
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -33,6 +36,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 // Extra CSS and JS
 $extra_css = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">';
 $extra_js = '<script src="js/auth.js"></script>';
+
+// Now include the header which will output HTML
+require_once 'includes/header.php';
 ?>
 
 <div class="container py-5">

@@ -57,13 +57,9 @@ require_once 'auth.php';
                                 $cart_count = 0;
                                 if (isset($_SESSION['user_id'])) {
                                     $stmt = $conn->prepare("SELECT SUM(quantity) as count FROM cart WHERE user_id = ?");
-                                    $stmt->bind_param("i", $_SESSION['user_id']);
-                                    $stmt->execute();
-                                    $result = $stmt->get_result();
-                                    if ($result->num_rows > 0) {
-                                        $row = $result->fetch_assoc();
-                                        $cart_count = $row['count'] ? $row['count'] : 0;
-                                    }
+                                    $stmt->execute([$_SESSION['user_id']]);
+                                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                                    $cart_count = $row && isset($row['count']) ? $row['count'] : 0;
                                 }
                                 echo $cart_count;
                                 ?>
