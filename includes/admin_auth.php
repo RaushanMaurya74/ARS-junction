@@ -111,20 +111,12 @@ function admin_count_orders_by_status() {
 // Get all users for admin
 function admin_get_all_users($limit = 100, $offset = 0) {
     global $conn;
-    $sql = "SELECT * FROM users WHERE is_admin = 0 ORDER BY created_at DESC LIMIT ? OFFSET ?";
+    // In PostgreSQL, use FALSE for boolean values instead of 0
+    $sql = "SELECT * FROM users WHERE is_admin = FALSE ORDER BY created_at DESC LIMIT ? OFFSET ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ii", $limit, $offset);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $users = array();
-    if ($result->num_rows > 0) {
-        while($row = $result->fetch_assoc()) {
-            $users[] = $row;
-        }
-    }
-    return $users;
+    $stmt->execute([$limit, $offset]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 // Get all restaurants for admin
@@ -138,29 +130,19 @@ function admin_get_all_restaurants($limit = 100, $offset = 0) {
            LIMIT ? OFFSET ?";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ii", $limit, $offset);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $restaurants = array();
-    if ($result->num_rows > 0) {
-        while($row = $result->fetch_assoc()) {
-            $restaurants[] = $row;
-        }
-    }
-    return $restaurants;
+    $stmt->execute([$limit, $offset]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 // Update order status for admin
 function admin_update_order_status($order_id, $status) {
     global $conn;
     $stmt = $conn->prepare("UPDATE orders SET order_status = ? WHERE order_id = ?");
-    $stmt->bind_param("si", $status, $order_id);
     
-    if ($stmt->execute()) {
+    if ($stmt->execute([$status, $order_id])) {
         return array('success' => true);
     } else {
-        return array('success' => false, 'message' => 'Failed to update order status: ' . $conn->error);
+        return array('success' => false, 'message' => 'Failed to update order status');
     }
 }
 
@@ -182,12 +164,11 @@ function admin_add_restaurant($data) {
     
     $stmt = $conn->prepare("INSERT INTO restaurants (name, description, address, city, state, zip_code, phone, email, delivery_time, delivery_fee, minimum_order) 
                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssssssiii", $name, $description, $address, $city, $state, $zip_code, $phone, $email, $delivery_time, $delivery_fee, $minimum_order);
     
-    if ($stmt->execute()) {
-        return array('success' => true, 'restaurant_id' => $stmt->insert_id);
+    if ($stmt->execute([$name, $description, $address, $city, $state, $zip_code, $phone, $email, $delivery_time, $delivery_fee, $minimum_order])) {
+        return array('success' => true, 'restaurant_id' => $conn->lastInsertId());
     } else {
-        return array('success' => false, 'message' => 'Failed to add restaurant: ' . $conn->error);
+        return array('success' => false, 'message' => 'Failed to add restaurant');
     }
 }
 
@@ -206,18 +187,18 @@ function admin_update_restaurant($restaurant_id, $data) {
     $delivery_time = intval($data['delivery_time']);
     $delivery_fee = floatval($data['delivery_fee']);
     $minimum_order = floatval($data['minimum_order']);
-    $is_active = isset($data['is_active']) ? 1 : 0;
+    // Use TRUE/FALSE for PostgreSQL boolean values
+    $is_active = isset($data['is_active']) ? 'TRUE' : 'FALSE';
     
     $stmt = $conn->prepare("UPDATE restaurants 
                          SET name = ?, description = ?, address = ?, city = ?, state = ?, zip_code = ?, 
                              phone = ?, email = ?, delivery_time = ?, delivery_fee = ?, minimum_order = ?, is_active = ? 
                          WHERE restaurant_id = ?");
-    $stmt->bind_param("sssssssiiiiis", $name, $description, $address, $city, $state, $zip_code, $phone, $email, $delivery_time, $delivery_fee, $minimum_order, $is_active, $restaurant_id);
     
-    if ($stmt->execute()) {
+    if ($stmt->execute([$name, $description, $address, $city, $state, $zip_code, $phone, $email, $delivery_time, $delivery_fee, $minimum_order, $is_active, $restaurant_id])) {
         return array('success' => true);
     } else {
-        return array('success' => false, 'message' => 'Failed to update restaurant: ' . $conn->error);
+        return array('success' => false, 'message' => 'Failed to update restaurant');
     }
 }
 
@@ -225,12 +206,11 @@ function admin_update_restaurant($restaurant_id, $data) {
 function admin_delete_restaurant($restaurant_id) {
     global $conn;
     $stmt = $conn->prepare("DELETE FROM restaurants WHERE restaurant_id = ?");
-    $stmt->bind_param("i", $restaurant_id);
     
-    if ($stmt->execute()) {
+    if ($stmt->execute([$restaurant_id])) {
         return array('success' => true);
     } else {
-        return array('success' => false, 'message' => 'Failed to delete restaurant: ' . $conn->error);
+        return array('success' => false, 'message' => 'Failed to delete restaurant');
     }
 }
 

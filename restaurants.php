@@ -10,15 +10,10 @@ $sql = "SELECT r.*,
        (SELECT AVG(rating) FROM reviews WHERE restaurant_id = r.restaurant_id) as avg_rating,
        (SELECT COUNT(*) FROM reviews WHERE restaurant_id = r.restaurant_id) as review_count
        FROM restaurants r 
-       WHERE r.is_active = 1 
+       WHERE r.is_active = TRUE 
        ORDER BY r.name";
-$result = $conn->query($sql);
-$restaurants = array();
-if ($result->num_rows > 0) {
-    while($row = $result->fetch_assoc()) {
-        $restaurants[] = $row;
-    }
-}
+$stmt = $conn->query($sql);
+$restaurants = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Handle search query
 $search_query = '';
@@ -87,11 +82,9 @@ $restaurant_images = [
                 $stmt = $conn->prepare("SELECT DISTINCT c.category_id FROM categories c 
                                       JOIN menu_items m ON c.category_id = m.category_id 
                                       WHERE m.restaurant_id = ?");
-                $stmt->bind_param("i", $restaurant['restaurant_id']);
-                $stmt->execute();
-                $cat_result = $stmt->get_result();
+                $stmt->execute([$restaurant['restaurant_id']]);
                 $restaurant_categories = array();
-                while($cat = $cat_result->fetch_assoc()) {
+                while($cat = $stmt->fetch(PDO::FETCH_ASSOC)) {
                     $restaurant_categories[] = $cat['category_id'];
                 }
                 $category_attr = implode(' ', $restaurant_categories);
