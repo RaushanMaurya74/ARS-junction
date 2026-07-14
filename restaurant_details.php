@@ -35,10 +35,8 @@ $review_count = 0;
 
 $sql = "SELECT AVG(rating) as avg_rating, COUNT(*) as count FROM reviews WHERE restaurant_id = ?";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $restaurant_id);
-$stmt->execute();
-$result = $stmt->get_result();
-if ($row = $result->fetch_assoc()) {
+$stmt->execute([$restaurant_id]);
+if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $avg_rating = round($row['avg_rating'], 1);
     $review_count = $row['count'];
 }
@@ -48,22 +46,18 @@ $extra_js = '<script src="js/cart.js"></script>';
 
 // Restaurant images (use stock photos)
 $restaurant_images = [
-    "https://pixabay.com/get/g1c4d7b9751b3890559d056283366d15c43871338c0b32e6e87df5f4fb2cda97974c2cab8ffcf0e12aa6594039be164ad5e32d9f2e84936052f08f05731b988e7_1280.jpg",
-    "https://pixabay.com/get/g32e7e52c71ac7b6b547bf4311824851318f6ceaf1f1b6608da37564e25220a7cdbd4a66a2f566383b2d6c3772e2cfb099c7ffa98517ec22b54df0296a90d88e0_1280.jpg",
-    "https://pixabay.com/get/gb03bfb45830cae2f092729c65eddf6e9bf3056cc1ce7e3f16ada88db82f39493d12d160c84fa25586f91bc9a59ccfa51fbccae0c02111db5816d0e74cb527647_1280.jpg",
-    "https://pixabay.com/get/g57892949a204216b3e74332aae863db8ad3ccbdf6375224bc32d4f2683827f08063f70ddefde5e9479934a5f1959f3217b14c99c441d6e284498c759fc9a6b0d_1280.jpg"
+    "images/restaurant_1.jpg",
+    "images/restaurant_2.jpg",
+    "images/restaurant_3.jpg",
+    "images/restaurant_4.jpg"
 ];
 
 // Food images
 $food_images = [
-    "https://pixabay.com/get/g12156b2dbc31bb07d0fc025ac2c9d55a2e380994888ce620bf2df42e2cad88a767656bfd015da042307899468e4fea5a7dac8c5271f4bca3e2557eb58b10cbcc_1280.jpg",
-    "https://pixabay.com/get/g00cc480b0593d93c26a23b5426edafddd525a90edb5b4fba09d7860087da5ad4a1db284ab5d9156c7db3337c4f18e99565d714d2f80fa86cdb2ab2521a5ee276_1280.jpg",
-    "https://pixabay.com/get/g6dab4081301a35f2eaa4dab90e26e8382b349aff7731c6fbaebdc4d02f74f79bef3ae2efa46e299a9994c2e3c2ca4f47b51a8362d12fe6f673b9ee1d59d222c3_1280.jpg",
-    "https://pixabay.com/get/g64e0555caef3f12f1d7115a280d82fb8413f9212dec2d3fb1ea8ab282134b485225984391e3f591e8a535477db67a8b997d34342883959addecd6d8c46a61013_1280.jpg",
-    "https://pixabay.com/get/g10786d528a6f89d5e001b5927653ea963c658bdb227414dfae50c760926e0b3ebd7d27197ec9ae9a5bd75db0d41f20fe6a7547c6e439af24d3c04b049fd7a47f_1280.jpg",
-    "https://pixabay.com/get/g88c1a943dca246fccfd6cc284add1888dd69d32b088ab38f54080c18c5ed31f80a94daa14599f5e35a3ecf9c9d34b3120088633a604208879589608db6f5c209_1280.jpg",
-    "https://pixabay.com/get/g683a2929e4615ce3a6bf61fdf30d6d35b46e9b8b9f3419d63e8dd595c00c12428211e15157d2f63cc00c9f1bf4f19ad28fbd26713abfa85e1670fe5460124258_1280.jpg",
-    "https://pixabay.com/get/g73588bd1697fddf3029e16f1b8f2f6cb1361a62e5916feb7dc4c9735d59270447fdeb6a9e0d70a82bef05a35ba6a288e61ce30139f6e1e3be044655518cea643_1280.jpg"
+    "images/food_pizza.jpg",
+    "images/food_burger.jpg",
+    "images/food_indian.jpg",
+    "images/food_chinese.jpg"
 ];
 
 // Select a random restaurant image
@@ -73,7 +67,11 @@ $img_index = $restaurant_id % 4;
 <!-- Restaurant Header -->
 <div class="container mb-4">
     <div class="restaurant-header">
-        <img src="<?php echo $restaurant_images[$img_index]; ?>" alt="<?php echo $restaurant['name']; ?>" class="restaurant-cover">
+        <?php if (!empty($restaurant['image']) && file_exists($restaurant['image'])): ?>
+            <img src="<?php echo $restaurant['image']; ?>" alt="<?php echo $restaurant['name']; ?>" class="restaurant-cover" style="height: 300px; width: 100%; object-fit: cover;">
+        <?php else: ?>
+            <img src="<?php echo $restaurant_images[$img_index]; ?>" alt="<?php echo $restaurant['name']; ?>" class="restaurant-cover" style="height: 300px; width: 100%; object-fit: cover;">
+        <?php endif; ?>
         
         <div class="restaurant-badge">
             <span class="badge bg-<?php echo $restaurant['is_active'] ? 'success' : 'danger'; ?> p-2">
@@ -176,18 +174,24 @@ $img_index = $restaurant_id % 4;
                 <h3 class="mb-3"><?php echo $category_menu['category']['name']; ?></h3>
                 
                 <?php foreach($category_menu['items'] as $item_index => $item): 
-                    $food_img_index = ($item['item_id'] + $index) % 8;
+                    $food_img_index = ($item['item_id'] + $index) % 4;
                 ?>
                 <div class="menu-item row align-items-center">
                     <div class="col-md-8">
                         <div class="d-flex align-items-center">
-                            <img src="<?php echo $food_images[$food_img_index]; ?>" alt="<?php echo $item['name']; ?>" class="menu-item-img me-3">
+                            <?php if (!empty($item['image']) && file_exists($item['image'])): ?>
+                                <img src="<?php echo $item['image']; ?>" alt="<?php echo $item['name']; ?>" class="menu-item-img me-3" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                            <?php else: ?>
+                                <img src="<?php echo $food_images[$food_img_index]; ?>" alt="<?php echo $item['name']; ?>" class="menu-item-img me-3" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                            <?php endif; ?>
                             <div>
                                 <h5 class="mb-1">
                                     <?php echo $item['name']; ?>
-                                    <?php if($item['is_vegetarian']): ?>
-                                    <span class="badge bg-success">Veg</span>
-                                    <?php endif; ?>
+                                     <?php if($item['is_vegetarian']): ?>
+                                     <span class="badge bg-success">Veg</span>
+                                     <?php else: ?>
+                                     <span class="badge bg-danger">Non-Veg</span>
+                                     <?php endif; ?>
                                     <?php if($item['is_spicy']): ?>
                                     <span class="badge bg-danger">Spicy</span>
                                     <?php endif; ?>
@@ -217,7 +221,7 @@ $img_index = $restaurant_id % 4;
             <?php endif; ?>
             
             <!-- Reviews Section -->
-            <div class="card mb-4">
+            <div class="card mb-4" id="reviews">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">Customer Reviews</h4>
                     <div>

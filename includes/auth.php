@@ -12,6 +12,7 @@ function authenticate_user($email, $password) {
         $_SESSION['user_name'] = $user['name'];
         $_SESSION['user_email'] = $user['email'];
         $_SESSION['is_admin'] = $user['is_admin'];
+        $_SESSION['is_delivery_boy'] = $user['is_delivery_boy'];
         return true;
     }
     return false;
@@ -49,6 +50,7 @@ function social_login($name, $email, $social_id, $social_type) {
         $_SESSION['user_name'] = $user['name'];
         $_SESSION['user_email'] = $user['email'];
         $_SESSION['is_admin'] = $user['is_admin'];
+        $_SESSION['is_delivery_boy'] = $user['is_delivery_boy'];
 
         return array('success' => true, 'user_id' => $user['user_id'], 'new_user' => false);
     } else {
@@ -64,17 +66,20 @@ function social_login($name, $email, $social_id, $social_type) {
             $_SESSION['user_name'] = $user['name'];
             $_SESSION['user_email'] = $user['email'];
             $_SESSION['is_admin'] = $user['is_admin'];
+            $_SESSION['is_delivery_boy'] = $user['is_delivery_boy'];
 
             return array('success' => true, 'user_id' => $user['user_id'], 'new_user' => false);
         } else {
-            $stmt = $conn->prepare("INSERT INTO users (name, email, social_id, social_type) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$name, $email, $social_id, $social_type]);
+            $placeholder_password = password_hash(generate_random_password(), PASSWORD_DEFAULT);
+            $stmt = $conn->prepare("INSERT INTO users (name, email, password, social_id, social_type) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$name, $email, $placeholder_password, $social_id, $social_type]);
             $user_id = $conn->lastInsertId();
 
             $_SESSION['user_id'] = $user_id;
             $_SESSION['user_name'] = $name;
             $_SESSION['user_email'] = $email;
             $_SESSION['is_admin'] = 0;
+            $_SESSION['is_delivery_boy'] = 0;
 
             return array('success' => true, 'user_id' => $user_id, 'new_user' => true);
         }
@@ -109,6 +114,17 @@ function require_login() {
     if (!is_logged_in()) {
         $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'];
         header("Location: login.php");
+        exit;
+    }
+}
+
+function is_delivery_boy() {
+    return isset($_SESSION['is_delivery_boy']) && $_SESSION['is_delivery_boy'] == 1;
+}
+
+function require_delivery_boy() {
+    if (!is_delivery_boy()) {
+        header("Location: index.php");
         exit;
     }
 }

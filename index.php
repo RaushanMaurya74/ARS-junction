@@ -2,6 +2,21 @@
 $page_title = "Home";
 require_once 'includes/header.php';
 
+// Local fallbacks
+$restaurant_images = [
+    "images/restaurant_1.jpg",
+    "images/restaurant_2.jpg",
+    "images/restaurant_3.jpg",
+    "images/restaurant_4.jpg"
+];
+
+$stock_images = [
+    "images/food_pizza.jpg",
+    "images/food_burger.jpg",
+    "images/food_indian.jpg",
+    "images/food_chinese.jpg"
+];
+
 // Get featured restaurants
 $featured_restaurants = get_featured_restaurants(4);
 
@@ -17,8 +32,12 @@ $featured_menu_items = get_featured_menu_items(8);
         
         <form action="restaurants.php" method="get" class="search-form">
             <div class="input-group mb-3">
-                <input type="text" name="search" class="form-control form-control-lg" placeholder="Search for food or restaurants...">
-                <button class="btn btn-warning" type="submit"><i class="fas fa-search"></i> Search</button>
+                <select class="form-select form-select-lg" style="max-width: 150px; flex: none; border-top-left-radius: 8px; border-bottom-left-radius: 8px; font-size: 1rem;" onchange="this.form.action = this.value === 'dishes' ? 'menu.php' : 'restaurants.php';">
+                    <option value="restaurants">Restaurants</option>
+                    <option value="dishes">Dishes</option>
+                </select>
+                <input type="text" name="search" class="form-control form-control-lg" placeholder="Search for food or restaurants..." required>
+                <button class="btn btn-warning px-4" type="submit" style="border-top-right-radius: 8px; border-bottom-right-radius: 8px;"><i class="fas fa-search"></i> Search</button>
             </div>
         </form>
     </div>
@@ -64,6 +83,88 @@ $featured_menu_items = get_featured_menu_items(8);
     </div>
 </section>
 
+<!-- Delivery Pincode Checker Section -->
+<section class="mb-5 py-4 bg-white rounded shadow-sm border">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-5 mb-4 mb-lg-0">
+                <h3 class="fw-bold text-dark"><i class="fas fa-map-marked-alt text-primary me-2"></i>Check Delivery Availability</h3>
+                <p class="text-muted">Enter your local Indian pincode to instantly check if ARS Junction delivers to your doorstep, see delivery rates, and view your area on the map.</p>
+                <form id="pincode-search-form" class="mt-3">
+                    <div class="input-group">
+                        <input type="text" id="search-pincode" class="form-control form-control-lg border-primary" placeholder="Enter 6-digit Pincode (e.g. 802207)" required pattern="[0-9]{6}">
+                        <button class="btn btn-primary px-4 fw-bold" type="submit"><i class="fas fa-search me-1"></i> Check</button>
+                    </div>
+                </form>
+                <div id="pincode-result" class="mt-3" style="display: none;"></div>
+            </div>
+            <div class="col-lg-7">
+                <div class="pincode-map-container rounded overflow-hidden border shadow-sm" style="min-height: 250px; background-color: #eee; position: relative;">
+                    <!-- Placeholder Map -->
+                    <div id="map-placeholder" class="d-flex flex-column justify-content-center align-items-center position-absolute w-100 h-100 bg-light text-center p-3">
+                        <i class="fas fa-map-marker-alt fa-3x text-muted mb-2 animate__animated animate__pulse animate__infinite"></i>
+                        <h6 class="text-muted mb-0">Enter a pincode to load the Google Map reference</h6>
+                    </div>
+                    <iframe id="pincode-map-iframe" width="100%" height="300" style="border:0; display: none;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const pinForm = document.getElementById('pincode-search-form');
+    if (pinForm) {
+        pinForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const pincode = document.getElementById('search-pincode').value.trim();
+            const resultDiv = document.getElementById('pincode-result');
+            const mapPlaceholder = document.getElementById('map-placeholder');
+            const mapIframe = document.getElementById('pincode-map-iframe');
+            
+            if (!/^[0-9]{6}$/.test(pincode)) {
+                resultDiv.className = 'alert alert-danger';
+                resultDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Please enter a valid 6-digit numeric pincode.';
+                resultDiv.style.display = 'block';
+                return;
+            }
+            
+            resultDiv.className = 'alert alert-info';
+            resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Checking availability...';
+            resultDiv.style.display = 'block';
+            
+            fetch('api/check_pincode.php?pincode=' + encodeURIComponent(pincode))
+            .then(response => response.json())
+            .then(data => {
+                if (data.deliverable) {
+                    resultDiv.className = 'alert alert-success border-2 animate__animated animate__fadeIn';
+                    resultDiv.innerHTML = `
+                        <h6 class="alert-heading fw-bold mb-1"><i class="fas fa-check-circle me-1"></i>We Deliver Here!</h6>
+                        <p class="mb-1 small"><strong>Area:</strong> ${data.area_name}</p>
+                        <p class="mb-0 small"><strong>Delivery Fee:</strong> ₹${data.delivery_charge.toFixed(2)}</p>
+                    `;
+                } else {
+                    resultDiv.className = 'alert alert-danger border-2 animate__animated animate__fadeIn';
+                    resultDiv.innerHTML = `<h6 class="alert-heading fw-bold mb-1"><i class="fas fa-times-circle me-1"></i>No Delivery Yet</h6><p class="mb-0 small">${data.message}</p>`;
+                }
+                
+                // Load Google Map reference for the pincode
+                mapPlaceholder.style.setProperty('display', 'none', 'important');
+                mapIframe.src = `https://maps.google.com/maps?q=${encodeURIComponent(pincode)}+India&t=&z=14&ie=UTF8&iwloc=&output=embed`;
+                mapIframe.style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                resultDiv.className = 'alert alert-warning';
+                resultDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Error connecting to the server. Please try again.';
+            });
+        });
+    }
+});
+</script>
+
 <!-- Featured Restaurants Section -->
 <section class="mb-5">
     <div class="container">
@@ -76,7 +177,11 @@ $featured_menu_items = get_featured_menu_items(8);
             <?php foreach($featured_restaurants as $restaurant): ?>
             <div class="col-md-6 col-lg-3 mb-4">
                 <div class="card restaurant-card">
-                    <img src="https://pixabay.com/get/g57892949a204216b3e74332aae863db8ad3ccbdf6375224bc32d4f2683827f08063f70ddefde5e9479934a5f1959f3217b14c99c441d6e284498c759fc9a6b0d_1280.jpg" class="card-img-top" alt="<?php echo $restaurant['name']; ?>">
+                    <?php if (!empty($restaurant['image']) && file_exists($restaurant['image'])): ?>
+                        <img src="<?php echo $restaurant['image']; ?>" class="card-img-top" alt="<?php echo $restaurant['name']; ?>" style="height: 180px; object-fit: cover;">
+                    <?php else: ?>
+                        <img src="<?php echo $restaurant_images[$restaurant['restaurant_id'] % 4]; ?>" class="card-img-top" alt="<?php echo $restaurant['name']; ?>" style="height: 180px; object-fit: cover;">
+                    <?php endif; ?>
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h5 class="card-title"><?php echo $restaurant['name']; ?></h5>
@@ -132,26 +237,21 @@ $featured_menu_items = get_featured_menu_items(8);
                     <div class="food-badges">
                         <?php if($item['is_vegetarian']): ?>
                         <span class="badge bg-success">Veg</span>
+                        <?php else: ?>
+                        <span class="badge bg-danger">Non-Veg</span>
                         <?php endif; ?>
                         <?php if($item['is_spicy']): ?>
                         <span class="badge bg-danger">Spicy</span>
                         <?php endif; ?>
                     </div>
                     <?php 
-                    // Using the provided stock images based on item index to simulate different food items
-                    $stock_images = [
-                        "https://pixabay.com/get/g12156b2dbc31bb07d0fc025ac2c9d55a2e380994888ce620bf2df42e2cad88a767656bfd015da042307899468e4fea5a7dac8c5271f4bca3e2557eb58b10cbcc_1280.jpg",
-                        "https://pixabay.com/get/g00cc480b0593d93c26a23b5426edafddd525a90edb5b4fba09d7860087da5ad4a1db284ab5d9156c7db3337c4f18e99565d714d2f80fa86cdb2ab2521a5ee276_1280.jpg",
-                        "https://pixabay.com/get/g6dab4081301a35f2eaa4dab90e26e8382b349aff7731c6fbaebdc4d02f74f79bef3ae2efa46e299a9994c2e3c2ca4f47b51a8362d12fe6f673b9ee1d59d222c3_1280.jpg",
-                        "https://pixabay.com/get/g64e0555caef3f12f1d7115a280d82fb8413f9212dec2d3fb1ea8ab282134b485225984391e3f591e8a535477db67a8b997d34342883959addecd6d8c46a61013_1280.jpg",
-                        "https://pixabay.com/get/g10786d528a6f89d5e001b5927653ea963c658bdb227414dfae50c760926e0b3ebd7d27197ec9ae9a5bd75db0d41f20fe6a7547c6e439af24d3c04b049fd7a47f_1280.jpg",
-                        "https://pixabay.com/get/g88c1a943dca246fccfd6cc284add1888dd69d32b088ab38f54080c18c5ed31f80a94daa14599f5e35a3ecf9c9d34b3120088633a604208879589608db6f5c209_1280.jpg",
-                        "https://pixabay.com/get/g683a2929e4615ce3a6bf61fdf30d6d35b46e9b8b9f3419d63e8dd595c00c12428211e15157d2f63cc00c9f1bf4f19ad28fbd26713abfa85e1670fe5460124258_1280.jpg",
-                        "https://pixabay.com/get/g73588bd1697fddf3029e16f1b8f2f6cb1361a62e5916feb7dc4c9735d59270447fdeb6a9e0d70a82bef05a35ba6a288e61ce30139f6e1e3be044655518cea643_1280.jpg"
-                    ];
-                    $img_index = $item['item_id'] % 8;
+                    $img_index = $item['item_id'] % 4;
                     ?>
-                    <img src="<?php echo $stock_images[$img_index]; ?>" class="card-img-top" alt="<?php echo $item['name']; ?>">
+                    <?php if (!empty($item['image']) && file_exists($item['image'])): ?>
+                        <img src="<?php echo $item['image']; ?>" class="card-img-top" alt="<?php echo $item['name']; ?>" style="height: 180px; object-fit: cover;">
+                    <?php else: ?>
+                        <img src="<?php echo $stock_images[$img_index]; ?>" class="card-img-top" alt="<?php echo $item['name']; ?>" style="height: 180px; object-fit: cover;">
+                    <?php endif; ?>
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h5 class="card-title"><?php echo $item['name']; ?></h5>
@@ -222,17 +322,29 @@ $featured_menu_items = get_featured_menu_items(8);
                 <h2>Get The ARS JUNCTION App</h2>
                 <p class="lead">Download our mobile app for a better experience</p>
                 <p>Order faster, track your delivery in real-time, and get exclusive app-only offers</p>
-                <div class="d-flex mt-4">
-                    <a href="#" class="me-3">
-                        <img src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/google-play.svg" alt="Google Play" height="40">
+                <div class="d-flex flex-wrap mt-4">
+                    <a href="https://play.google.com/store" target="_blank" class="btn btn-dark btn-lg me-3 mb-2 px-3 py-2 text-start" style="border-radius: 8px;">
+                        <div class="d-flex align-items-center">
+                            <i class="fab fa-google-play fa-2x me-3 text-warning"></i>
+                            <div>
+                                <div class="small text-muted" style="font-size: 0.65rem; text-transform: uppercase; line-height: 1;">Get it on</div>
+                                <div class="fw-bold fs-6" style="line-height: 1.2;">Google Play</div>
+                            </div>
+                        </div>
                     </a>
-                    <a href="#">
-                        <img src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/icons/apple.svg" alt="App Store" height="40">
+                    <a href="https://www.apple.com/app-store/" target="_blank" class="btn btn-dark btn-lg mb-2 px-3 py-2 text-start" style="border-radius: 8px;">
+                        <div class="d-flex align-items-center">
+                            <i class="fab fa-apple fa-2x me-3 text-light"></i>
+                            <div>
+                                <div class="small text-muted" style="font-size: 0.65rem; text-transform: uppercase; line-height: 1;">Download on the</div>
+                                <div class="fw-bold fs-6" style="line-height: 1.2;">App Store</div>
+                            </div>
+                        </div>
                     </a>
                 </div>
             </div>
-            <div class="col-md-6">
-                <img src="https://pixabay.com/get/geb103443b270c26dae13bc5ca7a7ffb4b841f92c183b4f98ee25fc31eb092c34258adc02368cc63b9adb2d86ccdae78c2ff5ac74352c4d077bfe5945da7d75cd_1280.jpg" class="img-fluid rounded" alt="Mobile App">
+            <div class="col-md-6 text-center">
+                 <img src="https://images.unsplash.com/photo-1512152272829-e3139592d56f?auto=format&fit=crop&w=800&q=80" class="img-fluid rounded shadow-sm" alt="Mobile App" style="max-height: 400px; border-radius: 12px; object-fit: cover; width: 100%;">
             </div>
         </div>
     </div>

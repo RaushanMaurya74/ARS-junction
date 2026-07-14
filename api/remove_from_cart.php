@@ -1,7 +1,7 @@
-
 <?php
 require_once '../includes/db_connect.php';
 require_once '../includes/functions.php';
+require_once '../includes/auth.php';
 
 header('Content-Type: application/json');
 
@@ -23,13 +23,13 @@ if ($cart_id <= 0) {
 }
 
 try {
-    $stmt = $conn->prepare("DELETE FROM cart WHERE id = ? AND user_id = ?");
+    $stmt = $conn->prepare("DELETE FROM cart WHERE cart_id = ? AND user_id = ?");
     $stmt->execute([$cart_id, $_SESSION['user_id']]);
 
     // Get updated cart total and count
     $stmt = $conn->prepare("SELECT SUM(m.price * c.quantity) as total, SUM(c.quantity) as count 
                            FROM cart c 
-                           JOIN menu_items m ON c.item_id = m.id 
+                           JOIN menu_items m ON c.item_id = m.item_id 
                            WHERE c.user_id = ?");
     $stmt->execute([$_SESSION['user_id']]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);

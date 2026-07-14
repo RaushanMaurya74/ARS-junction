@@ -54,108 +54,132 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Food filtering on menu page
+    // Combined Food Filtering (Search & Type Filters)
     const foodFilterBtns = document.querySelectorAll('.food-filter');
-    if (foodFilterBtns.length > 0) {
-        foodFilterBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const filterValue = this.getAttribute('data-filter');
-                
-                // Remove active class from all buttons
-                foodFilterBtns.forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                
-                // Add active class to clicked button
-                this.classList.add('active');
-                
-                // Filter food items
-                const foodItems = document.querySelectorAll('.food-item');
-                
-                foodItems.forEach(item => {
-                    if (filterValue === 'all') {
-                        item.style.display = 'block';
-                    } else {
-                        if (item.classList.contains(filterValue)) {
-                            item.style.display = 'block';
-                        } else {
-                            item.style.display = 'none';
-                        }
-                    }
-                });
-            });
-        });
-    }
-    
-    // Restaurant filtering on restaurants page
-    const restaurantFilterBtns = document.querySelectorAll('.restaurant-filter');
-    if (restaurantFilterBtns.length > 0) {
-        restaurantFilterBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const filterValue = this.getAttribute('data-filter');
-                
-                // Remove active class from all buttons
-                restaurantFilterBtns.forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                
-                // Add active class to clicked button
-                this.classList.add('active');
-                
-                // Filter restaurants
-                const restaurants = document.querySelectorAll('.restaurant-item');
-                
-                restaurants.forEach(item => {
-                    if (filterValue === 'all') {
-                        item.style.display = 'block';
-                    } else {
-                        if (item.getAttribute('data-category') === filterValue) {
-                            item.style.display = 'block';
-                        } else {
-                            item.style.display = 'none';
-                        }
-                    }
-                });
-            });
-        });
-    }
-    
-    // Restaurant search functionality
-    const restaurantSearchInput = document.getElementById('restaurant-search');
-    if (restaurantSearchInput) {
-        restaurantSearchInput.addEventListener('keyup', function() {
-            const searchValue = this.value.toLowerCase();
-            const restaurants = document.querySelectorAll('.restaurant-item');
-            
-            restaurants.forEach(item => {
-                const restaurantName = item.querySelector('.card-title').textContent.toLowerCase();
-                
-                if (restaurantName.includes(searchValue)) {
-                    item.style.display = 'block';
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-        });
-    }
-    
-    // Food search functionality
     const foodSearchInput = document.getElementById('food-search');
-    if (foodSearchInput) {
-        foodSearchInput.addEventListener('keyup', function() {
-            const searchValue = this.value.toLowerCase();
-            const foodItems = document.querySelectorAll('.food-item');
+    
+    if (foodFilterBtns.length > 0 || foodSearchInput) {
+        function filterFood() {
+            const activeBtn = document.querySelector('.food-filter.active');
+            const typeFilter = activeBtn ? activeBtn.getAttribute('data-filter') : 'all';
+            const searchValue = foodSearchInput ? foodSearchInput.value.toLowerCase() : '';
             
+            const foodItems = document.querySelectorAll('.food-item');
             foodItems.forEach(item => {
                 const foodName = item.querySelector('.card-title').textContent.toLowerCase();
+                const descElement = item.querySelector('.card-text');
+                const foodDescription = descElement ? descElement.textContent.toLowerCase() : '';
                 
-                if (foodName.includes(searchValue)) {
+                // Check type match
+                let matchesType = false;
+                if (typeFilter === 'all') {
+                    matchesType = true;
+                } else {
+                    if (item.classList.contains(typeFilter)) {
+                        matchesType = true;
+                    }
+                }
+                
+                // Check search match
+                const matchesSearch = foodName.includes(searchValue) || foodDescription.includes(searchValue);
+                
+                if (matchesType && matchesSearch) {
                     item.style.display = 'block';
                 } else {
                     item.style.display = 'none';
                 }
             });
-        });
+        }
+        
+        if (foodFilterBtns.length > 0) {
+            foodFilterBtns.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    foodFilterBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    filterFood();
+                });
+            });
+        }
+        
+        if (foodSearchInput) {
+            foodSearchInput.addEventListener('keyup', filterFood);
+            const foodForm = foodSearchInput.closest('form');
+            if (foodForm) {
+                foodForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    filterFood();
+                });
+            }
+        }
+    }
+    
+    // Combined Restaurant Filtering (Search & Category Filters)
+    const restaurantFilterBtns = document.querySelectorAll('.restaurant-filter');
+    const restaurantSearchInput = document.getElementById('restaurant-search');
+    
+    if (restaurantFilterBtns.length > 0 || restaurantSearchInput) {
+        function filterRestaurants() {
+            const activeBtn = document.querySelector('.restaurant-filter.active');
+            const categoryFilter = activeBtn ? activeBtn.getAttribute('data-filter') : 'all';
+            const searchValue = restaurantSearchInput ? restaurantSearchInput.value.toLowerCase() : '';
+            
+            const restaurants = document.querySelectorAll('.restaurant-item');
+            restaurants.forEach(item => {
+                const restaurantName = item.querySelector('.card-title').textContent.toLowerCase();
+                const descElement = item.querySelector('.card-text');
+                const restaurantDescription = descElement ? descElement.textContent.toLowerCase() : '';
+                
+                // Check category match
+                let matchesCategory = false;
+                if (categoryFilter === 'all') {
+                    matchesCategory = true;
+                } else {
+                    const categories = (item.getAttribute('data-category') || '').split(' ');
+                    if (categories.includes(categoryFilter)) {
+                        matchesCategory = true;
+                    }
+                }
+                
+                // Check search match
+                const matchesSearch = restaurantName.includes(searchValue) || restaurantDescription.includes(searchValue);
+                
+                if (matchesCategory && matchesSearch) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        if (restaurantFilterBtns.length > 0) {
+            restaurantFilterBtns.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    restaurantFilterBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Update dropdown toggle label
+                    const dropdownToggle = document.getElementById('categoryDropdown');
+                    if (dropdownToggle) {
+                        dropdownToggle.innerHTML = `<span><i class="fas fa-filter me-2"></i> ${this.textContent}</span>`;
+                    }
+                    
+                    filterRestaurants();
+                });
+            });
+        }
+        
+        if (restaurantSearchInput) {
+            restaurantSearchInput.addEventListener('keyup', filterRestaurants);
+            const searchForm = restaurantSearchInput.closest('form');
+            if (searchForm) {
+                searchForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    filterRestaurants();
+                });
+            }
+        }
     }
     
     // Star rating functionality
@@ -180,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Quantity input functionality
-    const quantityInputs = document.querySelectorAll('.quantity-input');
+    const quantityInputs = document.querySelectorAll('.quantity-input, .cart-qty');
     if (quantityInputs.length > 0) {
         quantityInputs.forEach(input => {
             const decreaseBtn = input.parentElement.querySelector('.decrease-qty');

@@ -33,10 +33,10 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
 
 // Interior restaurant stock images
 $restaurant_images = [
-    "https://pixabay.com/get/g1c4d7b9751b3890559d056283366d15c43871338c0b32e6e87df5f4fb2cda97974c2cab8ffcf0e12aa6594039be164ad5e32d9f2e84936052f08f05731b988e7_1280.jpg",
-    "https://pixabay.com/get/g32e7e52c71ac7b6b547bf4311824851318f6ceaf1f1b6608da37564e25220a7cdbd4a66a2f566383b2d6c3772e2cfb099c7ffa98517ec22b54df0296a90d88e0_1280.jpg",
-    "https://pixabay.com/get/gb03bfb45830cae2f092729c65eddf6e9bf3056cc1ce7e3f16ada88db82f39493d12d160c84fa25586f91bc9a59ccfa51fbccae0c02111db5816d0e74cb527647_1280.jpg",
-    "https://pixabay.com/get/g57892949a204216b3e74332aae863db8ad3ccbdf6375224bc32d4f2683827f08063f70ddefde5e9479934a5f1959f3217b14c99c441d6e284498c759fc9a6b0d_1280.jpg"
+    "images/restaurant_1.jpg",
+    "images/restaurant_2.jpg",
+    "images/restaurant_3.jpg",
+    "images/restaurant_4.jpg"
 ];
 ?>
 
@@ -45,22 +45,27 @@ $restaurant_images = [
     <div class="container">
         <h1 class="mb-4">Restaurants</h1>
         
-        <div class="row mb-4">
+        <div class="row mb-4 g-3">
             <div class="col-md-8">
                 <form action="restaurants.php" method="get" class="restaurant-search-form">
                     <div class="input-group">
-                        <input type="text" name="search" id="restaurant-search" class="form-control" placeholder="Search restaurants..." value="<?php echo $search_query; ?>">
-                        <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i> Search</button>
+                        <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" name="search" id="restaurant-search" class="form-control border-start-0" placeholder="Search restaurants..." value="<?php echo $search_query; ?>">
+                        <button class="btn btn-primary" type="submit">Search</button>
                     </div>
                 </form>
             </div>
-            <div class="col-md-4">
-                <div class="d-flex justify-content-end align-items-center h-100">
-                    <span class="me-2">Filter:</span>
-                    <button class="btn btn-outline-primary btn-sm me-2 restaurant-filter active" data-filter="all">All</button>
-                    <?php foreach($categories as $category): ?>
-                    <button class="btn btn-outline-primary btn-sm me-2 restaurant-filter" data-filter="<?php echo $category['category_id']; ?>"><?php echo $category['name']; ?></button>
-                    <?php endforeach; ?>
+            <div class="col-md-4 text-end">
+                <div class="dropdown d-inline-block w-100">
+                    <button class="btn btn-outline-primary dropdown-toggle w-100 py-2 d-flex justify-content-between align-items-center" type="button" id="categoryDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span><i class="fas fa-filter me-2"></i> All Categories</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end w-100" aria-labelledby="categoryDropdown">
+                        <li><button class="dropdown-item restaurant-filter active" data-filter="all">All Categories</button></li>
+                        <?php foreach($categories as $category): ?>
+                        <li><button class="dropdown-item restaurant-filter" data-filter="<?php echo $category['category_id']; ?>"><?php echo $category['name']; ?></button></li>
+                        <?php endforeach; ?>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -94,7 +99,11 @@ $restaurant_images = [
             ?>
             <div class="col-md-6 col-lg-4 mb-4 restaurant-item" data-category="<?php echo $category_attr; ?>">
                 <div class="card restaurant-card h-100">
-                    <img src="<?php echo $restaurant_images[$img_index]; ?>" class="card-img-top" alt="<?php echo $restaurant['name']; ?>">
+                    <?php if (!empty($restaurant['image']) && file_exists($restaurant['image'])): ?>
+                        <img src="<?php echo $restaurant['image']; ?>" class="card-img-top" alt="<?php echo $restaurant['name']; ?>" style="height: 200px; object-fit: cover;">
+                    <?php else: ?>
+                        <img src="<?php echo $restaurant_images[$img_index]; ?>" class="card-img-top" alt="<?php echo $restaurant['name']; ?>" style="height: 200px; object-fit: cover;">
+                    <?php endif; ?>
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h5 class="card-title"><?php echo $restaurant['name']; ?></h5>

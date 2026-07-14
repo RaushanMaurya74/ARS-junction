@@ -73,6 +73,33 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    // General Decrease Quantity control (for both menu pages and cart page)
+    document.querySelectorAll('.decrease-qty').forEach(button => {
+        button.addEventListener('click', function() {
+            const input = this.parentElement.querySelector('.cart-qty, .quantity-input');
+            if (input) {
+                let val = parseInt(input.value) || 1;
+                if (val > 1) {
+                    input.value = val - 1;
+                    input.dispatchEvent(new Event('change'));
+                }
+            }
+        });
+    });
+
+    // General Increase Quantity control (for both menu pages and cart page)
+    document.querySelectorAll('.increase-qty').forEach(button => {
+        button.addEventListener('click', function() {
+            const input = this.parentElement.querySelector('.cart-qty, .quantity-input');
+            if (input) {
+                let val = parseInt(input.value) || 1;
+                if (val < 10) {
+                    input.value = val + 1;
+                    input.dispatchEvent(new Event('change'));
+                }
+            }
+        });
+    });
 });
 
 /**
@@ -120,7 +147,7 @@ function updateCartItem(cartId, quantity) {
             // Update the item subtotal
             const itemSubtotalElement = document.querySelector(`.cart-item-subtotal[data-cart-id="${cartId}"]`);
             if (itemSubtotalElement) {
-                itemSubtotalElement.textContent = data.item_subtotal;
+                itemSubtotalElement.innerHTML = data.item_subtotal;
             }
             
             // Update cart summary
@@ -202,7 +229,7 @@ function updateCartSummary(total, count) {
     // Update subtotal
     const subtotalElement = document.getElementById('cart-subtotal');
     if (subtotalElement) {
-        subtotalElement.textContent = total;
+        subtotalElement.innerHTML = total;
     }
     
     // Update total
@@ -212,6 +239,13 @@ function updateCartSummary(total, count) {
 /**
  * Calculate order summary in checkout page
  */
+function parsePrice(text) {
+    if (!text) return 0;
+    // Strip out HTML Rupee entities and unicode symbols to prevent numeric errors (e.g. &#8377; -> 8377)
+    let clean = text.replace(/&#8377;/g, '').replace(/₹/g, '').replace(/[^0-9.]/g, '');
+    return parseFloat(clean) || 0;
+}
+
 function calculateOrderSummary() {
     const subtotalElement = document.getElementById('cart-subtotal');
     const deliveryFeeElement = document.getElementById('delivery-fee');
@@ -220,21 +254,24 @@ function calculateOrderSummary() {
     const totalElement = document.getElementById('total-amount');
     
     if (subtotalElement && deliveryFeeElement && taxElement && totalElement) {
-        // Get values and convert to numbers
-        const subtotal = parseFloat(subtotalElement.textContent.replace(/[^0-9.]/g, ''));
-        const deliveryFee = parseFloat(deliveryFeeElement.textContent.replace(/[^0-9.]/g, ''));
-        const tax = parseFloat(taxElement.textContent.replace(/[^0-9.]/g, ''));
-        let discount = 0;
+        // Get values and convert to numbers using safe parsePrice helper
+        const subtotal = parsePrice(subtotalElement.textContent || subtotalElement.innerHTML);
+        const deliveryFee = parsePrice(deliveryFeeElement.textContent || deliveryFeeElement.innerHTML);
         
+        // Calculate 5% tax dynamically and update taxElement
+        const tax = subtotal * 0.05;
+        taxElement.innerHTML = formatCurrency(tax);
+        
+        let discount = 0;
         if (discountElement) {
-            discount = parseFloat(discountElement.textContent.replace(/[^0-9.]/g, ''));
+            discount = parsePrice(discountElement.textContent || discountElement.innerHTML);
         }
         
         // Calculate total
         const total = subtotal + deliveryFee + tax - discount;
         
         // Update total element with formatted value
-        totalElement.textContent = formatCurrency(total);
+        totalElement.innerHTML = formatCurrency(total);
     }
 }
 
@@ -246,11 +283,11 @@ function applyDiscount(percentDiscount) {
     const discountElement = document.getElementById('discount-amount');
     
     if (subtotalElement && discountElement) {
-        const subtotal = parseFloat(subtotalElement.textContent.replace(/[^0-9.]/g, ''));
+        const subtotal = parsePrice(subtotalElement.textContent || subtotalElement.innerHTML);
         const discountAmount = (subtotal * percentDiscount) / 100;
         
         // Update discount amount element
-        discountElement.textContent = formatCurrency(discountAmount);
+        discountElement.innerHTML = formatCurrency(discountAmount);
         
         // Recalculate total
         calculateOrderSummary();

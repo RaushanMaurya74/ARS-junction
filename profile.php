@@ -11,6 +11,45 @@ $user = get_user_by_id($user_id);
 $success_msg = '';
 $error_msg = '';
 
+// Handle Profile Image Upload
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['upload_photo'])) {
+    if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] == 0) {
+        $allowed = ['jpg', 'jpeg', 'png', 'gif'];
+        $filename = $_FILES['profile_pic']['name'];
+        $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        
+        if (in_array($ext, $allowed)) {
+            $upload_dir = 'uploads/profile_pics/';
+            if (!file_exists($upload_dir)) {
+                mkdir($upload_dir, 0777, true);
+            }
+            
+            $new_filename = 'user_' . $user_id . '_' . time() . '.' . $ext;
+            $dest_path = $upload_dir . $new_filename;
+            
+            if (move_uploaded_file($_FILES['profile_pic']['tmp_name'], $dest_path)) {
+                if (!empty($user['profile_image']) && file_exists($user['profile_image'])) {
+                    @unlink($user['profile_image']);
+                }
+                
+                $stmt = $conn->prepare("UPDATE users SET profile_image = ? WHERE user_id = ?");
+                if ($stmt->execute([$dest_path, $user_id])) {
+                    $success_msg = 'Profile photo uploaded successfully!';
+                    $user = get_user_by_id($user_id);
+                } else {
+                    $error_msg = 'Database update failed.';
+                }
+            } else {
+                $error_msg = 'Failed to move uploaded file.';
+            }
+        } else {
+            $error_msg = 'Invalid file format. Only JPG, JPEG, PNG, and GIF allowed.';
+        }
+    } else {
+        $error_msg = 'Error uploading file.';
+    }
+}
+
 // Handle profile update
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_profile'])) {
     $name = clean_input($_POST['name']);
@@ -73,15 +112,26 @@ $extra_js = '<script src="js/auth.js"></script>';
         <div class="col-lg-3 mb-4">
             <div class="profile-sidebar card">
                 <div class="card-body text-center">
-                    <div class="profile-img-container mb-3">
+                    <div class="profile-img-container mb-3 text-center">
                         <?php if (!empty($user['profile_image'])): ?>
-                        <img src="<?php echo $user['profile_image']; ?>" alt="Profile Picture" class="profile-img">
+                        <img src="<?php echo $user['profile_image']; ?>" alt="Profile Picture" class="profile-img rounded-circle border shadow" style="width: 120px; height: 120px; object-fit: cover;">
                         <?php else: ?>
                         <i class="fas fa-user-circle display-1 text-primary"></i>
                         <?php endif; ?>
                     </div>
+                    
+                    <form method="post" action="profile.php" enctype="multipart/form-data" class="mb-3">
+                        <div class="mb-2">
+                            <label for="profile_pic" class="form-label btn btn-sm btn-outline-secondary w-100 mb-0">
+                                <i class="fas fa-camera me-1"></i> Choose Photo
+                            </label>
+                            <input type="file" id="profile_pic" name="profile_pic" accept="image/*" class="d-none" onchange="this.form.submit()">
+                        </div>
+                        <input type="hidden" name="upload_photo" value="1">
+                    </form>
+                    
                     <h5 class="mb-1"><?php echo $user['name']; ?></h5>
-                    <p class="text-muted"><?php echo $user['email']; ?></p>
+                    <p class="text-muted small"><?php echo $user['email']; ?></p>
                     
                     <div class="d-grid gap-2 mt-3">
                         <a href="order_tracking.php" class="btn btn-outline-primary">My Orders</a>

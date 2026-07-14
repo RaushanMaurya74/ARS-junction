@@ -1,0 +1,78 @@
+body {
+    background: #f4f6f9;
+}
+
+.admin-login-bg {
+    background: linear-gradient(135deg, #ff5722 0%, #ff875c 100%);
+    min-height: 100vh;
+}
+
+.wrapper {
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 250px;
+    background: #212529;
+    color: #fff;
+    min-height: 100vh;
+    flex-shrink: 0;
+}
+
+.sidebar-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid rgba(255,255,255,.12);
+}
+
+.sidebar ul li a {
+    color: rgba(255,255,255,.82);
+    display: block;
+    padding: .85rem 1.25rem;
+    text-decoration: none;
+}
+
+.sidebar ul li.active a,
+.sidebar ul li a:hover {
+    background: #ff5722;
+    color: #fff;
+}
+
+.topbar {
+    min-height: 64px;
+}
+
+.border-left-primary {
+    border-left: .25rem solid #ff5722 !important;
+}
+
+.border-left-success {
+    border-left: .25rem solid #28a745 !important;
+}
+
+.border-left-info {
+    border-left: .25rem solid #17a2b8 !important;
+}
+
+.border-left-warning {
+    border-left: .25rem solid #ffc107 !important;
+}
+
+.chart-area,
+.chart-pie {
+    height: 260px;
+}
+
+.text-xs {
+    font-size: .75rem;
+}
+
+@media (max-width: 768px) {
+    .wrapper {
+        display: block !important;
+    }
+
+    .sidebar {
+        width: 100%;
+        min-height: auto;
+    }
+}

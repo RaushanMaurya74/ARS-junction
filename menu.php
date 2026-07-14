@@ -43,14 +43,10 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
 
 // Food images
 $food_images = [
-    "https://pixabay.com/get/g12156b2dbc31bb07d0fc025ac2c9d55a2e380994888ce620bf2df42e2cad88a767656bfd015da042307899468e4fea5a7dac8c5271f4bca3e2557eb58b10cbcc_1280.jpg",
-    "https://pixabay.com/get/g00cc480b0593d93c26a23b5426edafddd525a90edb5b4fba09d7860087da5ad4a1db284ab5d9156c7db3337c4f18e99565d714d2f80fa86cdb2ab2521a5ee276_1280.jpg",
-    "https://pixabay.com/get/g6dab4081301a35f2eaa4dab90e26e8382b349aff7731c6fbaebdc4d02f74f79bef3ae2efa46e299a9994c2e3c2ca4f47b51a8362d12fe6f673b9ee1d59d222c3_1280.jpg",
-    "https://pixabay.com/get/g64e0555caef3f12f1d7115a280d82fb8413f9212dec2d3fb1ea8ab282134b485225984391e3f591e8a535477db67a8b997d34342883959addecd6d8c46a61013_1280.jpg",
-    "https://pixabay.com/get/g10786d528a6f89d5e001b5927653ea963c658bdb227414dfae50c760926e0b3ebd7d27197ec9ae9a5bd75db0d41f20fe6a7547c6e439af24d3c04b049fd7a47f_1280.jpg",
-    "https://pixabay.com/get/g88c1a943dca246fccfd6cc284add1888dd69d32b088ab38f54080c18c5ed31f80a94daa14599f5e35a3ecf9c9d34b3120088633a604208879589608db6f5c209_1280.jpg",
-    "https://pixabay.com/get/g683a2929e4615ce3a6bf61fdf30d6d35b46e9b8b9f3419d63e8dd595c00c12428211e15157d2f63cc00c9f1bf4f19ad28fbd26713abfa85e1670fe5460124258_1280.jpg",
-    "https://pixabay.com/get/g73588bd1697fddf3029e16f1b8f2f6cb1361a62e5916feb7dc4c9735d59270447fdeb6a9e0d70a82bef05a35ba6a288e61ce30139f6e1e3be044655518cea643_1280.jpg"
+    "images/food_pizza.jpg",
+    "images/food_burger.jpg",
+    "images/food_indian.jpg",
+    "images/food_chinese.jpg"
 ];
 ?>
 
@@ -98,8 +94,9 @@ $food_images = [
             <div class="btn-group food-filter-group">
                 <button class="btn btn-outline-primary food-filter active" data-filter="all">All</button>
                 <button class="btn btn-outline-success food-filter" data-filter="vegetarian">Vegetarian</button>
-                <button class="btn btn-outline-danger food-filter" data-filter="spicy">Spicy</button>
-                <button class="btn btn-outline-warning food-filter" data-filter="featured">Featured</button>
+                <button class="btn btn-outline-danger food-filter" data-filter="non-vegetarian">Non-Vegetarian</button>
+                <button class="btn btn-outline-warning food-filter" data-filter="spicy">Spicy</button>
+                <button class="btn btn-outline-info food-filter" data-filter="featured">Featured</button>
             </div>
         </div>
         
@@ -115,11 +112,15 @@ $food_images = [
         
         <div class="row">
             <?php foreach($menu_items as $index => $item): 
-                $img_index = $index % 8;
+                $img_index = $index % 4;
                 
                 // Add classes for filtering
                 $filter_classes = 'food-item';
-                if ($item['is_vegetarian']) $filter_classes .= ' vegetarian';
+                if ($item['is_vegetarian']) {
+                    $filter_classes .= ' vegetarian';
+                } else {
+                    $filter_classes .= ' non-vegetarian';
+                }
                 if ($item['is_spicy']) $filter_classes .= ' spicy';
                 if ($item['is_featured']) $filter_classes .= ' featured';
             ?>
@@ -128,15 +129,21 @@ $food_images = [
                     <div class="food-badges">
                         <?php if($item['is_vegetarian']): ?>
                         <span class="badge bg-success">Veg</span>
+                        <?php else: ?>
+                        <span class="badge bg-danger">Non-Veg</span>
                         <?php endif; ?>
                         <?php if($item['is_spicy']): ?>
-                        <span class="badge bg-danger">Spicy</span>
+                        <span class="badge bg-warning text-dark">Spicy</span>
                         <?php endif; ?>
                         <?php if($item['is_featured']): ?>
-                        <span class="badge bg-warning text-dark">Featured</span>
+                        <span class="badge bg-info text-dark">Featured</span>
                         <?php endif; ?>
                     </div>
-                    <img src="<?php echo $food_images[$img_index]; ?>" class="card-img-top" alt="<?php echo $item['name']; ?>">
+                    <?php if (!empty($item['image']) && file_exists($item['image'])): ?>
+                        <img src="<?php echo $item['image']; ?>" class="card-img-top" alt="<?php echo $item['name']; ?>" style="height: 180px; object-fit: cover;">
+                    <?php else: ?>
+                        <img src="<?php echo $food_images[$img_index]; ?>" class="card-img-top" alt="<?php echo $item['name']; ?>" style="height: 180px; object-fit: cover;">
+                    <?php endif; ?>
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h5 class="card-title"><?php echo $item['name']; ?></h5>

@@ -17,6 +17,40 @@ if (is_logged_in()) {
     exit;
 }
 
+// Helper function to check if email is real (not temporary/disposable, has valid domain DNS)
+function is_real_email($email) {
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return false;
+    }
+    
+    // Extract domain
+    $parts = explode('@', $email);
+    $domain = strtolower(end($parts));
+    
+    // List of common disposable email domains
+    $disposable_domains = [
+        'mailinator.com', '10minutemail.com', 'tempmail.com', 'temp-mail.org',
+        'yopmail.com', 'guerrillamail.com', 'sharklasers.com', 'dispostable.com',
+        'getairmail.com', 'maildrop.cc', 'tempmailaddress.com', 'throwawaymail.com',
+        'tempmail.net', 'fakeinbox.com', 'trashmail.com'
+    ];
+    
+    if (in_array($domain, $disposable_domains)) {
+        return false;
+    }
+    
+    // Check MX/A records
+    if (function_exists('checkdnsrr')) {
+        $has_mx = @checkdnsrr($domain, 'MX');
+        $has_a = @checkdnsrr($domain, 'A');
+        if (!$has_mx && !$has_a) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $name = clean_input($_POST['name']);
@@ -26,8 +60,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $phone = clean_input($_POST['phone']);
     
     // Validate inputs
-    if (empty($name) || empty($email) || empty($password)) {
+    if (empty($name) || empty($email) || empty($password) || empty($phone)) {
         $error = 'Please fill in all required fields.';
+    } elseif (!preg_match('/^[6-9]\d{9}$/', $phone)) {
+        $error = 'Please enter a valid 10-digit Indian mobile number (starting with 6, 7, 8, or 9).';
+    } elseif (!is_real_email($email)) {
+        $error = 'Please enter a real, active email address. Disposable emails are not allowed.';
     } elseif ($password !== $confirm_password) {
         $error = 'Passwords do not match.';
     } elseif (strlen($password) < 6) {
@@ -109,10 +147,10 @@ require_once 'includes/header.php';
                                     </div>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="phone" class="form-label">Phone Number</label>
+                                    <label for="phone" class="form-label">Phone Number (Required)</label>
                                     <div class="input-group">
                                         <span class="input-group-text bg-light border-end-0"><i class="fas fa-phone text-muted"></i></span>
-                                        <input type="tel" class="form-control border-start-0" id="phone" name="phone" value="<?php echo $phone; ?>" placeholder="Your phone number (optional)">
+                                        <input type="tel" class="form-control border-start-0" id="phone" name="phone" value="<?php echo $phone; ?>" placeholder="10-digit mobile number (required)" required>
                                     </div>
                                 </div>
                                 <div class="mb-3">
@@ -143,26 +181,38 @@ require_once 'includes/header.php';
                                 <button type="submit" class="btn btn-secondary w-100 py-2 mb-3">Create Account</button>
                             </form>
                             
+                            <?php 
+                            $fb_enabled = get_site_setting('facebook_login_enabled', '0');
+                            $google_enabled = get_site_setting('google_login_enabled', '1');
+                            
+                            if ($fb_enabled == '1' || $google_enabled == '1'): 
+                            ?>
                             <div class="position-relative text-center my-4">
                                 <hr>
                                 <span class="position-absolute top-50 start-50 translate-middle px-3 bg-white text-muted">or sign up with</span>
                             </div>
                             
                             <div class="social-login mb-4">
-                                <div class="row">
-                                    <div class="col-sm-6 mb-2 mb-sm-0">
+                                <div class="row justify-content-center">
+                                    <?php if ($fb_enabled == '1'): ?>
+                                    <div class="<?php echo ($google_enabled == '1') ? 'col-sm-6 mb-2 mb-sm-0' : 'col-12'; ?>">
                                         <button id="facebook-login" class="btn btn-outline-primary w-100 social-login-btn">
                                             <i class="fab fa-facebook-f"></i> Facebook
                                         </button>
                                     </div>
-                                    <div class="col-sm-6">
+                                    <?php endif; ?>
+                                    
+                                    <?php if ($google_enabled == '1'): ?>
+                                    <div class="<?php echo ($fb_enabled == '1') ? 'col-sm-6' : 'col-12'; ?>">
                                         <button id="google-login" class="btn btn-outline-danger w-100 social-login-btn">
                                             <i class="fab fa-google"></i> Google
                                         </button>
-                                        <div id="google-login-container" class="d-none"></div>
+                                        <div id="google-login-container" style="width: 100%;"></div>
                                     </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
+                            <?php endif; ?>
                             
                             <div class="text-center">
                                 <p class="mb-0">Already have an account? <a href="login.php" class="text-decoration-none fw-semibold">Sign In</a></p>

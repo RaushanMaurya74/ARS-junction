@@ -15,7 +15,7 @@ require_once 'includes/header.php';
                 <p>At ARS JUNCTION, we believe that good food brings people together. Whether it's a family dinner, a business lunch, or a late-night snack, we're here to ensure that you get exactly what you crave, when you want it.</p>
             </div>
             <div class="col-lg-6">
-                <img src="https://pixabay.com/get/g1c4d7b9751b3890559d056283366d15c43871338c0b32e6e87df5f4fb2cda97974c2cab8ffcf0e12aa6594039be164ad5e32d9f2e84936052f08f05731b988e7_1280.jpg" alt="Restaurant Interior" class="img-fluid rounded">
+                <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80" alt="Restaurant Interior" class="img-fluid rounded shadow-sm" style="max-height: 400px; width: 100%; object-fit: cover;">
             </div>
         </div>
     </div>
@@ -159,7 +159,7 @@ require_once 'includes/header.php';
                         <div class="mb-3">
                             <i class="fas fa-user-circle display-1 text-primary"></i>
                         </div>
-                        <h4 class="card-title">Suraj Kumar</h4>
+                        <h4 class="card-title">Ashutosh Kumar</h4>
                         <p class="card-text text-muted">Customer Relations</p>
                         <p class="card-text">Dedicated to providing exceptional support and resolving customer queries.</p>
                         <div class="social-icons mt-3">

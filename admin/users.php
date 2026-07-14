@@ -2,12 +2,51 @@
 $page_title = "Manage Users";
 require_once 'admin_header.php';
 
+$success_msg = '';
+$error_msg = '';
+
+// Handle user addition/deletion
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['add_user'])) {
+        $result = admin_add_user($_POST);
+        if ($result['success']) {
+            $success_msg = 'User added successfully.';
+        } else {
+            $error_msg = $result['message'];
+        }
+    }
+    
+    if (isset($_POST['delete_user'])) {
+        $result = admin_delete_user((int)$_POST['user_id']);
+        if ($result['success']) {
+            $success_msg = 'User deleted successfully.';
+        } else {
+            $error_msg = $result['message'];
+        }
+    }
+}
+
 // Get users
 $limit = 20;
 $offset = isset($_GET['page']) ? (intval($_GET['page']) - 1) * $limit : 0;
 if ($offset < 0) $offset = 0;
 
 $users = admin_get_all_users($limit, $offset);
+
+// Apply search filter if query is set
+if (isset($_GET['search']) && !empty($_GET['search'])) {
+    $search = strtolower(clean_input($_GET['search']));
+    $filtered = [];
+    foreach ($users as $user) {
+        if (stripos($user['name'], $search) !== false ||
+            stripos($user['email'], $search) !== false ||
+            stripos($user['phone'], $search) !== false ||
+            stripos($user['city'], $search) !== false) {
+            $filtered[] = $user;
+        }
+    }
+    $users = $filtered;
+}
 
 // Get total count of users for pagination
 $total_users = count_total_users();
@@ -37,6 +76,20 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
             </ol>
         </nav>
     </div>
+    
+    <?php if ($success_msg): ?>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <?php echo $success_msg; ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <?php endif; ?>
+    
+    <?php if ($error_msg): ?>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <?php echo $error_msg; ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <?php endif; ?>
     
     <?php if ($view_user): ?>
     <!-- Single User View -->
@@ -201,87 +254,166 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
     </div>
     
     <?php else: ?>
-    <!-- Users List -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">All Users</h6>
-            <div class="input-group w-25">
-                <input type="text" id="searchInput" class="form-control" placeholder="Search users...">
-                <button class="btn btn-outline-secondary" type="button" id="searchButton">
-                    <i class="fas fa-search"></i>
-                </button>
+    <!-- Users List with Add User Form -->
+    <div class="row">
+        <!-- Add User Column -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 bg-light">
+                    <h6 class="m-0 font-weight-bold text-primary">Add New User</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="users.php">
+                        <input type="hidden" name="add_user" value="1">
+                        <div class="mb-2">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" class="form-control" name="email" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" name="password" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Phone</label>
+                            <input type="tel" class="form-control" name="phone">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Address</label>
+                            <input type="text" class="form-control" name="address">
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label">City</label>
+                                <input type="text" class="form-control" name="city">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">State</label>
+                                <input type="text" class="form-control" name="state">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ZIP Code</label>
+                            <input type="text" class="form-control" name="zip_code">
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="is_delivery_boy" id="is_delivery_boy">
+                            <label class="form-check-label" for="is_delivery_boy">
+                                Is Delivery Boy
+                            </label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="is_admin" id="is_admin">
+                            <label class="form-check-label" for="is_admin">
+                                Is Admin / Staff
+                            </label>
+                        </div>
+                        <button class="btn btn-primary w-100" type="submit">Create User</button>
+                    </form>
+                </div>
             </div>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <?php if (empty($users)): ?>
-                <p class="text-center py-3">No users found.</p>
-                <?php else: ?>
-                <table class="table table-bordered table-hover" id="usersTable" width="100%" cellspacing="0">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Registration Date</th>
-                            <th>Type</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach($users as $user): ?>
-                        <tr>
-                            <td>#<?php echo $user['user_id']; ?></td>
-                            <td><?php echo $user['name']; ?></td>
-                            <td><?php echo $user['email']; ?></td>
-                            <td><?php echo !empty($user['phone']) ? $user['phone'] : 'N/A'; ?></td>
-                            <td><?php echo date('M d, Y', strtotime($user['created_at'])); ?></td>
-                            <td>
-                                <?php 
-                                switch($user['social_type']) {
-                                    case 'facebook': echo '<i class="fab fa-facebook text-primary"></i> Facebook'; break;
-                                    case 'google': echo '<i class="fab fa-google text-danger"></i> Google'; break;
-                                    default: echo '<i class="fas fa-envelope"></i> Email';
-                                }
-                                ?>
-                            </td>
-                            <td>
-                                <a href="users.php?view=<?php echo $user['user_id']; ?>" class="btn btn-sm btn-info">
-                                    <i class="fas fa-eye"></i> View
+
+        <!-- Users Table Column -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">All Users</h6>
+                    <div class="input-group w-50">
+                        <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search users...">
+                        <button class="btn btn-sm btn-outline-secondary" type="button" id="searchButton">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <?php if (empty($users)): ?>
+                        <p class="text-center py-3">No users found.</p>
+                        <?php else: ?>
+                        <table class="table table-bordered table-hover" id="usersTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Type</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach($users as $user): ?>
+                                <tr>
+                                    <td>#<?php echo $user['user_id']; ?></td>
+                                    <td>
+                                        <?php echo $user['name']; ?>
+                                        <?php if ($user['is_admin']): ?>
+                                            <span class="badge bg-danger">Admin</span>
+                                        <?php endif; ?>
+                                        <?php if ($user['is_delivery_boy']): ?>
+                                            <span class="badge bg-warning text-dark">Delivery</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?php echo $user['email']; ?></td>
+                                    <td><?php echo !empty($user['phone']) ? $user['phone'] : 'N/A'; ?></td>
+                                    <td>
+                                        <?php 
+                                        switch($user['social_type']) {
+                                            case 'facebook': echo '<i class="fab fa-facebook text-primary"></i> Facebook'; break;
+                                            case 'google': echo '<i class="fab fa-google text-danger"></i> Google'; break;
+                                            default: echo '<i class="fas fa-envelope"></i> Email';
+                                        }
+                                        ?>
+                                    </td>
+                                    <td style="white-space: nowrap;">
+                                        <a href="users.php?view=<?php echo $user['user_id']; ?>" class="btn btn-xs btn-info py-0 px-1" style="font-size: 0.8rem;">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <form method="post" action="users.php" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                                            <input type="hidden" name="user_id" value="<?php echo $user['user_id']; ?>">
+                                            <input type="hidden" name="delete_user" value="1">
+                                            <button class="btn btn-xs btn-danger py-0 px-1" style="font-size: 0.8rem;" type="submit">
+                                                <i class="fas fa-trash-alt"></i> Delete
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <?php if ($total_pages > 1): ?>
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm justify-content-center">
+                            <li class="page-item <?php echo ($current_page <= 1) ? 'disabled' : ''; ?>">
+                                <a class="page-link" href="?page=<?php echo $current_page - 1; ?>" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
                                 </a>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-                <?php endif; ?>
+                            </li>
+                            
+                            <?php for($i = 1; $i <= $total_pages; $i++): ?>
+                            <li class="page-item <?php echo ($current_page == $i) ? 'active' : ''; ?>">
+                                <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                            </li>
+                            <?php endfor; ?>
+                            
+                            <li class="page-item <?php echo ($current_page >= $total_pages) ? 'disabled' : ''; ?>">
+                                <a class="page-link" href="?page=<?php echo $current_page + 1; ?>" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                    <?php endif; ?>
+                </div>
             </div>
-            
-            <!-- Pagination -->
-            <?php if ($total_pages > 1): ?>
-            <nav aria-label="Page navigation">
-                <ul class="pagination justify-content-center">
-                    <li class="page-item <?php echo ($current_page <= 1) ? 'disabled' : ''; ?>">
-                        <a class="page-link" href="?page=<?php echo $current_page - 1; ?>" aria-label="Previous">
-                            <span aria-hidden="true">&laquo;</span>
-                        </a>
-                    </li>
-                    
-                    <?php for($i = 1; $i <= $total_pages; $i++): ?>
-                    <li class="page-item <?php echo ($current_page == $i) ? 'active' : ''; ?>">
-                        <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                    </li>
-                    <?php endfor; ?>
-                    
-                    <li class="page-item <?php echo ($current_page >= $total_pages) ? 'disabled' : ''; ?>">
-                        <a class="page-link" href="?page=<?php echo $current_page + 1; ?>" aria-label="Next">
-                            <span aria-hidden="true">&raquo;</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-            <?php endif; ?>
         </div>
     </div>
     <?php endif; ?>

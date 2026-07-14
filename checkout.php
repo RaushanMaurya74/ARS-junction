@@ -59,13 +59,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         <div class="row">
             <div class="col-lg-8">
+                <form id="checkout-form" action="api/place_order.php" method="post">
                 <!-- Delivery Details -->
                 <div class="card mb-4">
                     <div class="card-header bg-light">
                         <h5 class="mb-0">Delivery Details</h5>
                     </div>
                     <div class="card-body">
-                        <form id="checkout-form" action="api/place_order.php" method="post">
                             <input type="hidden" name="restaurant_id" value="<?php echo $restaurant_id; ?>">
                             
                             <div class="mb-3">
@@ -132,75 +132,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                 </label>
                             </div>
                             <div class="form-check mb-2">
-                                <input class="form-check-input payment-method" type="radio" name="payment_method" id="payment-card" value="card">
-                                <label class="form-check-label" for="payment-card">
-                                    <i class="fas fa-credit-card me-2"></i> Credit/Debit Card
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input payment-method" type="radio" name="payment_method" id="payment-wallet" value="wallet">
-                                <label class="form-check-label" for="payment-wallet">
-                                    <i class="fas fa-wallet me-2"></i> Digital Wallet
+                                <input class="form-check-input payment-method" type="radio" name="payment_method" id="payment-upi" value="upi">
+                                <label class="form-check-label" for="payment-upi">
+                                    <i class="fas fa-qrcode me-2"></i> UPI QR Code
                                 </label>
                             </div>
                         </div>
                         
-                        <!-- Card payment details (initially hidden) -->
-                        <div id="card-details" class="payment-details" style="display: none;">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="card-name" class="form-label">Name on Card</label>
-                                    <input type="text" class="form-control" id="card-name" name="card_name">
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="card-number" class="form-label">Card Number</label>
-                                    <input type="text" class="form-control" id="card-number" name="card_number" placeholder="XXXX XXXX XXXX XXXX">
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-4">
-                                    <label for="card-expiry-month" class="form-label">Expiry Month</label>
-                                    <select class="form-select" id="card-expiry-month" name="card_expiry_month">
-                                        <?php for($i = 1; $i <= 12; $i++): ?>
-                                        <option value="<?php echo sprintf('%02d', $i); ?>"><?php echo sprintf('%02d', $i); ?></option>
-                                        <?php endfor; ?>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="card-expiry-year" class="form-label">Expiry Year</label>
-                                    <select class="form-select" id="card-expiry-year" name="card_expiry_year">
-                                        <?php $current_year = date('Y'); for($i = $current_year; $i <= $current_year + 10; $i++): ?>
-                                        <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
-                                        <?php endfor; ?>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="card-cvv" class="form-label">CVV</label>
-                                    <input type="text" class="form-control" id="card-cvv" name="card_cvv" placeholder="XXX">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Wallet payment details (initially hidden) -->
-                        <div id="wallet-details" class="payment-details" style="display: none;">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="wallet-type" class="form-label">Wallet Type</label>
-                                    <select class="form-select" id="wallet-type" name="wallet_type">
-                                        <option value="paytm">Paytm</option>
-                                        <option value="phonepe">PhonePe</option>
-                                        <option value="googlepay">Google Pay</option>
-                                        <option value="amazonpay">Amazon Pay</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="wallet-number" class="form-label">Mobile Number</label>
-                                    <input type="text" class="form-control" id="wallet-number" name="wallet_number" placeholder="Enter mobile number linked to wallet">
-                                </div>
+                        <!-- UPI payment details (initially hidden) -->
+                        <div id="upi-details" class="payment-details" style="display: none;">
+                            <div class="alert alert-info py-2">
+                                <i class="fas fa-info-circle me-2"></i> A dynamic UPI QR code will be generated on the next screen for you to scan and pay.
                             </div>
                         </div>
                     </div>
                 </div>
+                </form>
             </div>
             
             <div class="col-lg-4">
@@ -273,8 +220,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </div>
                 </div>
             </div>
-            
-            </form> <!-- Closing form tag for checkout-form -->
         </div>
     </div>
 </section>
@@ -286,6 +231,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Handle checkout form submission
     document.addEventListener('DOMContentLoaded', function() {
         const checkoutForm = document.getElementById('checkout-form');
+        
+        // Define profile address vars
+        const profileAddress = <?php echo json_encode($user['address'] ?? ''); ?>;
+        const profileZip = <?php echo json_encode($user['zip_code'] ?? ''); ?>;
+        
         if (checkoutForm) {
             checkoutForm.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -299,16 +249,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 
                 if (name.trim() === '') {
                     showToast('Please enter your full name', 'danger');
-                    isValid = false;
+                    return;
                 }
                 
                 if (phone.trim() === '') {
                     showToast('Please enter your phone number', 'danger');
-                    isValid = false;
+                    return;
                 }
                 
-                // Check if different address is selected
+                // Check address selection and validity
                 const differentAddress = document.getElementById('different-address').checked;
+                let finalZip = '';
+                
                 if (differentAddress) {
                     const deliveryAddress = document.getElementById('delivery-address').value;
                     const deliveryCity = document.getElementById('delivery-city').value;
@@ -317,56 +269,65 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     
                     if (deliveryAddress.trim() === '' || deliveryCity.trim() === '' || 
                         deliveryState.trim() === '' || deliveryZip.trim() === '') {
-                        showToast('Please fill in all delivery address fields', 'danger');
-                        isValid = false;
+                        showToast('Please fill in all delivery address fields. Address is compulsory!', 'danger');
+                        return;
                     }
-                }
-                
-                // Check payment method
-                const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
-                
-                if (paymentMethod === 'card') {
-                    const cardName = document.getElementById('card-name').value;
-                    const cardNumber = document.getElementById('card-number').value;
-                    const cardCvv = document.getElementById('card-cvv').value;
-                    
-                    if (cardName.trim() === '' || cardNumber.trim() === '' || cardCvv.trim() === '') {
-                        showToast('Please fill in all card details', 'danger');
-                        isValid = false;
+                    finalZip = deliveryZip.trim();
+                } else {
+                    // Profile address validation
+                    if (profileAddress.trim() === '' || profileZip.trim() === '') {
+                        showToast('Your default profile address is incomplete. Please enter a delivery address.', 'warning');
+                        // Automatically open different address form
+                        document.getElementById('different-address').checked = true;
+                        document.getElementById('different-address').dispatchEvent(new Event('change'));
+                        return;
                     }
+                    finalZip = profileZip.trim();
                 }
                 
-                if (paymentMethod === 'wallet') {
-                    const walletNumber = document.getElementById('wallet-number').value;
-                    
-                    if (walletNumber.trim() === '') {
-                        showToast('Please enter your wallet mobile number', 'danger');
-                        isValid = false;
+                // Check if finalZip is valid
+                if (finalZip === '') {
+                    showToast('ZIP/Pincode is compulsory for delivery verification.', 'danger');
+                    return;
+                }
+                
+                // Query server via AJAX to verify delivery pincode
+                showToast('Verifying delivery location...', 'info');
+                
+                fetch('api/check_pincode.php?pincode=' + encodeURIComponent(finalZip))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.deliverable) {
+                        // Place order using AJAX
+                        const formData = new FormData(checkoutForm);
+                        
+                        fetch('api/place_order.php', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(orderData => {
+                            if (orderData.success) {
+                                showToast('Order placed successfully! Redirecting...', 'success');
+                                setTimeout(() => {
+                                    window.location.href = 'order_confirmation.php?order_id=' + orderData.order_id;
+                                }, 1000);
+                            } else {
+                                showToast(orderData.message || 'Failed to place order. Please try again.', 'danger');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            showToast('An error occurred while placing your order.', 'danger');
+                        });
+                    } else {
+                        showToast('Delivery not available to ' + finalZip + '. ' + data.message, 'danger');
                     }
-                }
-                
-                if (isValid) {
-                    // Submit form using AJAX
-                    const formData = new FormData(checkoutForm);
-                    
-                    fetch('api/place_order.php', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Redirect to order confirmation page
-                            window.location.href = 'order_confirmation.php?order_id=' + data.order_id;
-                        } else {
-                            showToast(data.message || 'Failed to place order. Please try again.', 'danger');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        showToast('An error occurred while placing your order. Please try again.', 'danger');
-                    });
-                }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Error verifying delivery location. Please try again.', 'danger');
+                });
             });
         }
     });

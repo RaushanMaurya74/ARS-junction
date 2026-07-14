@@ -96,31 +96,43 @@ require_once 'includes/header.php';
                                         <input type="checkbox" class="form-check-input" id="remember" name="remember">
                                         <label class="form-check-label" for="remember">Remember me</label>
                                     </div>
-                                    <a href="#" class="text-decoration-none text-primary fw-semibold">Forgot Password?</a>
+                                    <a href="forgot_password.php" class="text-decoration-none text-primary fw-semibold">Forgot Password?</a>
                                 </div>
                                 <button type="submit" class="btn btn-primary w-100 py-2 mb-3">Sign In</button>
                             </form>
                             
+                            <?php 
+                            $fb_enabled = get_site_setting('facebook_login_enabled', '0');
+                            $google_enabled = get_site_setting('google_login_enabled', '1');
+                            
+                            if ($fb_enabled == '1' || $google_enabled == '1'): 
+                            ?>
                             <div class="position-relative text-center my-4">
                                 <hr>
                                 <span class="position-absolute top-50 start-50 translate-middle px-3 bg-white text-muted">or continue with</span>
                             </div>
                             
                             <div class="social-login mb-4">
-                                <div class="row">
-                                    <div class="col-sm-6 mb-2 mb-sm-0">
+                                <div class="row justify-content-center">
+                                    <?php if ($fb_enabled == '1'): ?>
+                                    <div class="<?php echo ($google_enabled == '1') ? 'col-sm-6 mb-2 mb-sm-0' : 'col-12'; ?>">
                                         <button id="facebook-login" class="btn btn-outline-primary w-100 social-login-btn">
                                             <i class="fab fa-facebook-f"></i> Facebook
                                         </button>
                                     </div>
-                                    <div class="col-sm-6">
+                                    <?php endif; ?>
+                                    
+                                    <?php if ($google_enabled == '1'): ?>
+                                    <div class="<?php echo ($fb_enabled == '1') ? 'col-sm-6' : 'col-12'; ?>">
                                         <button id="google-login" class="btn btn-outline-danger w-100 social-login-btn">
                                             <i class="fab fa-google"></i> Google
                                         </button>
-                                        <div id="google-login-container" class="d-none"></div>
+                                        <div id="google-login-container" style="width: 100%;"></div>
                                     </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
+                            <?php endif; ?>
                             
                             <div class="text-center">
                                 <p class="mb-0">Don't have an account? <a href="register.php" class="text-decoration-none fw-semibold">Register Now</a></p>

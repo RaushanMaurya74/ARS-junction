@@ -66,6 +66,16 @@ if (!$admin) {
                     <i class="fas fa-users me-2"></i> Users
                 </a>
             </li>
+            <li class="<?php echo (basename($_SERVER['PHP_SELF']) == 'delivery_boys.php') ? 'active' : ''; ?>">
+                <a href="delivery_boys.php">
+                    <i class="fas fa-truck me-2"></i> Delivery Boys
+                </a>
+            </li>
+            <li class="<?php echo (basename($_SERVER['PHP_SELF']) == 'delivery_locations.php') ? 'active' : ''; ?>">
+                <a href="delivery_locations.php">
+                    <i class="fas fa-map-marker-alt me-2"></i> Delivery Locations
+                </a>
+            </li>
             <li class="<?php echo (basename($_SERVER['PHP_SELF']) == 'reviews.php') ? 'active' : ''; ?>">
                 <a href="reviews.php">
                     <i class="fas fa-star me-2"></i> Reviews
@@ -89,14 +99,12 @@ if (!$admin) {
             </button>
 
             <!-- Topbar Search -->
-            <form class="d-none d-sm-inline-block form-inline me-auto ms-md-3 my-2 my-md-0 mw-100 navbar-search">
+            <form action="" method="get" class="d-none d-sm-inline-block form-inline me-auto ms-md-3 my-2 my-md-0 mw-100 navbar-search">
                 <div class="input-group">
-                    <input type="text" class="form-control bg-light border-0 small" placeholder="Search for..." aria-label="Search">
-                    <div class="input-group-append">
-                        <button class="btn btn-primary" type="button">
-                            <i class="fas fa-search fa-sm"></i>
-                        </button>
-                    </div>
+                    <input type="text" name="search" class="form-control bg-light border-0 small" placeholder="Search current list..." aria-label="Search" value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fas fa-search fa-sm"></i>
+                    </button>
                 </div>
             </form>
 
@@ -155,17 +163,21 @@ if (!$admin) {
 
                 <!-- Nav Item - User Information -->
                 <li class="nav-item dropdown no-arrow">
-                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <span class="me-2 d-none d-lg-inline text-gray-600 small"><?php echo $admin['name']; ?></span>
-                        <i class="fas fa-user-circle fa-fw"></i>
+                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <span class="me-2 d-none d-lg-inline text-gray-600 small"><?php echo htmlspecialchars($admin['name']); ?></span>
+                        <?php if (!empty($admin['profile_image']) && file_exists('../' . $admin['profile_image'])): ?>
+                            <img class="img-profile rounded-circle" src="../<?php echo $admin['profile_image']; ?>" style="width: 32px; height: 32px; object-fit: cover; border: 1px solid #e3e6f0;">
+                        <?php else: ?>
+                            <img class="img-profile rounded-circle" src="../images/default_avatar.png" style="width: 32px; height: 32px; object-fit: cover; border: 1px solid #e3e6f0;">
+                        <?php endif; ?>
                     </a>
                     <!-- Dropdown - User Information -->
                     <div class="dropdown-menu dropdown-menu-end shadow animated--grow-in" aria-labelledby="userDropdown">
-                        <a class="dropdown-item" href="#">
+                        <a class="dropdown-item" href="profile.php">
                             <i class="fas fa-user fa-sm fa-fw me-2 text-gray-400"></i>
                             Profile
                         </a>
-                        <a class="dropdown-item" href="#">
+                        <a class="dropdown-item" href="settings.php">
                             <i class="fas fa-cogs fa-sm fa-fw me-2 text-gray-400"></i>
                             Settings
                         </a>

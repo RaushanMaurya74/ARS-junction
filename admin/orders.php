@@ -16,6 +16,34 @@ if (isset($_POST['update_status']) && isset($_POST['order_id']) && isset($_POST[
     }
 }
 
+// Handle payment status update
+if (isset($_POST['update_payment_status']) && isset($_POST['order_id']) && isset($_POST['payment_status'])) {
+    $order_id = intval($_POST['order_id']);
+    $payment_status = clean_input($_POST['payment_status']);
+    
+    $result = admin_update_payment_status($order_id, $payment_status);
+    
+    if ($result['success']) {
+        $success_msg = 'Payment status updated successfully.';
+    } else {
+        $error_msg = $result['message'];
+    }
+}
+
+// Handle delivery boy assignment
+if (isset($_POST['assign_delivery']) && isset($_POST['order_id']) && isset($_POST['delivery_boy_id'])) {
+    $order_id = intval($_POST['order_id']);
+    $delivery_boy_id = intval($_POST['delivery_boy_id']);
+    
+    $result = admin_assign_delivery_boy($order_id, $delivery_boy_id);
+    
+    if ($result['success']) {
+        $success_msg = 'Delivery boy assigned successfully.';
+    } else {
+        $error_msg = $result['message'];
+    }
+}
+
 // Get filter values
 $status_filter = isset($_GET['status']) ? clean_input($_GET['status']) : '';
 $limit = 20;
@@ -24,6 +52,23 @@ if ($offset < 0) $offset = 0;
 
 // Get orders with filter
 $orders = admin_get_all_orders($limit, $offset, $status_filter ? $status_filter : null);
+
+// Apply search filter if query is set
+if (isset($_GET['search']) && !empty($_GET['search'])) {
+    $search = strtolower(clean_input($_GET['search']));
+    $filtered = [];
+    foreach ($orders as $order) {
+        if (stripos((string)$order['order_id'], $search) !== false ||
+            stripos($order['user_name'], $search) !== false ||
+            stripos($order['restaurant_name'], $search) !== false ||
+            stripos($order['payment_method'], $search) !== false ||
+            stripos($order['payment_status'], $search) !== false ||
+            stripos($order['order_status'], $search) !== false) {
+            $filtered[] = $order;
+        }
+    }
+    $orders = $filtered;
+}
 
 // Get total count of orders for pagination
 $status_counts = admin_count_orders_by_status();
@@ -45,6 +90,7 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
     if ($view_order) {
         $restaurant = get_restaurant_by_id($view_order['restaurant_id']);
         $user = get_user_by_id($view_order['user_id']);
+        $delivery_boys = admin_get_delivery_boys();
     }
 }
 ?>
@@ -110,6 +156,7 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
                                     case 'cash': echo 'Cash on Delivery'; break;
                                     case 'card': echo 'Credit/Debit Card'; break;
                                     case 'wallet': echo 'Digital Wallet'; break;
+                                    case 'upi': echo 'UPI QR Code'; break;
                                 }
                                 ?>
                             </p>
@@ -139,6 +186,47 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
                                     </div>
                                     <div class="col-md-4">
                                         <button type="submit" name="update_status" class="btn btn-primary w-100">Update</button>
+                                    </div>
+                                </div>
+                            </form>
+                            
+                            <!-- Payment Status Update Form -->
+                            <form action="orders.php?view=<?php echo $view_order['order_id']; ?>" method="post" class="mt-3">
+                                <input type="hidden" name="order_id" value="<?php echo $view_order['order_id']; ?>">
+                                <div class="row align-items-end">
+                                    <div class="col-md-8 mb-2 mb-md-0">
+                                        <label for="payment_status" class="form-label">Update Payment Status</label>
+                                        <select class="form-select" id="payment_status" name="payment_status">
+                                            <option value="pending" <?php echo ($view_order['payment_status'] == 'pending') ? 'selected' : ''; ?>>Pending</option>
+                                            <option value="paid" <?php echo ($view_order['payment_status'] == 'paid') ? 'selected' : ''; ?>>Paid</option>
+                                            <option value="failed" <?php echo ($view_order['payment_status'] == 'failed') ? 'selected' : ''; ?>>Failed</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="submit" name="update_payment_status" class="btn btn-secondary w-100">Update</button>
+                                    </div>
+                                </div>
+                            </form>
+                            
+                            <hr>
+                            
+                            <!-- Assign Delivery Boy Form -->
+                            <form action="orders.php?view=<?php echo $view_order['order_id']; ?>" method="post">
+                                <input type="hidden" name="order_id" value="<?php echo $view_order['order_id']; ?>">
+                                <div class="row align-items-end">
+                                    <div class="col-md-8 mb-2 mb-md-0">
+                                        <label for="delivery_boy_id" class="form-label">Assign Delivery Boy</label>
+                                        <select class="form-select" id="delivery_boy_id" name="delivery_boy_id">
+                                            <option value="0">-- Unassigned --</option>
+                                            <?php foreach ($delivery_boys as $boy): ?>
+                                                <option value="<?php echo $boy['user_id']; ?>" <?php echo ($view_order['delivery_boy_id'] == $boy['user_id']) ? 'selected' : ''; ?>>
+                                                    <?php echo $boy['name']; ?> (<?php echo $boy['phone']; ?>)
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="submit" name="assign_delivery" class="btn btn-warning text-dark w-100">Assign</button>
                                     </div>
                                 </div>
                             </form>

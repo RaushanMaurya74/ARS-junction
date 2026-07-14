@@ -64,7 +64,11 @@ $extra_js = '<script src="js/cart.js"></script>';
                 <?php endif; ?>
                 
                 <div class="cart-item d-flex align-items-center mb-3" data-cart-id="<?php echo $item['cart_id']; ?>">
-                    <img src="https://pixabay.com/get/g12156b2dbc31bb07d0fc025ac2c9d55a2e380994888ce620bf2df42e2cad88a767656bfd015da042307899468e4fea5a7dac8c5271f4bca3e2557eb58b10cbcc_1280.jpg" alt="<?php echo $item['name']; ?>" class="cart-item-img me-3">
+                    <?php if (!empty($item['image']) && file_exists($item['image'])): ?>
+                        <img src="<?php echo $item['image']; ?>" alt="<?php echo $item['name']; ?>" class="cart-item-img me-3" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                    <?php else: ?>
+                        <img src="images/food_placeholder.jpg" alt="<?php echo $item['name']; ?>" class="cart-item-img me-3" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                    <?php endif; ?>
                     <div class="flex-grow-1">
                         <h5 class="mb-1"><?php echo $item['name']; ?></h5>
                         <p class="mb-1 text-muted small"><?php echo format_price($item['price']); ?> each</p>

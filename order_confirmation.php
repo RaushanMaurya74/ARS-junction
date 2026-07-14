@@ -60,6 +60,33 @@ $restaurant = get_restaurant_by_id($order['restaurant_id']);
                     </div>
                 </div>
                 
+                <?php if ($order['payment_method'] === 'upi' && $order['payment_status'] === 'pending'): 
+                    $upi_id = get_site_setting('upi_id', '7979730721@rapl');
+                    $payee_name = rawurlencode(get_site_setting('site_name', 'ARS Junction'));
+                    $amount = number_format((float)$order['total_amount'], 2, '.', '');
+                    $note = rawurlencode('Order #' . $order_id);
+                    $upi_string = "upi://pay?pa={$upi_id}&pn={$payee_name}&am={$amount}&cu=INR&tn={$note}";
+                    $qr_api_url = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urlencode($upi_string);
+                ?>
+                <!-- UPI QR Code Card -->
+                <div class="card mt-4 border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0 text-center"><i class="fas fa-qrcode me-2"></i> Scan & Pay with UPI</h5>
+                    </div>
+                    <div class="card-body text-center p-4">
+                        <p class="mb-3">Scan this QR code using GPay, PhonePe, Paytm, BHIM, or any UPI app to complete your payment.</p>
+                        <div class="mb-3">
+                            <img src="<?php echo $qr_api_url; ?>" alt="UPI QR Code" class="img-fluid border p-2 bg-white" style="max-width: 220px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                        </div>
+                        <h4 class="mb-1 text-primary"><?php echo format_price($order['total_amount']); ?></h4>
+                        <p class="text-muted small mb-3">UPI ID: <strong><?php echo htmlspecialchars($upi_id); ?></strong></p>
+                        <div class="alert alert-warning d-inline-block py-2 px-3 mb-0" style="font-size: 0.9rem;">
+                            <i class="fas fa-spinner fa-spin me-2"></i> After payment, our team/delivery boy will confirm your payment.
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
                 <!-- Order Details -->
                 <div class="card mt-4">
                     <div class="card-header bg-light">
@@ -102,6 +129,7 @@ $restaurant = get_restaurant_by_id($order['restaurant_id']);
                                     case 'cash': echo 'Cash on Delivery'; break;
                                     case 'card': echo 'Credit/Debit Card'; break;
                                     case 'wallet': echo 'Digital Wallet'; break;
+                                    case 'upi': echo 'UPI QR Code'; break;
                                 }
                                 ?>
                             </p>

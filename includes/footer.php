@@ -35,9 +35,9 @@
             <div class="col-md-4">
                 <h5 class="mb-3">Contact Information</h5>
                 <ul class="list-unstyled contact-info">
-                    <li class="mb-2"><i class="fas fa-map-marker-alt me-2"></i>AT - PIRO, BHOJPUR, BIHAR, INDIA-802207</li>
-                    <li class="mb-2"><i class="fas fa-phone me-2"></i>+91 7979730721</li>
-                    <li class="mb-2"><i class="fas fa-envelope me-2"></i>arsjunction79793@gmail.com</li>
+                    <li class="mb-2"><i class="fas fa-map-marker-alt me-2"></i><?php echo htmlspecialchars(get_site_setting('site_location', 'AT - PIRO, BHOJPUR, BIHAR, INDIA-802207')); ?></li>
+                    <li class="mb-2"><i class="fas fa-phone me-2"></i>+91 <?php echo htmlspecialchars(get_site_setting('site_phone', '7979730721')); ?></li>
+                    <li class="mb-2"><i class="fas fa-envelope me-2"></i><?php echo htmlspecialchars(get_site_setting('site_email', 'arsjunction79793@gmail.com')); ?></li>
                     <li class="mb-2"><i class="fas fa-clock me-2"></i>Open: 24/7</li>
                 </ul>
             </div>
@@ -64,6 +64,8 @@
 <!-- Custom JS -->
 <script src="js/main.js"></script>
 <?php if (isset($extra_js)): echo $extra_js; endif; ?>
+
+<?php include_once 'includes/chatbot.php'; ?>
 
 </body>
 </html>

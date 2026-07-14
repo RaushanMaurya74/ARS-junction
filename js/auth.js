@@ -24,9 +24,9 @@ function validateEmail(email) {
     return re.test(String(email).toLowerCase());
 }
 
-// Validate phone number format
+// Validate phone number format (detect real Indian mobile numbers starting with 6-9)
 function validatePhone(phone) {
-    const re = /^\d{10}$/; // Basic validation for 10-digit phone number
+    const re = /^[6-9]\d{9}$/;
     return re.test(String(phone));
 }
 
@@ -119,6 +119,7 @@ function setupFormHandlers() {
             
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
             
@@ -130,6 +131,16 @@ function setupFormHandlers() {
             
             if (!validateEmail(email)) {
                 showToast('Please enter a valid email address', 'danger');
+                return;
+            }
+            
+            if (phone.trim() === '') {
+                showToast('Please enter your phone number', 'danger');
+                return;
+            }
+            
+            if (!validatePhone(phone)) {
+                showToast('Please enter a valid 10-digit Indian mobile number (starts with 6, 7, 8, or 9)', 'danger');
                 return;
             }
             
@@ -214,35 +225,131 @@ function setupFormHandlers() {
         });
     }
     
-    // Facebook login button
+    // Facebook login button - Redirecting to Google Login flow as requested
     const fbLoginBtn = document.getElementById('facebook-login');
     if (fbLoginBtn) {
         fbLoginBtn.addEventListener('click', function(e) {
             e.preventDefault();
             
-            if (typeof FB !== 'undefined') {
-                FB.login(function(response) {
-                    if (response.authResponse) {
-                        // Get user info from Facebook
-                        FB.api('/me', {fields: 'name,email'}, function(userInfo) {
-                            // Send to backend for authentication/registration
-                            socialLogin('facebook', userInfo.id, userInfo.name, userInfo.email);
-                        });
-                    } else {
-                        showToast('Facebook login cancelled or failed', 'warning');
-                    }
-                }, {scope: 'email'});
-            } else {
-                showToast('Facebook SDK not loaded', 'danger');
+            // Create the modal HTML dynamically if it doesn't exist
+            let redirectModal = document.getElementById('fb-redirect-modal');
+            if (!redirectModal) {
+                const modalHtml = `
+                    <div class="modal fade" id="fb-redirect-modal" tabindex="-1" aria-labelledby="fbRedirectModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+                                <div class="modal-header border-0 pb-0 justify-content-end">
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body text-center px-4 pb-4">
+                                    <div class="mb-3 text-warning display-4">
+                                        <i class="fas fa-exclamation-circle animate__animated animate__pulse animate__infinite"></i>
+                                    </div>
+                                    <h4 class="fw-bold mb-2">Facebook Login Offline</h4>
+                                    <p class="text-muted mb-4">Facebook login is currently undergoing maintenance. Would you like to log in securely with your Google account instead?</p>
+                                    <button id="modal-continue-google" class="btn btn-danger btn-lg w-100 py-2.5 mb-2" style="border-radius: 8px; font-weight: 600; background-color: #dc3545; border-color: #dc3545;">
+                                        <i class="fab fa-google me-2"></i> Continue with Google
+                                    </button>
+                                    <button type="button" class="btn btn-link text-muted text-decoration-none w-100 mt-2" data-bs-dismiss="modal">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                const div = document.createElement('div');
+                div.innerHTML = modalHtml;
+                document.body.appendChild(div.firstElementChild);
+                redirectModal = document.getElementById('fb-redirect-modal');
+                
+                // Add click listener for "Continue with Google"
+                const continueGoogleBtn = document.getElementById('modal-continue-google');
+                if (continueGoogleBtn) {
+                    continueGoogleBtn.addEventListener('click', function() {
+                        const modalInstance = bootstrap.Modal.getInstance(redirectModal);
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        }
+                        triggerGoogleRedirect();
+                    });
+                }
             }
+            
+            // Show the modal
+            const bsModal = new bootstrap.Modal(redirectModal);
+            bsModal.show();
         });
     }
 }
 
-// Setup Google Sign-In
+// Setup Google Sign-In redirect flow
+function triggerGoogleRedirect() {
+    const apiKeys = window.socialApiKeys || {};
+    const clientId = apiKeys.google_client_id || '213451617569-9s3a4nvk661jhnotfskuf6js4bo9sgpg.apps.googleusercontent.com';
+    const redirectUri = window.location.href.split('#')[0].split('?')[0]; // Clean URL without hash or parameters
+    
+    const oauthUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
+        '?client_id=' + encodeURIComponent(clientId) +
+        '&redirect_uri=' + encodeURIComponent(redirectUri) +
+        '&response_type=token' +
+        '&scope=' + encodeURIComponent('openid email profile') +
+        '&state=' + encodeURIComponent(window.location.pathname);
+        
+    window.location.href = oauthUrl;
+}
+
+// Check if redirect has returned with a token in the hash
+function checkGoogleHashCallback() {
+    if (window.location.hash) {
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const accessToken = params.get('access_token');
+        
+        if (accessToken) {
+            // Clear hash from URL immediately for clean UX
+            window.history.replaceState(null, null, window.location.pathname);
+            
+            showToast('Authenticating with Google...', 'info');
+            
+            fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            })
+            .then(res => res.json())
+            .then(userInfo => {
+                if (userInfo && userInfo.sub) {
+                    socialLogin('google', userInfo.sub, userInfo.name, userInfo.email);
+                } else {
+                    showToast('Failed to retrieve Google profile info', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error('Google token exchange error:', err);
+                showToast('Google authentication failed', 'danger');
+            });
+        }
+    }
+}
+
+// Setup Google Sign-In button listeners (with Popup Mode)
 function setupGoogleSignIn(apiKeys) {
+    const googleContainer = document.getElementById('google-login-container');
     const googleLoginBtn = document.getElementById('google-login');
+    
+    // Bind click handler for custom button immediately as a fallback redirect
     if (googleLoginBtn) {
+        googleLoginBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            // If GSI script failed to load or initialize, use redirect flow
+            if (typeof google === 'undefined' || !google.accounts) {
+                triggerGoogleRedirect();
+            } else {
+                google.accounts.id.prompt();
+            }
+        });
+    }
+
+    if (googleContainer) {
         // Load Google Identity Services JavaScript library
         const googleScript = document.createElement('script');
         googleScript.src = 'https://accounts.google.com/gsi/client';
@@ -250,33 +357,32 @@ function setupGoogleSignIn(apiKeys) {
         googleScript.defer = true;
         document.head.appendChild(googleScript);
         
-        // Initialize Google Sign-In when script is loaded
         googleScript.onload = function() {
             if (typeof google !== 'undefined') {
-                // Initialize Google Sign-In
+                // Initialize Google Sign-In with popup
                 google.accounts.id.initialize({
                     client_id: apiKeys.google_client_id,
                     callback: handleGoogleSignIn,
+                    ux_mode: 'popup',
                     auto_select: false
                 });
                 
-                // Custom button triggers Google Sign-In prompt
-                googleLoginBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    if (typeof google !== 'undefined' && google.accounts) {
-                        google.accounts.id.prompt();
-                    } else {
-                        showToast('Google Sign-In not loaded yet. Please try again in a moment.', 'warning');
+                // Render the official Google Sign-In button
+                google.accounts.id.renderButton(
+                    googleContainer,
+                    { 
+                        theme: 'outline', 
+                        size: 'large', 
+                        width: '100%', 
+                        text: 'signin_with',
+                        shape: 'rectangular',
+                        logo_alignment: 'left'
                     }
-                });
+                );
                 
-                // Also render the standard Google button (hidden, but available as fallback)
-                const googleContainer = document.getElementById('google-login-container');
-                if (googleContainer) {
-                    google.accounts.id.renderButton(
-                        googleContainer,
-                        { theme: 'outline', size: 'large', width: '100%' }
-                    );
+                // Hide the custom button since the official one is now rendered
+                if (googleLoginBtn) {
+                    googleLoginBtn.style.setProperty('display', 'none', 'important');
                 }
             }
         };
@@ -313,6 +419,9 @@ function initializeSocialLogins(apiKeys) {
 
 // When document is ready
 document.addEventListener('DOMContentLoaded', function() {
+    // Check if returning from Google OAuth redirect
+    checkGoogleHashCallback();
+
     // First get API keys from server
     fetch('api/get_api_keys.php')
     .then(response => response.json())

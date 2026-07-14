@@ -13,13 +13,21 @@ $order_status_counts = admin_count_orders_by_status();
 
 // Get recent orders
 $recent_orders = get_recent_orders(10);
+
+// Fetch all delivery boys for status sidebar
+$stmt_boys = $conn->prepare("SELECT * FROM users WHERE role = 'delivery' ORDER BY is_online DESC, name ASC");
+$stmt_boys->execute();
+$delivery_agents = $stmt_boys->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">Dashboard</h1>
         <div>
-            <span class="text-muted me-2">Today: <?php echo date('F d, Y'); ?></span>
+            <span class="text-muted me-3">Today: <?php echo date('F d, Y'); ?></span>
+            <a href="export_expenditure.php" class="btn btn-sm btn-success shadow-sm">
+                <i class="fas fa-download fa-sm text-white-50 me-1"></i> Export Monthly Report
+            </a>
         </div>
     </div>
     
@@ -146,15 +154,16 @@ $recent_orders = get_recent_orders(10);
         </div>
     </div>
     
-    <!-- Recent Orders -->
+    <!-- Recent Orders & Delivery Boy Status -->
     <div class="row">
-        <div class="col-12">
+        <!-- Recent Orders (col-lg-8) -->
+        <div class="col-lg-8">
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">Recent Orders</h6>
                     <a href="orders.php" class="btn btn-sm btn-primary">View All</a>
                 </div>
-                <div class="card-body">
+                <div class="card-body" style="min-height: 400px;">
                     <div class="table-responsive">
                         <?php if (empty($recent_orders)): ?>
                         <p class="text-center">No orders found.</p>
@@ -175,8 +184,8 @@ $recent_orders = get_recent_orders(10);
                                 <?php foreach($recent_orders as $order): ?>
                                 <tr>
                                     <td>#<?php echo $order['order_id']; ?></td>
-                                    <td><?php echo $order['user_name']; ?></td>
-                                    <td><?php echo $order['restaurant_name']; ?></td>
+                                    <td><?php echo htmlspecialchars($order['user_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($order['restaurant_name']); ?></td>
                                     <td><?php echo date('M d, Y H:i', strtotime($order['order_date'])); ?></td>
                                     <td><?php echo format_price($order['total_amount']); ?></td>
                                     <td>
@@ -205,6 +214,47 @@ $recent_orders = get_recent_orders(10);
                         </table>
                         <?php endif; ?>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delivery Agents Status (col-lg-4) -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Delivery Partner Status</h6>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    <?php if (empty($delivery_agents)): ?>
+                    <p class="text-center text-muted my-4">No delivery agents registered.</p>
+                    <?php else: ?>
+                    <div class="list-group list-group-flush">
+                        <?php foreach($delivery_agents as $agent): ?>
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2.5">
+                            <div class="d-flex align-items-center">
+                                <?php if (!empty($agent['profile_image'])): ?>
+                                    <img src="../<?php echo $agent['profile_image']; ?>" class="rounded-circle border me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                <?php else: ?>
+                                    <div class="rounded-circle bg-light border d-flex justify-content-center align-items-center me-3" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user text-secondary"></i>
+                                    </div>
+                                <?php endif; ?>
+                                <div>
+                                    <h6 class="mb-0 fw-bold" style="font-size: 0.9rem;"><?php echo htmlspecialchars($agent['name']); ?></h6>
+                                    <small class="text-muted" style="font-size: 0.75rem;"><i class="fas fa-phone-alt me-1"></i>+91 <?php echo htmlspecialchars($agent['phone']); ?></small>
+                                </div>
+                            </div>
+                            <div>
+                                <?php if (($agent['is_online'] ?? 0) == 1): ?>
+                                    <span class="badge bg-success rounded-pill px-2.5 py-1.5"><i class="fas fa-circle me-1 animate-pulse" style="font-size: 0.45rem;"></i>Online</span>
+                                <?php else: ?>
+                                    <span class="badge bg-secondary rounded-pill px-2.5 py-1.5">Offline</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

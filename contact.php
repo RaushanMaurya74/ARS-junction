@@ -18,8 +18,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Please enter a valid email address.';
     } else {
-        // In a real application, you would send an email here
-        // For now, we'll just simulate success
+        $stmt = $conn->prepare("INSERT INTO contact_messages (name, email, subject, message) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$name, $email, $subject, $message]);
         $success = true;
     }
 }
@@ -35,7 +35,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <p>Have questions, suggestions, or feedback? Our team is here to help! Get in touch with us using any of the methods below, and we'll get back to you as soon as possible.</p>
             </div>
             <div class="col-lg-6">
-                <img src="https://pixabay.com/get/g7d4a4c89c18b48b42196c9d0932d3be2a2da3e2284193887f3dc6a2cc9b3d34b065c8bbc1e757368f8458dbf6d4d821078ad1638359ee65563322540a5bfe082_1280.jpg" alt="Food Delivery" class="img-fluid rounded">
+                <img src="images/delivery_hero.jpg" alt="Food Delivery" class="img-fluid rounded shadow-sm">
             </div>
         </div>
     </div>
@@ -52,8 +52,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             <i class="fas fa-map-marker-alt"></i>
                         </div>
                         <h4>Our Location</h4>
-                        <p>AT - PIRO, BHOJPUR,<br> BIHAR, INDIA-802207</p>
-                        <a href="https://goo.gl/maps/yourlocationlink" target="_blank" class="btn btn-outline-primary">Get Directions</a>
+                        <p><?php echo nl2br(htmlspecialchars(get_site_setting('site_location', 'AT - PIRO, BHOJPUR, BIHAR, INDIA-802207'))); ?></p>
+                        <a href="https://maps.google.com/?q=<?php echo urlencode(get_site_setting('site_location', 'AT - PIRO, BHOJPUR, BIHAR, INDIA-802207')); ?>" target="_blank" class="btn btn-outline-primary">Get Directions</a>
                     </div>
                 </div>
             </div>
@@ -65,7 +65,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </div>
                         <h4>Phone Number</h4>
                         <p>Call us for any inquiries or to place an order by phone.</p>
-                        <a href="tel:+917979730721" class="btn btn-outline-primary">+91 7979730721</a>
+                        <a href="tel:<?php echo htmlspecialchars(get_site_setting('site_phone', '7979730721')); ?>" class="btn btn-outline-primary">+91 <?php echo htmlspecialchars(get_site_setting('site_phone', '7979730721')); ?></a>
                     </div>
                 </div>
             </div>
@@ -77,7 +77,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </div>
                         <h4>Email Address</h4>
                         <p>Send us an email and we'll get back to you within 24 hours.</p>
-                        <a href="mailto:arsjunction79793@gmail.com" class="btn btn-outline-primary">arsjunction79793@gmail.com</a>
+                        <a href="mailto:<?php echo htmlspecialchars(get_site_setting('site_email', 'arsjunction79793@gmail.com')); ?>" class="btn btn-outline-primary"><?php echo htmlspecialchars(get_site_setting('site_email', 'arsjunction79793@gmail.com')); ?></a>
                     </div>
                 </div>
             </div>

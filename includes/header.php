@@ -14,7 +14,7 @@ require_once 'auth.php';
     <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Custom CSS -->
-    <link href="css/style.css" rel="stylesheet">
+    <link href="css/style.css?v=1.2" rel="stylesheet">
     <?php if (isset($extra_css)): echo $extra_css; endif; ?>
 </head>
 <body>

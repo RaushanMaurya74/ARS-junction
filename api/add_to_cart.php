@@ -1,4 +1,3 @@
-
 <?php
 session_start();
 require_once '../includes/db_connect.php';
@@ -28,15 +27,15 @@ if ($item_id <= 0 || $quantity <= 0) {
 
 try {
     // Check if item already exists in cart
-    $stmt = $conn->prepare("SELECT id, quantity FROM cart WHERE user_id = ? AND item_id = ?");
+    $stmt = $conn->prepare("SELECT cart_id, quantity FROM cart WHERE user_id = ? AND item_id = ?");
     $stmt->execute([$user_id, $item_id]);
     $existing_item = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($existing_item) {
         // Update quantity if item exists
         $new_quantity = $existing_item['quantity'] + $quantity;
-        $stmt = $conn->prepare("UPDATE cart SET quantity = ? WHERE id = ?");
-        $stmt->execute([$new_quantity, $existing_item['id']]);
+        $stmt = $conn->prepare("UPDATE cart SET quantity = ? WHERE cart_id = ?");
+        $stmt->execute([$new_quantity, $existing_item['cart_id']]);
     } else {
         // Insert new item if it doesn't exist
         $stmt = $conn->prepare("INSERT INTO cart (user_id, item_id, quantity) VALUES (?, ?, ?)");
