@@ -1,6 +1,7 @@
-<?php
-$page_title = "Restaurant Details";
-require_once 'includes/header.php';
+// Start session and check parameters before outputting headers
+require_once 'includes/db_connect.php';
+require_once 'includes/functions.php';
+require_once 'includes/auth.php';
 
 // Check if restaurant ID is provided
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
@@ -16,6 +17,9 @@ if (!$restaurant) {
     header("Location: restaurants.php");
     exit;
 }
+
+$page_title = "Restaurant Details";
+require_once 'includes/header.php';
 
 // Get restaurant menu items organized by category
 $menu_by_category = get_restaurant_menu_by_category($restaurant_id);

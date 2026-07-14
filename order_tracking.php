@@ -1,12 +1,16 @@
-<?php
-$page_title = "Order Tracking";
-require_once 'includes/header.php';
+// Start session and check authentication before outputting headers
+require_once 'includes/db_connect.php';
+require_once 'includes/functions.php';
+require_once 'includes/auth.php';
 
 // Redirect to login if not logged in
 if (!is_logged_in()) {
     header("Location: login.php");
     exit;
 }
+
+$page_title = "Order Tracking";
+require_once 'includes/header.php';
 
 $user_id = $_SESSION['user_id'];
 $order_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
