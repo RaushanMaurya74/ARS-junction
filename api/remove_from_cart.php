@@ -1,4 +1,5 @@
 <?php
+chdir(__DIR__);
 require_once '../includes/db_connect.php';
 require_once '../includes/functions.php';
 require_once '../includes/auth.php';
@@ -44,3 +45,4 @@ try {
     echo json_encode(['success' => false, 'message' => 'Failed to remove item from cart']);
 }
 ?>
+

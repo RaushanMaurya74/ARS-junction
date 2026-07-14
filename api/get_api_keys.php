@@ -1,4 +1,5 @@
 <?php
+chdir(__DIR__);
 /**
  * API endpoint to get API keys for social login
  * This is a safer approach than hardcoding the API keys in JS files

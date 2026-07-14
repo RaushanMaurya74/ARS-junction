@@ -1,4 +1,5 @@
 <?php
+chdir(__DIR__);
 /**
  * API endpoint for handling social login (Facebook/Google)
  */

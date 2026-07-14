@@ -1,4 +1,5 @@
 <?php
+chdir(__DIR__);
 require_once '../includes/db_connect.php';
 require_once '../includes/functions.php';
 require_once '../includes/auth.php';
@@ -32,3 +33,4 @@ if (!has_user_reviewed($user_id, $restaurant_id)) {
 header('Location: ../restaurant_details.php?id=' . $restaurant_id . '#reviews');
 exit;
 ?>
+

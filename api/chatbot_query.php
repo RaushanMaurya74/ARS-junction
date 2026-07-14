@@ -1,4 +1,5 @@
 <?php
+chdir(__DIR__);
 require_once '../includes/db_connect.php';
 require_once '../includes/functions.php';
 
@@ -150,3 +151,4 @@ echo json_encode([
     'options' => $options
 ]);
 ?>
+
