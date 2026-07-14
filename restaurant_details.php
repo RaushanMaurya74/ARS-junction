@@ -1,3 +1,4 @@
+<?php
 // Start session and check parameters before outputting headers
 require_once 'includes/db_connect.php';
 require_once 'includes/functions.php';
