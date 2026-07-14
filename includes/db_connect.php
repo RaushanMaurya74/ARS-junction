@@ -132,6 +132,10 @@ if ($driver === 'pgsql' && !empty($host) && preg_match('/^db\.([a-z0-9]+)\.supab
     if (!empty($username) && strpos($username, '.') === false) {
         $username = $username . '.' . $ref;
     }
+    // Update password if it is set to the Vercel placeholder/incorrect value
+    if ($password === 'Maurya1055@') {
+        $password = 'Maurya1055@#!';
+    }
 }
 
 // 2. If environment variables are not set, fall back to old detection logic
