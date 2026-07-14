@@ -24,9 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     if ($order_id > 0) {
         $check_order = get_order_details($order_id, $user_id);
         if ($check_order) {
-            $stmt = $conn->prepare("SELECT TIMESTAMPDIFF(SECOND, order_date, NOW()) FROM orders WHERE order_id = ?");
-            $stmt->execute([$order_id]);
-            $elapsed = intval($stmt->fetchColumn());
+            $elapsed = time() - strtotime($check_order['order_date']);
             
             if ($check_order['order_status'] === 'pending' && $elapsed <= 180) {
                 $stmt = $conn->prepare("UPDATE orders SET order_status = 'cancelled' WHERE order_id = ?");
@@ -56,9 +54,7 @@ if ($order_id > 0) {
         $restaurant = get_restaurant_by_id($order['restaurant_id']);
         
         // Calculate seconds elapsed for frontend cancellation countdown timer
-        $stmt = $conn->prepare("SELECT TIMESTAMPDIFF(SECOND, order_date, NOW()) FROM orders WHERE order_id = ?");
-        $stmt->execute([$order_id]);
-        $seconds_elapsed = intval($stmt->fetchColumn());
+        $seconds_elapsed = time() - strtotime($order['order_date']);
         $can_cancel = ($order['order_status'] === 'pending' && $seconds_elapsed <= 180);
     } else {
         $order_id = 0;
