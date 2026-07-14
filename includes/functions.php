@@ -602,7 +602,7 @@ function auto_assign_confirmed_orders() {
     global $conn;
     
     // 1. Find all online delivery boys
-    $stmt_boys = $conn->query("SELECT user_id FROM users WHERE role = 'delivery' AND is_online = 1");
+    $stmt_boys = $conn->query("SELECT user_id FROM users WHERE is_delivery_boy = 1 AND is_online = 1");
     $online_boys = $stmt_boys->fetchAll(PDO::FETCH_COLUMN);
     
     if (empty($online_boys)) {
@@ -610,12 +610,18 @@ function auto_assign_confirmed_orders() {
     }
     
     // 2. Find all orders that are 'confirmed', have NO delivery boy assigned, and were confirmed at least 3 minutes ago
-    // We check: confirmed_at IS NOT NULL AND confirmed_at <= NOW() - INTERVAL 3 MINUTE
+    $driver = $conn->getAttribute(PDO::ATTR_DRIVER_NAME);
+    if ($driver === 'pgsql') {
+        $timeCondition = "confirmed_at <= NOW() - INTERVAL '3 minutes'";
+    } else {
+        $timeCondition = "confirmed_at <= NOW() - INTERVAL 3 MINUTE";
+    }
+    
     $stmt_orders = $conn->query("SELECT order_id FROM orders 
                                  WHERE order_status = 'confirmed' 
                                  AND delivery_boy_id IS NULL 
                                  AND confirmed_at IS NOT NULL 
-                                 AND confirmed_at <= NOW() - INTERVAL 3 MINUTE");
+                                 AND {$timeCondition}");
     $unassigned_orders = $stmt_orders->fetchAll(PDO::FETCH_COLUMN);
     
     if (empty($unassigned_orders)) {

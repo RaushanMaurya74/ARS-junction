@@ -24,8 +24,12 @@ try {
             <p class='mb-0'>Connected successfully to host: <strong>" . htmlspecialchars($host) . "</strong></p>
           </div>";
 
-    // List tables
-    $stmt = $conn->query("SHOW TABLES");
+    // List tables dynamically based on driver
+    if ($conn->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
+        $stmt = $conn->query("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'");
+    } else {
+        $stmt = $conn->query("SHOW TABLES");
+    }
     $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
     if (empty($tables)) {
@@ -33,13 +37,13 @@ try {
                 <h5 class='alert-heading'>✖ Tables Missing!</h5>
                 <p>No tables were found in the database. This means the SQL import failed or was not run.</p>
                 <hr>
-                <p class='mb-0'><strong>Action:</strong> Open phpMyAdmin on ProFreeHost, select <code>ezyro_38647338_ars_junction</code>, go to the <strong>Import</strong> tab, and import the <code>database/ars_junction.sql</code> file.</p>
+                <p class='mb-0'><strong>Action:</strong> Import the schema using Supabase SQL Editor or phpMyAdmin depending on your environment.</p>
               </div>";
     } else {
         echo "<h5 class='mb-3'>Database Tables Summary:</h5>";
         echo "<ul class='list-group mb-3'>";
         foreach ($tables as $table) {
-            $countStmt = $conn->query("SELECT COUNT(*) FROM `$table`");
+            $countStmt = $conn->query("SELECT COUNT(*) FROM $table");
             $rows = $countStmt->fetchColumn();
             echo "<li class='list-group-item d-flex justify-content-between align-items-center'>
                     $table

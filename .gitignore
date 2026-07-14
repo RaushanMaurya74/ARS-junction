@@ -1,0 +1,8 @@
+.env
+.vercel
+node_modules/
+uploads/profile_pics/*
+uploads/emails/*
+scratch/
+.DS_Store
+Thumbs.db

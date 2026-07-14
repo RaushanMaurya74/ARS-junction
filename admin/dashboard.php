@@ -15,7 +15,7 @@ $order_status_counts = admin_count_orders_by_status();
 $recent_orders = get_recent_orders(10);
 
 // Fetch all delivery boys for status sidebar
-$stmt_boys = $conn->prepare("SELECT * FROM users WHERE role = 'delivery' ORDER BY is_online DESC, name ASC");
+$stmt_boys = $conn->prepare("SELECT * FROM users WHERE is_delivery_boy = 1 ORDER BY is_online DESC, name ASC");
 $stmt_boys->execute();
 $delivery_agents = $stmt_boys->fetchAll(PDO::FETCH_ASSOC);
 ?>
