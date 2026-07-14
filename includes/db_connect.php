@@ -121,6 +121,14 @@ if (getenv('SUPABASE_DB_HOST') || getenv('SUPABASE_DB_PASSWORD')) {
     $driver = 'pgsql';
 }
 
+// Supabase Connection Pooler Hotfix:
+// Direct database connections (db.<ref>.supabase.co:5432) resolve to IPv6-only, which Vercel fails to route.
+// We dynamically rewrite to the IPv4-compatible Session Mode pooler host for ap-northeast-1 region.
+if ($driver === 'pgsql' && !empty($host) && preg_match('/^db\.([a-z0-9]+)\.supabase\.co$/i', $host)) {
+    $host = 'aws-0-ap-northeast-1.pooler.supabase.com';
+    $port = '5432';
+}
+
 // 2. If environment variables are not set, fall back to old detection logic
 if (empty($host)) {
     $is_local = false;

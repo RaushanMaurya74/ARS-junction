@@ -19,20 +19,29 @@ if (strpos($path, '..') !== false) {
     die('Forbidden');
 }
 
+// Redirect directories to trailing slash version to ensure correct asset resolution
+if (is_dir($path)) {
+    header("Location: /" . $path . "/");
+    exit;
+}
+
+// Only allow executing files ending with .php
+$isPhp = (substr($path, -4) === '.php');
+
 // If the requested path is a PHP file that exists in the root, require it
-if (file_exists($path)) {
+if ($isPhp && is_file($path)) {
     require $path;
     exit;
 }
 
 // Check if it exists with .php extension
-if (file_exists($path . '.php')) {
+if (is_file($path . '.php')) {
     require $path . '.php';
     exit;
 }
 
 // Fallback to index.php if the path matches nothing
-if (file_exists('index.php')) {
+if (is_file('index.php')) {
     require 'index.php';
     exit;
 }

@@ -21,20 +21,29 @@ if (strpos($path, '..') !== false) {
 
 $file = 'admin/' . $path;
 
+// Redirect directories to trailing slash version to ensure correct asset resolution
+if (is_dir($file)) {
+    header("Location: /" . $file . "/");
+    exit;
+}
+
+// Only allow executing files ending with .php
+$isPhp = (substr($file, -4) === '.php');
+
 // If the requested file exists, require it
-if (file_exists($file)) {
+if ($isPhp && is_file($file)) {
     require $file;
     exit;
 }
 
 // Check if it exists with .php extension
-if (file_exists($file . '.php')) {
+if (is_file($file . '.php')) {
     require $file . '.php';
     exit;
 }
 
 // Fallback to admin/index.php
-if (file_exists('admin/index.php')) {
+if (is_file('admin/index.php')) {
     require 'admin/index.php';
     exit;
 }
