@@ -337,3 +337,115 @@ function showToast(message, type = 'success') {
         this.remove();
     });
 }
+
+// Web Audio Synth for Customer order update chime (Delightful double upward beep)
+function playCustomerNotificationSound() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        playNotificationBeep(audioCtx, 659.25, 0.15, 'sine'); // E5
+        setTimeout(() => playNotificationBeep(audioCtx, 880, 0.25, 'sine'), 120); // A5
+    } catch (e) {
+        console.warn('AudioContext failed:', e);
+    }
+}
+
+function playNotificationBeep(ctx, frequency, duration, type) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = frequency;
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+}
+
+// Polling Customer Order Updates
+document.addEventListener('DOMContentLoaded', function() {
+    let lastOrderStatuses = {}; // Store order_id -> status mapping
+    let pollIntervalId = null;
+
+    function pollCustomerOrders() {
+        // Find path prefix dynamically depending on page location
+        const pathPrefix = window.location.pathname.includes('/admin/') || window.location.pathname.includes('/delivery/') ? '../' : '';
+        fetch(pathPrefix + 'api/poll_notifications.php?role=customer')
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                if (data.message === 'Unauthorized') {
+                    // Stop polling if unauthorized (not logged in)
+                    if (pollIntervalId) {
+                        clearInterval(pollIntervalId);
+                    }
+                }
+                return;
+            }
+
+            const currentOrders = data.orders || [];
+            let statusChanged = false;
+
+            currentOrders.forEach(order => {
+                const orderId = order.order_id;
+                const newStatus = order.order_status;
+                const oldStatus = lastOrderStatuses[orderId];
+
+                if (oldStatus !== undefined && oldStatus !== newStatus) {
+                    statusChanged = true;
+                    
+                    // Show visual floating banner
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-info border-primary alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x m-3 shadow-lg';
+                    alertDiv.style.zIndex = '9999';
+                    alertDiv.style.minWidth = '300px';
+                    alertDiv.innerHTML = `
+                        <strong><i class="fas fa-utensils text-primary me-2"></i>Order Update!</strong> 
+                        Your order #${orderId} is now <span class="badge bg-primary text-uppercase">${newStatus}</span>.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.body.appendChild(alertDiv);
+                    
+                    // Auto close alert
+                    setTimeout(() => {
+                        alertDiv.remove();
+                    }, 6000);
+
+                    // Refresh page if on order_tracking.php
+                    const currentFile = window.location.pathname.split("/").pop();
+                    if (currentFile === 'order_tracking.php') {
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2500);
+                    }
+                }
+                
+                // Save the new status
+                lastOrderStatuses[orderId] = newStatus;
+            });
+
+            // Update statuses and play sound if changed
+            if (statusChanged) {
+                playCustomerNotificationSound();
+            }
+
+            // Also clean up any orders that are no longer active (delivered/cancelled)
+            const activeIds = currentOrders.map(o => o.order_id);
+            Object.keys(lastOrderStatuses).forEach(id => {
+                if (!activeIds.includes(parseInt(id))) {
+                    delete lastOrderStatuses[id];
+                }
+            });
+        })
+        .catch(err => console.error('Error polling customer orders:', err));
+    }
+
+    // Start polling if not in admin or delivery portals
+    const currentPath = window.location.pathname;
+    if (!currentPath.includes('/admin/') && !currentPath.includes('/delivery/')) {
+        // Poll every 6 seconds
+        pollIntervalId = setInterval(pollCustomerOrders, 6000);
+        // Run initial check
+        setTimeout(pollCustomerOrders, 1000);
+    }
+});

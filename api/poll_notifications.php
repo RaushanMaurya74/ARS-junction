@@ -55,6 +55,29 @@ elseif ($role === 'delivery') {
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
 } 
+elseif ($role === 'customer') {
+    // Check if user is logged in
+    if (!isset($_SESSION['user_id'])) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+        exit;
+    }
+    
+    $user_id = $_SESSION['user_id'];
+    
+    try {
+        // Find user's active orders (not delivered and not cancelled)
+        $stmt = $conn->prepare("SELECT order_id, order_status FROM orders WHERE user_id = ? AND order_status NOT IN ('delivered', 'cancelled')");
+        $stmt->execute([$user_id]);
+        $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode([
+            'success' => true,
+            'orders' => $orders
+        ]);
+    } catch (PDOException $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
 else {
     echo json_encode(['success' => false, 'message' => 'Invalid role']);
 }
