@@ -13,7 +13,7 @@ $sql = "SELECT m.*, r.name as restaurant_name, c.name as category_name
        FROM menu_items m 
        JOIN restaurants r ON m.restaurant_id = r.restaurant_id 
        JOIN categories c ON m.category_id = c.category_id 
-       WHERE m.is_available = TRUE AND r.is_active = TRUE";
+        WHERE m.is_available = 1 AND r.is_active = 1";
 
 // Add category filter if selected
 if ($category_filter > 0) {

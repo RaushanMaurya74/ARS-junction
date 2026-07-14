@@ -64,7 +64,7 @@ function get_featured_restaurants($limit = 4) {
            (SELECT AVG(rating) FROM reviews WHERE restaurant_id = r.restaurant_id) as avg_rating,
            (SELECT COUNT(*) FROM reviews WHERE restaurant_id = r.restaurant_id) as review_count
            FROM restaurants r 
-           WHERE r.is_active = TRUE 
+           WHERE r.is_active = 1 
            ORDER BY avg_rating DESC, review_count DESC 
            LIMIT :limit";
     
@@ -81,7 +81,7 @@ function get_featured_menu_items($limit = 8) {
     $sql = "SELECT m.*, r.name as restaurant_name 
            FROM menu_items m 
            JOIN restaurants r ON m.restaurant_id = r.restaurant_id 
-           WHERE m.is_featured = TRUE AND m.is_available = TRUE AND r.is_active = TRUE 
+           WHERE m.is_featured = 1 AND m.is_available = 1 AND r.is_active = 1 
            ORDER BY RAND() 
            LIMIT :limit";
     
@@ -100,7 +100,7 @@ function get_restaurant_menu_by_category($restaurant_id) {
     $sql = "SELECT DISTINCT c.* 
            FROM categories c 
            JOIN menu_items m ON c.category_id = m.category_id 
-           WHERE m.restaurant_id = :restaurant_id AND m.is_available = TRUE 
+           WHERE m.restaurant_id = :restaurant_id AND m.is_available = 1 
            ORDER BY c.name";
     
     $stmt = $conn->prepare($sql);
@@ -113,7 +113,7 @@ function get_restaurant_menu_by_category($restaurant_id) {
     foreach ($categories as $category) {
         // For each category, get all menu items
         $sql = "SELECT * FROM menu_items 
-               WHERE restaurant_id = :restaurant_id AND category_id = :category_id AND is_available = TRUE 
+               WHERE restaurant_id = :restaurant_id AND category_id = :category_id AND is_available = 1 
                ORDER BY name";
         
         $stmt = $conn->prepare($sql);

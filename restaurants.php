@@ -10,7 +10,7 @@ $sql = "SELECT r.*,
        (SELECT AVG(rating) FROM reviews WHERE restaurant_id = r.restaurant_id) as avg_rating,
        (SELECT COUNT(*) FROM reviews WHERE restaurant_id = r.restaurant_id) as review_count
        FROM restaurants r 
-       WHERE r.is_active = TRUE 
+       WHERE r.is_active = 1 
        ORDER BY r.name";
 $stmt = $conn->query($sql);
 $restaurants = $stmt->fetchAll(PDO::FETCH_ASSOC);
