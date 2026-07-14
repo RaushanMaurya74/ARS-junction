@@ -77,6 +77,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $result = register_user($name, $email, $password, $phone);
         
         if ($result['success']) {
+            send_welcome_email($result['user_id']);
             $redirect = isset($_SESSION['redirect_after_login']) ? $_SESSION['redirect_after_login'] : 'index.php';
             unset($_SESSION['redirect_after_login']);
             header("Location: $redirect");

@@ -58,6 +58,11 @@ if (!in_array($provider, ['facebook', 'google'])) {
 $result = social_login($name, $email, $social_id, $provider);
 
 if ($result['success']) {
+    if ($result['new_user']) {
+        send_welcome_email($result['user_id']);
+    } else {
+        send_login_confirmation_email($result['user_id']);
+    }
     // Determine redirect URL
     $redirect = isset($_SESSION['redirect_after_login']) ? $_SESSION['redirect_after_login'] : 'index.php';
     unset($_SESSION['redirect_after_login']);

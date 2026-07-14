@@ -23,6 +23,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user = authenticate_user($email, $password);
     
     if ($user) {
+        send_login_confirmation_email($_SESSION['user_id']);
         // Redirect to intended page or home
         $redirect = isset($_SESSION['redirect_after_login']) ? $_SESSION['redirect_after_login'] : 'index.php';
         unset($_SESSION['redirect_after_login']);

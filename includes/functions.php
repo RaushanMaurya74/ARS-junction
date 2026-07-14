@@ -654,4 +654,171 @@ function auto_assign_confirmed_orders() {
         }
     }
 }
+
+// Send welcome / registration confirmation email
+function send_welcome_email($user_id) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT * FROM users WHERE user_id = ?");
+    $stmt->execute([$user_id]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$user) return false;
+
+    $site_name = get_site_setting('site_name', 'ARS Junction');
+    $site_email = get_site_setting('site_email', 'officialarsjunction@gmail.com');
+    $site_phone = get_site_setting('site_phone', '7979730721');
+    $site_location = get_site_setting('site_location', 'AT - PIRO, BHOJPUR, BIHAR, INDIA-802207');
+
+    $buyer_name = htmlspecialchars($user['name']);
+    $buyer_email = htmlspecialchars($user['email']);
+
+    $htmlContent = "
+    <!DOCTYPE html>
+    <html lang='en'>
+    <head>
+        <meta charset='UTF-8'>
+        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+        <title>Welcome to {$site_name}</title>
+        <style>
+            body { font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background-color: #f6f9fc; margin: 0; padding: 0; color: #333333; }
+            .email-container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #e1e6eb; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+            .header { background: linear-gradient(135deg, #FF5722 0%, #E64A19 100%); color: #ffffff; padding: 30px; text-align: center; }
+            .header h1 { margin: 0; font-size: 24px; font-weight: bold; letter-spacing: 0.5px; }
+            .content { padding: 30px; }
+            .greeting { font-size: 18px; font-weight: 600; margin-top: 0; color: #111111; }
+            .details-card { background-color: #f8f9fa; border-radius: 6px; padding: 15px; margin: 20px 0; font-size: 13.5px; line-height: 1.5; border: 1px solid #eaedf1; }
+            .details-card h4 { margin: 0 0 10px 0; color: #E64A19; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
+            .footer { background-color: #f1f4f7; text-align: center; padding: 20px; font-size: 12px; color: #666666; border-top: 1px solid #e1e6eb; }
+            .btn { display: inline-block; padding: 12px 24px; background-color: #FF5722; color: #ffffff !important; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; margin-top: 15px; }
+        </style>
+    </head>
+    <body>
+        <div class='email-container'>
+            <div class='header'>
+                <h1>Welcome to {$site_name}!</h1>
+                <p style='margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;'>Your Account has been successfully confirmed</p>
+            </div>
+            <div class='content'>
+                <p class='greeting'>Dear {$buyer_name},</p>
+                <p>Welcome to {$site_name}! We are absolutely thrilled to have you join our food community. 🍔✨</p>
+                <p>Your account has been registered successfully. You can now log in, explore popular local restaurants, build your cart, and track your food deliveries in real-time.</p>
+                
+                <div class='details-card'>
+                    <h4>Account Details</h4>
+                    <p style='margin: 0 0 5px 0;'><strong>Name:</strong> {$buyer_name}</p>
+                    <p style='margin: 0;'><strong>Registered Email:</strong> {$buyer_email}</p>
+                </div>
+
+                <div style='text-align: center;'>
+                    <a href='\" . get_site_setting('site_url', 'https://ars-junction.vercel.app/') . \"' class='btn'>Explore Food & Restaurants</a>
+                </div>
+            </div>
+            <div class='footer'>
+                <p style='margin: 0 0 5px 0;'><strong>{$site_name} Support</strong></p>
+                <p style='margin: 0 0 10px 0;'>{$site_location} | Phone: +91 {$site_phone}</p>
+                <p style='margin: 0; font-size: 11px; color: #999999;'>This is a system generated welcome email. Please do not reply directly to this mail.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    ";
+
+    $email_dir = dirname(__DIR__) . '/uploads/emails';
+    if (!file_exists($email_dir)) {
+        @mkdir($email_dir, 0777, true);
+    }
+    $preview_file = $email_dir . "/welcome_{$user_id}.html";
+    @file_put_contents($preview_file, $htmlContent);
+
+    $to = $buyer_email;
+    $subject = "Welcome to {$site_name}! Account Confirmed";
+    $headers = "MIME-Version: 1.0" . "\r\n";
+    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+    $headers .= "From: {$site_name} <noreply@arsjunction.com>" . "\r\n";
+    $headers .= "Reply-To: {$site_email}" . "\r\n";
+
+    return @mail($to, $subject, $htmlContent, $headers);
+}
+
+// Send login alert confirmation email
+function send_login_confirmation_email($user_id) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT * FROM users WHERE user_id = ?");
+    $stmt->execute([$user_id]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$user) return false;
+
+    $site_name = get_site_setting('site_name', 'ARS Junction');
+    $site_email = get_site_setting('site_email', 'officialarsjunction@gmail.com');
+    $site_phone = get_site_setting('site_phone', '7979730721');
+    $site_location = get_site_setting('site_location', 'AT - PIRO, BHOJPUR, BIHAR, INDIA-802207');
+
+    $buyer_name = htmlspecialchars($user['name']);
+    $buyer_email = htmlspecialchars($user['email']);
+    $login_time = date('F d, Y h:i A');
+
+    $htmlContent = "
+    <!DOCTYPE html>
+    <html lang='en'>
+    <head>
+        <meta charset='UTF-8'>
+        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+        <title>Account Login Confirmation - {$site_name}</title>
+        <style>
+            body { font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background-color: #f6f9fc; margin: 0; padding: 0; color: #333333; }
+            .email-container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #e1e6eb; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+            .header { background: linear-gradient(135deg, #FF5722 0%, #E64A19 100%); color: #ffffff; padding: 30px; text-align: center; }
+            .header h1 { margin: 0; font-size: 24px; font-weight: bold; letter-spacing: 0.5px; }
+            .content { padding: 30px; }
+            .greeting { font-size: 18px; font-weight: 600; margin-top: 0; color: #111111; }
+            .details-card { background-color: #f8f9fa; border-radius: 6px; padding: 15px; margin: 20px 0; font-size: 13.5px; line-height: 1.5; border: 1px solid #eaedf1; }
+            .details-card h4 { margin: 0 0 10px 0; color: #E64A19; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
+            .footer { background-color: #f1f4f7; text-align: center; padding: 20px; font-size: 12px; color: #666666; border-top: 1px solid #e1e6eb; }
+            .btn { display: inline-block; padding: 12px 24px; background-color: #FF5722; color: #ffffff !important; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; margin-top: 15px; }
+        </style>
+    </head>
+    <body>
+        <div class='email-container'>
+            <div class='header'>
+                <h1>Login Security Alert</h1>
+                <p style='margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;'>New sign-in detected on your account</p>
+            </div>
+            <div class='content'>
+                <p class='greeting'>Hello {$buyer_name},</p>
+                <p>We wanted to let you know that a successful login was just completed on your account with {$site_name}. 🔒</p>
+                
+                <div class='details-card'>
+                    <h4>Login Details</h4>
+                    <p style='margin: 0 0 5px 0;'><strong>Account Email:</strong> {$buyer_email}</p>
+                    <p style='margin: 0;'><strong>Time:</strong> {$login_time}</p>
+                </div>
+
+                <p style='color: #666; font-size: 13px;'>If this was you, you can safely ignore this email. If you did not log in, please secure your account immediately or contact support.</p>
+            </div>
+            <div class='footer'>
+                <p style='margin: 0 0 5px 0;'><strong>{$site_name} Support</strong></p>
+                <p style='margin: 0 0 10px 0;'>{$site_location} | Phone: +91 {$site_phone}</p>
+                <p style='margin: 0; font-size: 11px; color: #999999;'>This is a security alert. Please do not reply directly to this mail.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    ";
+
+    $email_dir = dirname(__DIR__) . '/uploads/emails';
+    if (!file_exists($email_dir)) {
+        @mkdir($email_dir, 0777, true);
+    }
+    $timestamp = time();
+    $preview_file = $email_dir . "/login_confirm_{$user_id}_{$timestamp}.html";
+    @file_put_contents($preview_file, $htmlContent);
+
+    $to = $buyer_email;
+    $subject = "Security Alert: Successful Login - {$site_name}";
+    $headers = "MIME-Version: 1.0" . "\r\n";
+    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+    $headers .= "From: {$site_name} <noreply@arsjunction.com>" . "\r\n";
+    $headers .= "Reply-To: {$site_email}" . "\r\n";
+
+    return @mail($to, $subject, $htmlContent, $headers);
+}
 ?>
