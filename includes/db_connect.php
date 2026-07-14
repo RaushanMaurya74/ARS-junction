@@ -204,7 +204,78 @@ try {
     }
 }
 
+class CookieSessionHandler implements SessionHandlerInterface {
+    private $key;
+    private $cookie_name = 'ARS_SESSION';
+
+    public function __construct() {
+        $this->key = hash('sha256', 'Maurya1055@#!', true);
+    }
+
+    public function open($savePath, $sessionName): bool {
+        return true;
+    }
+
+    public function close(): bool {
+        return true;
+    }
+
+    public function read($id): string {
+        if (isset($_COOKIE[$this->cookie_name])) {
+            $data = $_COOKIE[$this->cookie_name];
+            $decoded = base64_decode($data);
+            if ($decoded !== false) {
+                $iv_length = openssl_cipher_iv_length('aes-256-cbc');
+                $iv = substr($decoded, 0, $iv_length);
+                $encrypted = substr($decoded, $iv_length);
+                $decrypted = openssl_decrypt($encrypted, 'aes-256-cbc', $this->key, 0, $iv);
+                if ($decrypted !== false) {
+                    return $decrypted;
+                }
+            }
+        }
+        return '';
+    }
+
+    public function write($id, $data): bool {
+        $iv_length = openssl_cipher_iv_length('aes-256-cbc');
+        $iv = openssl_random_pseudo_bytes($iv_length);
+        $encrypted = openssl_encrypt($data, 'aes-256-cbc', $this->key, 0, $iv);
+        if ($encrypted !== false) {
+            $cookie_val = base64_encode($iv . $encrypted);
+            $secure = isset($_SERVER['HTTPS']) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+            setcookie($this->cookie_name, $cookie_val, [
+                'expires' => 0,
+                'path' => '/',
+                'secure' => $secure,
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]);
+            return true;
+        }
+        return false;
+    }
+
+    public function destroy($id): bool {
+        $secure = isset($_SERVER['HTTPS']) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+        setcookie($this->cookie_name, '', [
+            'expires' => time() - 3600,
+            'path' => '/',
+            'secure' => $secure,
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ]);
+        return true;
+    }
+
+    public function gc($maxlifetime): int|false {
+        return true;
+    }
+}
+
 if (session_status() === PHP_SESSION_NONE) {
+    $handler = new CookieSessionHandler();
+    session_set_save_handler($handler, true);
     session_start();
 }
 ?>

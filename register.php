@@ -39,15 +39,6 @@ function is_real_email($email) {
         return false;
     }
     
-    // Check MX/A records
-    if (function_exists('checkdnsrr')) {
-        $has_mx = @checkdnsrr($domain, 'MX');
-        $has_a = @checkdnsrr($domain, 'A');
-        if (!$has_mx && !$has_a) {
-            return false;
-        }
-    }
-    
     return true;
 }
 

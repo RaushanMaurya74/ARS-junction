@@ -1,6 +1,6 @@
 <?php
 // Redirect to dashboard if already logged in
-session_start();
+require_once '../includes/db_connect.php';
 if (isset($_SESSION['admin_id'])) {
     header("Location: dashboard.php");
     exit;
