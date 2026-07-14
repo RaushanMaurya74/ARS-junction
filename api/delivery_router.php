@@ -32,19 +32,22 @@ $isPhp = (substr($file, -4) === '.php');
 
 // If the requested file exists, require it
 if ($isPhp && is_file($file)) {
-    require $file;
+    chdir(dirname(__DIR__) . '/delivery');
+    require basename($file);
     exit;
 }
 
 // Check if it exists with .php extension
 if (is_file($file . '.php')) {
-    require $file . '.php';
+    chdir(dirname(__DIR__) . '/delivery');
+    require basename($file) . '.php';
     exit;
 }
 
 // Fallback to delivery/index.php
 if (is_file('delivery/index.php')) {
-    require 'delivery/index.php';
+    chdir(dirname(__DIR__) . '/delivery');
+    require 'index.php';
     exit;
 }
 
