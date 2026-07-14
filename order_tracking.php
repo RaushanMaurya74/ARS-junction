@@ -538,100 +538,97 @@ document.addEventListener('DOMContentLoaded', function() {
     let customerMarker = null;
     let gpsInterval = null;
 
-    function initGpsTracking() {
-        if (typeof L === 'undefined') {
-            console.warn('Leaflet library not loaded.');
-            return;
-        }
-
-        const mapContainer = document.getElementById('live-gps-map');
-        if (!mapContainer) return;
-
-        fetch('api/get_delivery_location.php?order_id=' + orderId)
+    function pollGpsLocation() {
+        fetch('api/get_delivery_location.php?order_id=' + orderId + '&_=' + Date.now())
         .then(res => res.json())
         .then(data => {
             if (data.success && data.assigned && data.delivery_boy.latitude && data.delivery_boy.longitude) {
-                document.getElementById('live-map-card').style.display = 'block';
-                document.getElementById('tracker-boy-name').textContent = escapeHtml(data.delivery_boy.name);
+                const dbLat = data.delivery_boy.latitude;
+                const dbLng = data.delivery_boy.longitude;
+                const resLat = data.restaurant.lat;
+                const resLng = data.restaurant.lng;
                 
+                // Mock customer location slightly offset near restaurant for the tracking visualization
+                const custLat = resLat + 0.005;
+                const custLng = resLng + 0.005;
+
+                // Show the map card container
+                const mapCard = document.getElementById('live-map-card');
+                if (mapCard && mapCard.style.display === 'none') {
+                    mapCard.style.display = 'block';
+                }
+
+                // Update text details
+                const boyNameEl = document.getElementById('tracker-boy-name');
+                if (boyNameEl) {
+                    boyNameEl.textContent = escapeHtml(data.delivery_boy.name);
+                }
                 const callBtn = document.getElementById('call-boy-btn');
                 if (callBtn && data.delivery_boy.phone) {
                     callBtn.href = 'tel:' + data.delivery_boy.phone;
                 }
 
-                const dbLat = data.delivery_boy.latitude;
-                const dbLng = data.delivery_boy.longitude;
-                const resLat = data.restaurant.lat;
-                const resLng = data.restaurant.lng;
+                // If map is not initialized yet, initialize it
+                if (!gpsMap) {
+                    gpsMap = L.map('live-gps-map').setView([dbLat, dbLng], 14);
 
-                // Mock customer location slightly offset near restaurant for the tracking visualization
-                const custLat = resLat + 0.005;
-                const custLng = resLng + 0.005;
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap contributors'
+                    }).addTo(gpsMap);
 
-                gpsMap = L.map('live-gps-map').setView([dbLat, dbLng], 14);
+                    const bikeIcon = L.divIcon({
+                        html: '<div style="background-color: #0d6efd; color: white; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><i class="fas fa-motorcycle" style="font-size: 16px;"></i></div>',
+                        className: '',
+                        iconSize: [35, 35],
+                        iconAnchor: [17, 17]
+                    });
 
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap contributors'
-                }).addTo(gpsMap);
+                    const shopIcon = L.divIcon({
+                        html: '<div style="background-color: #dc3545; color: white; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><i class="fas fa-store" style="font-size: 16px;"></i></div>',
+                        className: '',
+                        iconSize: [35, 35],
+                        iconAnchor: [17, 17]
+                    });
 
-                const bikeIcon = L.divIcon({
-                    html: '<div style="background-color: #0d6efd; color: white; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><i class="fas fa-motorcycle" style="font-size: 16px;"></i></div>',
-                    className: '',
-                    iconSize: [35, 35],
-                    iconAnchor: [17, 17]
-                });
+                    const homeIcon = L.divIcon({
+                        html: '<div style="background-color: #198754; color: white; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><i class="fas fa-home" style="font-size: 16px;"></i></div>',
+                        className: '',
+                        iconSize: [35, 35],
+                        iconAnchor: [17, 17]
+                    });
 
-                const shopIcon = L.divIcon({
-                    html: '<div style="background-color: #dc3545; color: white; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><i class="fas fa-store" style="font-size: 16px;"></i></div>',
-                    className: '',
-                    iconSize: [35, 35],
-                    iconAnchor: [17, 17]
-                });
+                    restaurantMarker = L.marker([resLat, resLng], {icon: shopIcon}).addTo(gpsMap).bindPopup('Restaurant');
+                    customerMarker = L.marker([custLat, custLng], {icon: homeIcon}).addTo(gpsMap).bindPopup('Your Delivery Address');
+                    deliveryBoyMarker = L.marker([dbLat, dbLng], {icon: bikeIcon}).addTo(gpsMap).bindPopup('Delivery Agent: ' + escapeHtml(data.delivery_boy.name));
 
-                const homeIcon = L.divIcon({
-                    html: '<div style="background-color: #198754; color: white; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><i class="fas fa-home" style="font-size: 16px;"></i></div>',
-                    className: '',
-                    iconSize: [35, 35],
-                    iconAnchor: [17, 17]
-                });
+                    const group = new L.featureGroup([restaurantMarker, customerMarker, deliveryBoyMarker]);
+                    gpsMap.fitBounds(group.getBounds().pad(0.1));
 
-                restaurantMarker = L.marker([resLat, resLng], {icon: shopIcon}).addTo(gpsMap).bindPopup('Restaurant');
-                customerMarker = L.marker([custLat, custLng], {icon: homeIcon}).addTo(gpsMap).bindPopup('Your Delivery Address');
-                deliveryBoyMarker = L.marker([dbLat, dbLng], {icon: bikeIcon}).addTo(gpsMap).bindPopup('Delivery Agent: ' + escapeHtml(data.delivery_boy.name));
-
-                const group = new L.featureGroup([restaurantMarker, customerMarker, deliveryBoyMarker]);
-                gpsMap.fitBounds(group.getBounds().pad(0.1));
-
-                document.getElementById('gps-status-badge').textContent = 'Live Tracking';
-                document.getElementById('gps-status-badge').className = 'badge bg-success';
-
-                startGpsPolling();
-            }
-        })
-        .catch(err => console.error('Error initializing GPS tracking:', err));
-    }
-
-    function startGpsPolling() {
-        gpsInterval = setInterval(function() {
-            fetch('api/get_delivery_location.php?order_id=' + orderId)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.assigned && data.delivery_boy.latitude && data.delivery_boy.longitude) {
-                    const lat = data.delivery_boy.latitude;
-                    const lng = data.delivery_boy.longitude;
-                    
+                    document.getElementById('gps-status-badge').textContent = 'Live Tracking';
+                    document.getElementById('gps-status-badge').className = 'badge bg-success';
+                } else {
+                    // Map is already initialized, just update agent marker and bounds
                     if (deliveryBoyMarker) {
-                        deliveryBoyMarker.setLatLng([lat, lng]);
+                        deliveryBoyMarker.setLatLng([dbLat, dbLng]);
                     }
-                    
-                    if (gpsMap && restaurantMarker && customerMarker && deliveryBoyMarker) {
+                    if (restaurantMarker && customerMarker && deliveryBoyMarker) {
                         const group = new L.featureGroup([restaurantMarker, customerMarker, deliveryBoyMarker]);
                         gpsMap.fitBounds(group.getBounds().pad(0.1));
                     }
                 }
-            })
-            .catch(err => console.error('Error updating GPS tracking:', err));
-        }, 5000);
+            }
+        })
+        .catch(err => console.error('Error polling GPS location:', err));
+    }
+
+    function initGpsTracking() {
+        if (typeof L === 'undefined') {
+            console.warn('Leaflet library not loaded.');
+            return;
+        }
+        
+        pollGpsLocation(); // Initial check
+        gpsInterval = setInterval(pollGpsLocation, 4000);
     }
 
     if (orderId > 0 && currentStatus !== 'delivered' && currentStatus !== 'cancelled') {
@@ -640,7 +637,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (orderId > 0 && currentStatus !== 'delivered' && currentStatus !== 'cancelled') {
         const interval = setInterval(function() {
-            fetch('api/get_order_status.php?order_id=' + orderId)
+            fetch('api/get_order_status.php?order_id=' + orderId + '&_=' + Date.now())
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
