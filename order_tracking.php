@@ -201,6 +201,7 @@ if (!$single_order) {
                                     <?php echo date('h:i A', strtotime($order['order_date'] . ' +' . $restaurant['delivery_time'] . ' minutes')); ?>
                                 </p>
                             </div>
+                            <?php endif; ?>
                         </div>
                         
                         <!-- Live GPS Tracking Map -->
