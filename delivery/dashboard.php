@@ -526,6 +526,51 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(pollDeliveryOrders, 5000);
     // Initial check
     setTimeout(pollDeliveryOrders, 1000);
+
+    // HTML5 Geolocation Watcher for live location updates
+    let watchId = null;
+    function startLocationTracking() {
+        if ('geolocation' in navigator) {
+            watchId = navigator.geolocation.watchPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    const formData = new FormData();
+                    formData.append('latitude', lat);
+                    formData.append('longitude', lng);
+                    
+                    fetch('../api/update_location.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.success) {
+                            console.warn('Location update failed:', data.message);
+                        }
+                    })
+                    .catch(err => console.error('Error sending GPS coords:', err));
+                },
+                function(error) {
+                    console.warn('Geolocation error:', error.message);
+                },
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 10000,
+                    timeout: 5000
+                }
+            );
+        } else {
+            console.warn('Geolocation not supported by this browser.');
+        }
+    }
+    
+    // Start tracking if there are active deliveries displayed on dashboard
+    const hasActiveOrders = document.querySelectorAll('span.badge.bg-warning, span.badge.bg-info, span.badge.bg-primary').length > 0;
+    if (hasActiveOrders) {
+        startLocationTracking();
+    }
 });
 </script>
 

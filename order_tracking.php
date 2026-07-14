@@ -11,6 +11,8 @@ if (!is_logged_in()) {
 }
 
 $page_title = "Order Tracking";
+$extra_css = '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />';
+$extra_js = '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>';
 require_once 'includes/header.php';
 
 $user_id = $_SESSION['user_id'];
@@ -199,7 +201,27 @@ if (!$single_order) {
                                     <?php echo date('h:i A', strtotime($order['order_date'] . ' +' . $restaurant['delivery_time'] . ' minutes')); ?>
                                 </p>
                             </div>
-                            <?php endif; ?>
+                        </div>
+                        
+                        <!-- Live GPS Tracking Map -->
+                        <div id="live-map-card" class="card mb-4 border-primary shadow-sm" style="display: none;">
+                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-2.5">
+                                <h6 class="mb-0 fw-bold"><i class="fas fa-map-marked-alt me-2 animate__animated animate__pulse animate__infinite"></i>Live GPS Delivery Tracker</h6>
+                                <span class="badge bg-light text-primary" id="gps-status-badge">Locating...</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="live-gps-map" style="height: 350px; width: 100%;"></div>
+                            </div>
+                            <div class="card-footer bg-light py-2">
+                                <div class="row align-items-center small">
+                                    <div class="col-8">
+                                        <i class="fas fa-motorcycle text-primary me-1"></i> <span id="tracker-boy-name">Your delivery agent</span> is en route.
+                                    </div>
+                                    <div class="col-4 text-end">
+                                        <a href="#" id="call-boy-btn" class="btn btn-xs btn-outline-primary py-1 px-2.5 rounded"><i class="fas fa-phone-alt"></i> Call</a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <div id="delivered-actions-wrapper" style="<?php echo ($order['order_status'] === 'delivered') ? '' : 'display: none;'; ?>">
@@ -508,6 +530,113 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentPayment = <?php echo json_encode($order['payment_status']); ?>;
     let currentDeliveryBoy = <?php echo json_encode($order['delivery_boy_id'] ?? ''); ?>;
 
+    // --- Live GPS Tracking Leaflet Integration ---
+    let gpsMap = null;
+    let deliveryBoyMarker = null;
+    let restaurantMarker = null;
+    let customerMarker = null;
+    let gpsInterval = null;
+
+    function initGpsTracking() {
+        if (typeof L === 'undefined') {
+            console.warn('Leaflet library not loaded.');
+            return;
+        }
+
+        const mapContainer = document.getElementById('live-gps-map');
+        if (!mapContainer) return;
+
+        fetch('api/get_delivery_location.php?order_id=' + orderId)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.assigned && data.delivery_boy.latitude && data.delivery_boy.longitude) {
+                document.getElementById('live-map-card').style.display = 'block';
+                document.getElementById('tracker-boy-name').textContent = escapeHtml(data.delivery_boy.name);
+                
+                const callBtn = document.getElementById('call-boy-btn');
+                if (callBtn && data.delivery_boy.phone) {
+                    callBtn.href = 'tel:' + data.delivery_boy.phone;
+                }
+
+                const dbLat = data.delivery_boy.latitude;
+                const dbLng = data.delivery_boy.longitude;
+                const resLat = data.restaurant.lat;
+                const resLng = data.restaurant.lng;
+
+                // Mock customer location slightly offset near restaurant for the tracking visualization
+                const custLat = resLat + 0.005;
+                const custLng = resLng + 0.005;
+
+                gpsMap = L.map('live-gps-map').setView([dbLat, dbLng], 14);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(gpsMap);
+
+                const bikeIcon = L.divIcon({
+                    html: '<div style="background-color: #0d6efd; color: white; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><i class="fas fa-motorcycle" style="font-size: 16px;"></i></div>',
+                    className: '',
+                    iconSize: [35, 35],
+                    iconAnchor: [17, 17]
+                });
+
+                const shopIcon = L.divIcon({
+                    html: '<div style="background-color: #dc3545; color: white; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><i class="fas fa-store" style="font-size: 16px;"></i></div>',
+                    className: '',
+                    iconSize: [35, 35],
+                    iconAnchor: [17, 17]
+                });
+
+                const homeIcon = L.divIcon({
+                    html: '<div style="background-color: #198754; color: white; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><i class="fas fa-home" style="font-size: 16px;"></i></div>',
+                    className: '',
+                    iconSize: [35, 35],
+                    iconAnchor: [17, 17]
+                });
+
+                restaurantMarker = L.marker([resLat, resLng], {icon: shopIcon}).addTo(gpsMap).bindPopup('Restaurant');
+                customerMarker = L.marker([custLat, custLng], {icon: homeIcon}).addTo(gpsMap).bindPopup('Your Delivery Address');
+                deliveryBoyMarker = L.marker([dbLat, dbLng], {icon: bikeIcon}).addTo(gpsMap).bindPopup('Delivery Agent: ' + escapeHtml(data.delivery_boy.name));
+
+                const group = new L.featureGroup([restaurantMarker, customerMarker, deliveryBoyMarker]);
+                gpsMap.fitBounds(group.getBounds().pad(0.1));
+
+                document.getElementById('gps-status-badge').textContent = 'Live Tracking';
+                document.getElementById('gps-status-badge').className = 'badge bg-success';
+
+                startGpsPolling();
+            }
+        })
+        .catch(err => console.error('Error initializing GPS tracking:', err));
+    }
+
+    function startGpsPolling() {
+        gpsInterval = setInterval(function() {
+            fetch('api/get_delivery_location.php?order_id=' + orderId)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.assigned && data.delivery_boy.latitude && data.delivery_boy.longitude) {
+                    const lat = data.delivery_boy.latitude;
+                    const lng = data.delivery_boy.longitude;
+                    
+                    if (deliveryBoyMarker) {
+                        deliveryBoyMarker.setLatLng([lat, lng]);
+                    }
+                    
+                    if (gpsMap && restaurantMarker && customerMarker && deliveryBoyMarker) {
+                        const group = new L.featureGroup([restaurantMarker, customerMarker, deliveryBoyMarker]);
+                        gpsMap.fitBounds(group.getBounds().pad(0.1));
+                    }
+                }
+            })
+            .catch(err => console.error('Error updating GPS tracking:', err));
+        }, 5000);
+    }
+
+    if (orderId > 0 && currentStatus !== 'delivered' && currentStatus !== 'cancelled') {
+        initGpsTracking();
+    }
+
     if (orderId > 0 && currentStatus !== 'delivered' && currentStatus !== 'cancelled') {
         const interval = setInterval(function() {
             fetch('api/get_order_status.php?order_id=' + orderId)
@@ -636,6 +765,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 6. Handle Delivery completion actions
         if (data.order_status === 'delivered') {
+            if (gpsInterval) {
+                clearInterval(gpsInterval);
+            }
+            const mapCard = document.getElementById('live-map-card');
+            if (mapCard) mapCard.remove();
+            
             const estBox = document.getElementById('est-delivery-wrapper');
             if (estBox) estBox.remove();
             
