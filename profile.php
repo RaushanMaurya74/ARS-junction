@@ -274,7 +274,7 @@ $extra_js = '<script src="js/auth.js"></script>';
                                 <tr>
                                     <td>#<?php echo $order['order_id']; ?></td>
                                     <td><?php echo $order['restaurant_name']; ?></td>
-                                    <td><?php echo date('M d, Y', strtotime($order['order_date'])); ?></td>
+                                    <td><?php echo date('M d, Y', strtotime($order['order_date'] . ' UTC')); ?></td>
                                     <td><?php echo format_price($order['total_amount']); ?></td>
                                     <td>
                                         <span class="badge bg-<?php 

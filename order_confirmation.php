@@ -54,7 +54,7 @@ $restaurant = get_restaurant_by_id($order['restaurant_id']);
                             </div>
                             <div class="bg-light rounded p-3 px-4">
                                 <h5>Estimated Delivery</h5>
-                                <p class="mb-0 fw-bold"><?php echo date('h:i A', strtotime($order['order_date'] . ' +' . $restaurant['delivery_time'] . ' minutes')); ?></p>
+                                <p class="mb-0 fw-bold"><?php echo date('h:i A', strtotime($order['order_date'] . ' UTC +' . $restaurant['delivery_time'] . ' minutes')); ?></p>
                             </div>
                         </div>
                         <div class="text-center mb-4">

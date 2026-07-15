@@ -453,7 +453,7 @@ function send_order_confirmation_email($order_id) {
 
     $buyer_name = htmlspecialchars($order['customer_name']);
     $buyer_email = htmlspecialchars($order['customer_email']);
-    $order_date = date('F d, Y h:i A', strtotime($order['order_date']));
+    $order_date = date('F d, Y h:i A', strtotime($order['order_date'] . ' UTC'));
     $payment_method = ($order['payment_method'] === 'upi') ? 'UPI QR Code' : 'Cash on Delivery';
     
     // Build HTML email template

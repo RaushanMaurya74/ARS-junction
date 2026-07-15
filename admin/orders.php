@@ -132,7 +132,7 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
                         </div>
                         <div class="card-body">
                             <p class="mb-1"><strong>Order ID:</strong> #<?php echo $view_order['order_id']; ?></p>
-                            <p class="mb-1"><strong>Date:</strong> <?php echo date('F d, Y h:i A', strtotime($view_order['order_date'])); ?></p>
+                            <p class="mb-1"><strong>Date:</strong> <?php echo date('F d, Y h:i A', strtotime($view_order['order_date'] . ' UTC')); ?></p>
                             <p class="mb-1">
                                 <strong>Status:</strong> 
                                 <span class="badge bg-<?php 
@@ -364,7 +364,7 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
                             <td>#<?php echo $order['order_id']; ?></td>
                             <td><?php echo $order['user_name']; ?></td>
                             <td><?php echo $order['restaurant_name']; ?></td>
-                            <td><?php echo date('M d, Y H:i', strtotime($order['order_date'])); ?></td>
+                            <td><?php echo date('M d, Y H:i', strtotime($order['order_date'] . ' UTC')); ?></td>
                             <td><?php echo format_price($order['total_amount']); ?></td>
                             <td>
                                 <span class="badge bg-<?php 

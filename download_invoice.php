@@ -124,7 +124,7 @@ $currency_symbol = get_site_setting('currency_symbol', '₹');
                         <div class="col-sm-6 text-center text-sm-end">
                             <h4 class="text-primary mb-1">INVOICE</h4>
                             <p class="mb-1 text-dark"><strong>Invoice No:</strong> #<?php echo $order['order_id']; ?></p>
-                            <p class="mb-1 text-muted small"><strong>Date:</strong> <?php echo date('M d, Y h:i A', strtotime($order['order_date'])); ?></p>
+                            <p class="mb-1 text-muted small"><strong>Date:</strong> <?php echo date('M d, Y h:i A', strtotime($order['order_date'] . ' UTC')); ?></p>
                             <p class="mb-0 text-muted small"><strong>Payment Method:</strong> <?php echo ($order['payment_method'] === 'upi') ? 'UPI' : 'Cash on Delivery'; ?></p>
                         </div>
                     </div>

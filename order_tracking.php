@@ -26,7 +26,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     if ($order_id > 0) {
         $check_order = get_order_details($order_id, $user_id);
         if ($check_order) {
-            $elapsed = time() - strtotime($check_order['order_date']);
+            $elapsed = time() - strtotime($check_order['order_date'] . ' UTC');
             
             if ($check_order['order_status'] === 'pending' && $elapsed <= 180) {
                 $stmt = $conn->prepare("UPDATE orders SET order_status = 'cancelled' WHERE order_id = ?");
@@ -56,7 +56,7 @@ if ($order_id > 0) {
         $restaurant = get_restaurant_by_id($order['restaurant_id']);
         
         // Calculate seconds elapsed for frontend cancellation countdown timer
-        $seconds_elapsed = time() - strtotime($order['order_date']);
+        $seconds_elapsed = time() - strtotime($order['order_date'] . ' UTC');
         $can_cancel = ($order['order_status'] === 'pending' && $seconds_elapsed <= 180);
     } else {
         $order_id = 0;
@@ -198,7 +198,7 @@ if (!$single_order) {
                             <div class="estimated-delivery text-center mb-3">
                                 <h5>Estimated Delivery Time</h5>
                                 <p class="mb-0 lead fw-bold text-primary">
-                                    <?php echo date('h:i A', strtotime($order['order_date'] . ' +' . $restaurant['delivery_time'] . ' minutes')); ?>
+                                    <?php echo date('h:i A', strtotime($order['order_date'] . ' UTC +' . $restaurant['delivery_time'] . ' minutes')); ?>
                                 </p>
                             </div>
                             <?php endif; ?>
@@ -287,7 +287,7 @@ if (!$single_order) {
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <p class="mb-1"><strong>Order Date:</strong> <?php echo date('F d, Y h:i A', strtotime($order['order_date'])); ?></p>
+                            <p class="mb-1"><strong>Order Date:</strong> <?php echo date('F d, Y h:i A', strtotime($order['order_date'] . ' UTC')); ?></p>
                             <p class="mb-1"><strong>Payment Method:</strong> 
                                 <?php 
                                 switch($order['payment_method']) {
@@ -451,7 +451,7 @@ if (!$single_order) {
                             <?php foreach($orders as $order): ?>
                             <tr>
                                 <td>#<?php echo $order['order_id']; ?></td>
-                                <td><?php echo date('M d, Y', strtotime($order['order_date'])); ?></td>
+                                <td><?php echo date('M d, Y', strtotime($order['order_date'] . ' UTC')); ?></td>
                                 <td><?php echo $order['restaurant_name']; ?></td>
                                 <td><?php echo format_price($order['total_amount']); ?></td>
                                 <td>
