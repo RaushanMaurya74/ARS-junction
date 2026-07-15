@@ -37,10 +37,20 @@ $user = get_user_by_id($_SESSION['user_id']);
 // Calculate totals
 $cart_subtotal = calculate_cart_total($_SESSION['user_id']);
 
-// Get delivery fee from the restaurant
+// Get delivery fee from the restaurant (fallback)
 $restaurant_id = $cart_items[0]['restaurant_id'];
 $restaurant = get_restaurant_by_id($restaurant_id);
-$delivery_fee = $restaurant['delivery_fee'];
+$delivery_fee = (float)$restaurant['delivery_fee'];
+
+// Query specific delivery charge for user's default zip code if available
+if (!empty($user['zip_code'])) {
+    $stmt_pin = $conn->prepare("SELECT delivery_charge FROM delivery_pincodes WHERE pincode = ? AND is_active = 1");
+    $stmt_pin->execute([$user['zip_code']]);
+    $db_charge = $stmt_pin->fetchColumn();
+    if ($db_charge !== false) {
+        $delivery_fee = (float)$db_charge;
+    }
+}
 
 // Calculate tax (5% of subtotal)
 $tax = $cart_subtotal * 0.05;
@@ -240,6 +250,56 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Define profile address vars
         const profileAddress = <?php echo json_encode($user['address'] ?? ''); ?>;
         const profileZip = <?php echo json_encode($user['zip_code'] ?? ''); ?>;
+        const differentAddressCheckbox = document.getElementById('different-address');
+        const deliveryZipInput = document.getElementById('delivery-zip');
+        
+        function updateDeliveryFee(pincode) {
+            if (!/^[0-9]{6}$/.test(pincode)) {
+                return;
+            }
+            
+            fetch('api/check_pincode.php?pincode=' + encodeURIComponent(pincode))
+            .then(response => response.json())
+            .then(data => {
+                if (data.deliverable) {
+                    const subtotal = parseFloat(<?php echo json_encode($cart_subtotal); ?>);
+                    const deliveryFee = parseFloat(data.delivery_charge);
+                    const tax = Math.round(subtotal * 0.05 * 100) / 100;
+                    const total = subtotal + deliveryFee + tax;
+                    
+                    const deliveryFeeEl = document.getElementById('delivery-fee');
+                    if (deliveryFeeEl) deliveryFeeEl.textContent = '₹' + deliveryFee.toFixed(2);
+                    
+                    const taxAmountEl = document.getElementById('tax-amount');
+                    if (taxAmountEl) taxAmountEl.textContent = '₹' + tax.toFixed(2);
+                    
+                    const totalAmountEl = document.getElementById('total-amount');
+                    if (totalAmountEl) totalAmountEl.textContent = '₹' + total.toFixed(2);
+                }
+            })
+            .catch(err => console.error('Error updating delivery fee:', err));
+        }
+
+        // Listen for toggling between profile address and custom address
+        if (differentAddressCheckbox) {
+            differentAddressCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    updateDeliveryFee(deliveryZipInput.value.trim());
+                } else {
+                    updateDeliveryFee(profileZip.trim());
+                }
+            });
+        }
+
+        // Listen for typing inside custom zip input
+        if (deliveryZipInput) {
+            deliveryZipInput.addEventListener('input', function() {
+                const pincode = this.value.trim();
+                if (pincode.length === 6) {
+                    updateDeliveryFee(pincode);
+                }
+            });
+        }
         
         if (checkoutForm) {
             checkoutForm.addEventListener('submit', function(e) {
