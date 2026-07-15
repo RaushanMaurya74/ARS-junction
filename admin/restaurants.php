@@ -52,8 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $res_id = (int)$_POST['restaurant_id'];
         $new_status = $_POST['current_status'] == '1' ? 0 : 1;
         
-        $db = db_connect();
-        $stmt = $db->prepare("UPDATE restaurants SET is_active = :is_active WHERE restaurant_id = :id");
+        global $conn;
+        $stmt = $conn->prepare("UPDATE restaurants SET is_active = :is_active WHERE restaurant_id = :id");
         $stmt->bindValue(':is_active', $new_status, PDO::PARAM_INT);
         $stmt->bindValue(':id', $res_id, PDO::PARAM_INT);
         $stmt->execute();
