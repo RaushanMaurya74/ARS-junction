@@ -635,7 +635,7 @@ document.addEventListener('DOMContentLoaded', function() {
         initGpsTracking();
     }
 
-    if (orderId > 0 && currentStatus !== 'delivered' && currentStatus !== 'cancelled') {
+    if (orderId > 0 && (currentStatus !== 'delivered' || currentPayment === 'pending') && currentStatus !== 'cancelled') {
         const interval = setInterval(function() {
             fetch('api/get_order_status.php?order_id=' + orderId + '&_=' + Date.now())
             .then(res => res.json())
@@ -668,11 +668,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         updateTrackingUI(data);
                     }
                     
-                    if (data.order_status === 'delivered' || data.order_status === 'cancelled') {
+                    if (data.order_status === 'cancelled') {
                         clearInterval(interval);
                         setTimeout(() => {
                             window.location.reload();
                         }, 2000);
+                    } else if (data.order_status === 'delivered') {
+                        // If order is delivered but payment is still pending, keep polling for payment confirmation
+                        if (data.payment_status === 'paid') {
+                            clearInterval(interval);
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 2000);
+                        }
                     }
                 }
             })
