@@ -10,14 +10,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
         if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
-            if (!file_exists('../uploads/restaurants')) {
-                mkdir('../uploads/restaurants', 0777, true);
-            }
-            $filename = 'res_' . uniqid() . '.' . $ext;
-            $target = '../uploads/restaurants/' . $filename;
-            if (move_uploaded_file($_FILES['image']['tmp_name'], $target)) {
-                $uploaded_image = 'uploads/restaurants/' . $filename;
-            }
+            // Read file content and encode to base64
+            $file_data = file_get_contents($_FILES['image']['tmp_name']);
+            $uploaded_image = 'data:image/' . $ext . ';base64,' . base64_encode($file_data);
         }
     }
 

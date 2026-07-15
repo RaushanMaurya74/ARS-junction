@@ -670,6 +670,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     if (data.order_status === 'delivered' || data.order_status === 'cancelled') {
                         clearInterval(interval);
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
                     }
                 }
             })

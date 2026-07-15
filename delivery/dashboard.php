@@ -34,30 +34,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
             
             if (in_array($ext, $allowed)) {
-                $upload_dir = '../uploads/profile_pics/';
-                if (!file_exists($upload_dir)) {
-                    mkdir($upload_dir, 0777, true);
-                }
+                // Read file content and encode to base64
+                $file_data = file_get_contents($_FILES['profile_pic']['tmp_name']);
+                $base64_image = 'data:image/' . $ext . ';base64,' . base64_encode($file_data);
                 
-                $new_filename = 'delivery_' . $db_id . '_' . time() . '.' . $ext;
-                $dest_path = $upload_dir . $new_filename;
-                
-                if (move_uploaded_file($_FILES['profile_pic']['tmp_name'], $dest_path)) {
-                    if (!empty($db_user['profile_image']) && file_exists('../' . $db_user['profile_image'])) {
-                        @unlink('../' . $db_user['profile_image']);
-                    }
-                    
-                    $db_path = 'uploads/profile_pics/' . $new_filename;
-                    $stmt = $conn->prepare("UPDATE users SET profile_image = ? WHERE user_id = ?");
-                    if ($stmt->execute([$db_path, $db_id])) {
-                        $success_msg = 'Profile photo uploaded successfully!';
-                        // Refresh user data
-                        $db_user = get_user_by_id($db_id);
-                    } else {
-                        $error_msg = 'Database update failed.';
-                    }
+                $stmt = $conn->prepare("UPDATE users SET profile_image = ? WHERE user_id = ?");
+                if ($stmt->execute([$base64_image, $db_id])) {
+                    $success_msg = 'Profile photo uploaded successfully!';
+                    // Refresh user data
+                    $db_user = get_user_by_id($db_id);
                 } else {
-                    $error_msg = 'Failed to move uploaded file.';
+                    $error_msg = 'Database update failed.';
                 }
             } else {
                 $error_msg = 'Invalid file format. Only JPG, JPEG, PNG, and GIF allowed.';
