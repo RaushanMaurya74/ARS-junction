@@ -305,6 +305,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             checkoutForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
+                // Get and disable submit button to prevent double-submits
+                const submitBtn = document.querySelector('button[form="checkout-form"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Placing Order...';
+                }
+                
+                function enableSubmitBtn() {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Place Order';
+                    }
+                }
+                
                 // Validate form
                 let isValid = true;
                 
@@ -314,11 +328,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 
                 if (name.trim() === '') {
                     showToast('Please enter your full name', 'danger');
+                    enableSubmitBtn();
                     return;
                 }
                 
                 if (phone.trim() === '') {
                     showToast('Please enter your phone number', 'danger');
+                    enableSubmitBtn();
                     return;
                 }
                 
@@ -335,6 +351,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     if (deliveryAddress.trim() === '' || deliveryCity.trim() === '' || 
                         deliveryState.trim() === '' || deliveryZip.trim() === '') {
                         showToast('Please fill in all delivery address fields. Address is compulsory!', 'danger');
+                        enableSubmitBtn();
                         return;
                     }
                     finalZip = deliveryZip.trim();
@@ -345,6 +362,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         // Automatically open different address form
                         document.getElementById('different-address').checked = true;
                         document.getElementById('different-address').dispatchEvent(new Event('change'));
+                        enableSubmitBtn();
                         return;
                     }
                     finalZip = profileZip.trim();
@@ -353,6 +371,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 // Check if finalZip is valid
                 if (finalZip === '') {
                     showToast('ZIP/Pincode is compulsory for delivery verification.', 'danger');
+                    enableSubmitBtn();
                     return;
                 }
                 
@@ -379,19 +398,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                 }, 1000);
                             } else {
                                 showToast(orderData.message || 'Failed to place order. Please try again.', 'danger');
+                                enableSubmitBtn();
                             }
                         })
                         .catch(error => {
                             console.error('Error:', error);
                             showToast('An error occurred while placing your order.', 'danger');
+                            enableSubmitBtn();
                         });
                     } else {
                         showToast('Delivery not available to ' + finalZip + '. ' + data.message, 'danger');
+                        enableSubmitBtn();
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     showToast('Error verifying delivery location. Please try again.', 'danger');
+                    enableSubmitBtn();
                 });
             });
         }

@@ -88,6 +88,10 @@ if (!$location) {
 }
 
 $subtotal = calculate_cart_total($user_id);
+if ($subtotal <= 0) {
+    echo json_encode(['success' => false, 'message' => 'Your cart is empty.']);
+    exit;
+}
 // Use the location specific delivery charge
 $delivery_fee = (float)$location['delivery_charge'];
 $tax = round($subtotal * 0.05, 2);
