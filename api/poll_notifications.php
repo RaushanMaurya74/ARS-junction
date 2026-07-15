@@ -5,6 +5,13 @@ require_once '../includes/functions.php';
 
 header('Content-Type: application/json');
 
+// Run auto-assignment of expired pending orders globally on all poll events
+try {
+    auto_assign_confirmed_orders();
+} catch (Exception $e) {
+    // Suppress background assignment exceptions so as not to break notifications response
+}
+
 $role = isset($_GET['role']) ? clean_input($_GET['role']) : '';
 
 if ($role === 'admin') {
@@ -15,9 +22,6 @@ if ($role === 'admin') {
     }
     
     try {
-        // Trigger auto-assignment of confirmed orders
-        auto_assign_confirmed_orders();
-
         // Count pending orders
         $stmt = $conn->query("SELECT COUNT(*) as count, MAX(order_id) as latest_id FROM orders WHERE order_status = 'pending'");
         $data = $stmt->fetch(PDO::FETCH_ASSOC);
