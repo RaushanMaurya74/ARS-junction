@@ -34,8 +34,10 @@ function require_admin() {
 }
 
 function logout() {
-    session_destroy();
-    session_start();
+    $_SESSION = array();
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_destroy();
+    }
 }
 
 function social_login($name, $email, $social_id, $social_type) {
