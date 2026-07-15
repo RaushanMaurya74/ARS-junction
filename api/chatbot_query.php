@@ -48,7 +48,27 @@ elseif (preg_match('/\b(hi|hello|hey|greetings|jerry|hola|help)\b/', $lower_mess
     $reply = "Hello there! I'm **Jerry** 🤖✨, your custom food assistant. I can help you search the menu, verify delivery in your area, and customize your cart! <br><br>What would you like me to do?";
     $options = ['Check Delivery Pincode', 'Recommend Food', 'Search Pizza', 'Search Burgers'];
 }
-// 3. Search menu items
+// 3. Conversational trigger: Thanks
+elseif (preg_match('/\b(thanks|thank you|ok|okay|cool|great|awesome|good|perfect|fine|yes)\b/', $lower_message)) {
+    $reply = "You're very welcome! Jerry is always happy to help you find the best food around. 🍕😊 Let me know if you want to search for dishes, check delivery areas, or anything else!";
+    $options = ['Recommend Food', 'Search Pizza', 'Check Delivery Pincode'];
+}
+// 4. Conversational trigger: Support/Contact info
+elseif (preg_match('/\b(contact|support|phone|number|call|email|helpdesk|reach|agent|delivery boy)\b/', $lower_message)) {
+    $reply = "Need help? 📞 You can contact ARS Junction Support at **+91 7979730721** or email us at **officialarsjunction@gmail.com**! We are active 24/7 to assist you.";
+    $options = ['Browse Menu', 'Recommend Food'];
+}
+// 5. Conversational trigger: Payment details
+elseif (preg_match('/\b(pay|payment|cod|cash|upi|card|online|wallet)\b/', $lower_message)) {
+    $reply = "We make payments easy! 💳 We accept **Cash on Delivery (COD)** and **UPI Scan-and-Pay** (a QR code is displayed on your Order Tracking page). Payment status is updated instantly upon delivery boy confirmation.";
+    $options = ['Browse Menu', 'Recommend Food'];
+}
+// 6. Conversational trigger: Cancellation / Refund
+elseif (preg_match('/\b(cancel|cancellation|refund|change order)\b/', $lower_message)) {
+    $reply = "You can cancel any pending order within **3 minutes** of placing it directly from the Order Tracking page. ⏱️ Once the cancellation window closes, our kitchen immediately starts cooking your order!";
+    $options = ['Browse Menu', 'Recommend Food'];
+}
+// 7. Search menu items
 elseif (preg_match('/\b(search|find|order|want|crave|eat|buy|get|show|menu|food|dish|pizza|burger|naan|chicken|coffee|tea|dessert|shake|noodles)\b/', $lower_message, $match)) {
     // Determine search keyword
     $keyword = '';
@@ -79,7 +99,7 @@ elseif (preg_match('/\b(search|find|order|want|crave|eat|buy|get|show|menu|food|
         if (!empty($items)) {
             $reply = "Jerry found some delicious choices matching **'{$keyword}'** for you! Click the button to add them directly to your cart: 😋👇<br><br>";
             foreach ($items as $item) {
-                $img = !empty($item['image']) && file_exists('../' . $item['image']) ? $item['image'] : 'images/food_placeholder.jpg';
+                $img = has_image($item['image'], false) ? get_image_url($item['image'], false) : 'images/food_placeholder.jpg';
                 $veg_badge = $item['is_vegetarian'] ? '<span class="badge bg-success small"><i class="fas fa-leaf me-1"></i>Veg</span>' : '<span class="badge bg-danger small"><i class="fas fa-drumstick-bite me-1"></i>Non-Veg</span>';
                 
                 $reply .= "
@@ -106,14 +126,14 @@ elseif (preg_match('/\b(search|find|order|want|crave|eat|buy|get|show|menu|food|
         $reply = "Sorry, my systems are running hot! I couldn't search the menu database. Try again shortly.";
     }
 }
-// 4. Recommend popular food
+// 8. Recommend popular food
 elseif (preg_match('/\b(recommend|popular|best|featured|suggest|favorite|choice)\b/', $lower_message)) {
     try {
         $featured = get_featured_menu_items(3);
         if (!empty($featured)) {
             $reply = "Here are Jerry's top recommendations! You can add them straight to your order: 🌟🍕<br><br>";
             foreach ($featured as $item) {
-                $img = !empty($item['image']) && file_exists('../' . $item['image']) ? $item['image'] : 'images/food_placeholder.jpg';
+                $img = has_image($item['image'], false) ? get_image_url($item['image'], false) : 'images/food_placeholder.jpg';
                 $veg_badge = $item['is_vegetarian'] ? '<span class="badge bg-success small"><i class="fas fa-leaf me-1"></i>Veg</span>' : '<span class="badge bg-danger small"><i class="fas fa-drumstick-bite me-1"></i>Non-Veg</span>';
                 
                 $reply .= "
@@ -140,7 +160,7 @@ elseif (preg_match('/\b(recommend|popular|best|featured|suggest|favorite|choice)
         $reply = "I couldn't fetch recommendations right now. Let's try something else!";
     }
 }
-// 5. Default Response
+// 9. Default Response
 else {
     $reply = "I'm not sure how to answer that, but Jerry is always learning! 🤖💡<br>You can ask me to **Search Pizza**, **Recommend popular food**, or check **Delivery availability** by typing a 6-digit pincode.";
     $options = ['Check Delivery Pincode', 'Recommend Food', 'Browse Menu'];

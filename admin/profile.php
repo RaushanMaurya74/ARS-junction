@@ -112,8 +112,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['upload_photo'])) {
             <div class="card shadow border-0 h-100">
                 <div class="card-body text-center py-5">
                     <div class="mb-4">
-                        <?php if (!empty($admin['profile_image'])): ?>
-                        <img src="../<?php echo $admin['profile_image']; ?>" alt="Admin Profile Picture" class="profile-img rounded-circle border shadow mb-3" style="width: 120px; height: 120px; object-fit: cover;">
+                        <?php if (has_image($admin['profile_image'], true)): ?>
+                        <img src="<?php echo get_image_url($admin['profile_image'], true); ?>" alt="Admin Profile Picture" class="profile-img rounded-circle border shadow mb-3" style="width: 120px; height: 120px; object-fit: cover;">
                         <?php else: ?>
                         <i class="fas fa-user-circle text-primary display-1 mb-3"></i>
                         <?php endif; ?>

@@ -820,4 +820,26 @@ function send_login_confirmation_email($user_id) {
 
     return @mail($to, $subject, $htmlContent, $headers);
 }
+
+// Helper to determine active image URL supporting Base64 or local paths
+function get_image_url($path, $in_subdir = false) {
+    if (empty($path)) {
+        return '';
+    }
+    if (strpos($path, 'data:') === 0) {
+        return $path;
+    }
+    return ($in_subdir ? '../' : '') . $path;
+}
+
+// Helper to check if image is available (supports Base64 direct and file_exists)
+function has_image($path, $in_subdir = false) {
+    if (empty($path)) {
+        return false;
+    }
+    if (strpos($path, 'data:') === 0) {
+        return true;
+    }
+    return file_exists(($in_subdir ? '../' : '') . $path);
+}
 ?>

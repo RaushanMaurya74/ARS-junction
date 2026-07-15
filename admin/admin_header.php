@@ -164,8 +164,8 @@ if (!$admin) {
                 <li class="nav-item dropdown no-arrow">
                     <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <span class="me-2 d-none d-lg-inline text-gray-600 small"><?php echo htmlspecialchars($admin['name']); ?></span>
-                        <?php if (!empty($admin['profile_image']) && file_exists('../' . $admin['profile_image'])): ?>
-                            <img class="img-profile rounded-circle" src="../<?php echo $admin['profile_image']; ?>" style="width: 32px; height: 32px; object-fit: cover; border: 1px solid #e3e6f0;">
+                        <?php if (has_image($admin['profile_image'], true)): ?>
+                            <img class="img-profile rounded-circle" src="<?php echo get_image_url($admin['profile_image'], true); ?>" style="width: 32px; height: 32px; object-fit: cover; border: 1px solid #e3e6f0;">
                         <?php else: ?>
                             <img class="img-profile rounded-circle" src="../images/default_avatar.png" style="width: 32px; height: 32px; object-fit: cover; border: 1px solid #e3e6f0;">
                         <?php endif; ?>

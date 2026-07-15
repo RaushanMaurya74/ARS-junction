@@ -146,8 +146,8 @@ $active_tab = isset($_GET['tab']) && $_GET['tab'] === 'history' ? 'history' : 'a
         <a class="navbar-brand fw-bold text-warning" href="dashboard.php"><i class="fas fa-truck-moving me-2"></i> Delivery Panel</a>
         <div class="d-flex align-items-center">
             <span class="navbar-text text-white me-3 d-none d-sm-inline">
-                <?php if (!empty($db_user['profile_image'])): ?>
-                    <img src="../<?php echo $db_user['profile_image']; ?>" class="rounded-circle me-1 border" style="width: 32px; height: 32px; object-fit: cover;">
+                <?php if (has_image($db_user['profile_image'], true)): ?>
+                    <img src="<?php echo get_image_url($db_user['profile_image'], true); ?>" class="rounded-circle me-1 border" style="width: 32px; height: 32px; object-fit: cover;">
                 <?php else: ?>
                     <i class="fas fa-user-circle me-1"></i>
                 <?php endif; ?>
@@ -189,8 +189,8 @@ $active_tab = isset($_GET['tab']) && $_GET['tab'] === 'history' ? 'history' : 'a
             <div class="card border-0 shadow-sm text-center p-3 h-100">
                 <div class="card-body">
                     <div class="mb-3 position-relative d-inline-block">
-                        <?php if (!empty($db_user['profile_image'])): ?>
-                            <img src="../<?php echo $db_user['profile_image']; ?>" class="rounded-circle border shadow-sm" style="width: 100px; height: 100px; object-fit: cover;">
+                        <?php if (has_image($db_user['profile_image'], true)): ?>
+                            <img src="<?php echo get_image_url($db_user['profile_image'], true); ?>" class="rounded-circle border shadow-sm" style="width: 100px; height: 100px; object-fit: cover;">
                         <?php else: ?>
                             <i class="fas fa-user-circle text-secondary display-3"></i>
                         <?php endif; ?>

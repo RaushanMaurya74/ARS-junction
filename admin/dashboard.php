@@ -232,8 +232,8 @@ $delivery_agents = $stmt_boys->fetchAll(PDO::FETCH_ASSOC);
                         <?php foreach($delivery_agents as $agent): ?>
                         <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2.5">
                             <div class="d-flex align-items-center">
-                                <?php if (!empty($agent['profile_image'])): ?>
-                                    <img src="../<?php echo $agent['profile_image']; ?>" class="rounded-circle border me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                <?php if (has_image($agent['profile_image'], true)): ?>
+                                    <img src="<?php echo get_image_url($agent['profile_image'], true); ?>" class="rounded-circle border me-3" style="width: 40px; height: 40px; object-fit: cover;">
                                 <?php else: ?>
                                     <div class="rounded-circle bg-light border d-flex justify-content-center align-items-center me-3" style="width: 40px; height: 40px;">
                                         <i class="fas fa-user text-secondary"></i>
