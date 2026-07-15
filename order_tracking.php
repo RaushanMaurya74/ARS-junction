@@ -299,7 +299,7 @@ if (!$single_order) {
                                 ?>
                             </p>
                             <p class="mb-0"><strong>Payment Status:</strong> 
-                                <span class="badge bg-<?php echo ($order['payment_status'] == 'paid') ? 'success' : (($order['payment_status'] == 'pending') ? 'warning text-dark' : 'danger'); ?>">
+                                <span id="payment-status-badge" class="badge bg-<?php echo ($order['payment_status'] == 'paid') ? 'success' : (($order['payment_status'] == 'pending') ? 'warning text-dark' : 'danger'); ?>">
                                     <?php echo ucfirst($order['payment_status']); ?>
                                 </span>
                             </p>
