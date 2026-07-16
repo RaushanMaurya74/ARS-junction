@@ -844,4 +844,83 @@ function has_image($path, $in_subdir = false) {
     }
     return file_exists(($in_subdir ? '../' : '') . $path);
 }
+
+// Compress and resize uploaded image to base64 to prevent Vercel payload too large error
+function get_compressed_base64_image($tmp_name, $ext, $max_width = 300, $max_height = 300) {
+    // If GD extension is not loaded, fall back to raw base64
+    if (!extension_loaded('gd')) {
+        $file_data = file_get_contents($tmp_name);
+        return 'data:image/' . $ext . ';base64,' . base64_encode($file_data);
+    }
+
+    // Load image based on extension
+    $src_img = null;
+    if ($ext === 'jpg' || $ext === 'jpeg') {
+        $src_img = @imagecreatefromjpeg($tmp_name);
+    } elseif ($ext === 'png') {
+        $src_img = @imagecreatefrompng($tmp_name);
+    } elseif ($ext === 'gif') {
+        $src_img = @imagecreatefromgif($tmp_name);
+    }
+
+    if (!$src_img) {
+        $file_data = file_get_contents($tmp_name);
+        return 'data:image/' . $ext . ';base64,' . base64_encode($file_data);
+    }
+
+    // Get original dimensions
+    list($width, $height) = getimagesize($tmp_name);
+    if ($width <= 0 || $height <= 0) {
+        $file_data = file_get_contents($tmp_name);
+        return 'data:image/' . $ext . ';base64,' . base64_encode($file_data);
+    }
+    
+    // Calculate new dimensions
+    $ratio = $width / $height;
+    if ($width > $max_width || $height > $max_height) {
+        if ($max_width / $max_height > $ratio) {
+            $new_width = intval($max_height * $ratio);
+            $new_height = $max_height;
+        } else {
+            $new_height = intval($max_width / $ratio);
+            $new_width = $max_width;
+        }
+    } else {
+        $new_width = $width;
+        $new_height = $height;
+    }
+
+    // Create destination image resource
+    $dst_img = imagecreatetruecolor($new_width, $new_height);
+
+    // Keep transparency for PNG/GIF
+    if ($ext === 'png' || $ext === 'gif') {
+        imagealphablending($dst_img, false);
+        imagesavealpha($dst_img, true);
+    } else {
+        // Fill white background for JPEG
+        $white = imagecolorallocate($dst_img, 255, 255, 255);
+        imagefill($dst_img, 0, 0, $white);
+    }
+
+    // Resize and resample
+    imagecopyresampled($dst_img, $src_img, 0, 0, 0, 0, $new_width, $new_height, $width, $height);
+
+    // Capture compressed image output in buffer
+    ob_start();
+    if ($ext === 'png') {
+        imagepng($dst_img, null, 7); // Compression level 7
+    } elseif ($ext === 'gif') {
+        imagegif($dst_img);
+    } else {
+        imagejpeg($dst_img, null, 75); // Quality 75%
+    }
+    $compressed_data = ob_get_clean();
+
+    // Free resources
+    imagedestroy($src_img);
+    imagedestroy($dst_img);
+
+    return 'data:image/' . ($ext === 'png' ? 'png' : ($ext === 'gif' ? 'gif' : 'jpeg')) . ';base64,' . base64_encode($compressed_data);
+}
 ?>

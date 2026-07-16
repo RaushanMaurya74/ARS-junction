@@ -30,8 +30,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_FILES['banner_image']) && $_FILES['banner_image']['error'] === UPLOAD_ERR_OK) {
             $ext = strtolower(pathinfo($_FILES['banner_image']['name'], PATHINFO_EXTENSION));
             if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
-                $file_data = file_get_contents($_FILES['banner_image']['tmp_name']);
-                $uploaded_banner = 'data:image/' . $ext . ';base64,' . base64_encode($file_data);
+                // Compress and encode to base64
+                require_once '../includes/functions.php';
+                $uploaded_banner = get_compressed_base64_image($_FILES['banner_image']['tmp_name'], $ext, 800, 400);
             } else {
                 $error_msg = 'Invalid image format. Only JPG, JPEG, PNG, and GIF allowed.';
             }

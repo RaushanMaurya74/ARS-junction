@@ -34,9 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
             
             if (in_array($ext, $allowed)) {
-                // Read file content and encode to base64
-                $file_data = file_get_contents($_FILES['profile_pic']['tmp_name']);
-                $base64_image = 'data:image/' . $ext . ';base64,' . base64_encode($file_data);
+                // Compress and encode to base64
+                $base64_image = get_compressed_base64_image($_FILES['profile_pic']['tmp_name'], $ext, 200, 200);
                 
                 $stmt = $conn->prepare("UPDATE users SET profile_image = ? WHERE user_id = ?");
                 if ($stmt->execute([$base64_image, $db_id])) {

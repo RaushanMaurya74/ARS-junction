@@ -99,7 +99,7 @@ function admin_count_orders_by_status() {
 // Get all users for admin
 function admin_get_all_users($limit = 100, $offset = 0) {
     global $conn;
-    $sql = "SELECT * FROM users WHERE is_admin = 0 ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
+    $sql = "SELECT user_id, name, email, phone, address, city, state, zip_code, social_id, social_type, is_admin, is_delivery_boy, is_online, created_at, updated_at, is_restaurant_owner, restaurant_id FROM users WHERE is_admin = 0 ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
     
     $stmt = $conn->prepare($sql);
     $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
@@ -462,7 +462,7 @@ function admin_update_payment_status($order_id, $payment_status) {
 // Get all delivery boys for admin
 function admin_get_delivery_boys() {
     global $conn;
-    $stmt = $conn->prepare("SELECT * FROM users WHERE is_delivery_boy = 1 ORDER BY name");
+    $stmt = $conn->prepare("SELECT user_id, name, email, phone, address, city, state, zip_code, is_online, latitude, longitude, location_updated_at, restaurant_id FROM users WHERE is_delivery_boy = 1 ORDER BY name");
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }

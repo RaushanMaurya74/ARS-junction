@@ -115,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Fetch all delivery boys for this restaurant
 global $conn;
-$stmt_boys = $conn->prepare("SELECT * FROM users WHERE is_delivery_boy = 1 AND restaurant_id = ? ORDER BY name");
+$stmt_boys = $conn->prepare("SELECT user_id, name, email, phone, is_online, created_at, restaurant_id FROM users WHERE is_delivery_boy = 1 AND restaurant_id = ? ORDER BY name");
 $stmt_boys->execute([$restaurant_id]);
 $delivery_boys = $stmt_boys->fetchAll(PDO::FETCH_ASSOC);
 
@@ -123,7 +123,7 @@ $delivery_boys = $stmt_boys->fetchAll(PDO::FETCH_ASSOC);
 $edit_boy = null;
 if (isset($_GET['edit'])) {
     $edit_id = intval($_GET['edit']);
-    $stmt_edit = $conn->prepare("SELECT * FROM users WHERE user_id = ? AND restaurant_id = ? AND is_delivery_boy = 1");
+    $stmt_edit = $conn->prepare("SELECT user_id, name, email, phone, is_online, created_at, restaurant_id FROM users WHERE user_id = ? AND restaurant_id = ? AND is_delivery_boy = 1");
     $stmt_edit->execute([$edit_id, $restaurant_id]);
     $edit_boy = $stmt_edit->fetch(PDO::FETCH_ASSOC);
 }

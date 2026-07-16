@@ -17,8 +17,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
         if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
-            $file_data = file_get_contents($_FILES['image']['tmp_name']);
-            $uploaded_image = 'data:image/' . $ext . ';base64,' . base64_encode($file_data);
+            // Compress and encode to base64
+            require_once '../includes/functions.php';
+            $uploaded_image = get_compressed_base64_image($_FILES['image']['tmp_name'], $ext, 400, 300);
         } else {
             $error_msg = 'Invalid image type. Only JPG, JPEG, PNG, and GIF are allowed.';
         }
