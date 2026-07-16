@@ -67,55 +67,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        :root {
-            --brand:      #b91c1c;
-            --brand-dark: #991b1b;
-            --brand-glow: rgba(185, 28, 28, 0.35);
-            --text-dark:  #111827;
-            --text-mid:   #6b7280;
-            --text-light: #9ca3af;
-            --border:     #e5e7eb;
-            --input-bg:   #f9fafb;
-            --white:      #ffffff;
-        }
+        :root { --brand: #b91c1c; --brand-dark: #991b1b; --brand-glow: rgba(185,28,28,0.35); --text-dark: #111827; --text-mid: #6b7280; --text-light: #9ca3af; --border: #e5e7eb; --input-bg: #f9fafb; --white: #ffffff; }
         html, body { height: 100%; font-family: 'Inter', sans-serif; background: #f3f4f6; }
         .login-wrap { display: flex; height: 100vh; align-items: center; justify-content: center; padding: 1.5rem; }
-        .login-card {
-            display: flex; width: 100%; max-width: 960px; min-height: 600px;
-            border-radius: 24px; overflow: hidden;
-            box-shadow: 0 25px 60px rgba(0,0,0,.18);
-            animation: fadeUp .5s ease both;
-        }
+        .login-card { display: flex; width: 100%; max-width: 960px; min-height: 600px; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,.18); animation: fadeUp .5s ease both; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
-
-        .panel-left {
-            flex: 1; position: relative;
-            background: url('../images/restaurant_4.jpg') center/cover no-repeat;
-            display: flex; flex-direction: column; justify-content: space-between;
-            padding: 2.25rem 2rem; color: var(--white); min-width: 0;
-        }
-        .panel-left::before {
-            content: ''; position: absolute; inset: 0;
-            background: linear-gradient(160deg, rgba(10,10,10,.78) 0%, rgba(30,10,10,.55) 50%, rgba(185,28,28,.30) 100%);
-        }
+        .panel-left { flex: 1; position: relative; background: url('../images/restaurant_4.jpg') center/cover no-repeat; display: flex; flex-direction: column; justify-content: space-between; padding: 2.25rem 2rem; color: var(--white); min-width: 0; }
+        .panel-left::before { content: ''; position: absolute; inset: 0; background: linear-gradient(160deg, rgba(10,10,10,.78) 0%, rgba(30,10,10,.55) 50%, rgba(185,28,28,.30) 100%); }
         .panel-left > * { position: relative; z-index: 1; }
         .brand-logo { display: flex; align-items: center; gap: .6rem; font-size: 1.35rem; font-weight: 800; letter-spacing: -.5px; }
-        .brand-logo .icon-wrap {
-            width: 38px; height: 38px; border-radius: 10px; background: var(--brand);
-            display: flex; align-items: center; justify-content: center; font-size: .95rem;
-            box-shadow: 0 4px 14px var(--brand-glow);
-        }
+        .brand-logo .icon-wrap { width: 38px; height: 38px; border-radius: 10px; background: var(--brand); display: flex; align-items: center; justify-content: center; font-size: .95rem; box-shadow: 0 4px 14px var(--brand-glow); }
         .brand-tagline { margin-top: .5rem; font-size: .82rem; color: rgba(255,255,255,.7); max-width: 220px; line-height: 1.5; }
-        .restaurant-badge {
-            background: rgba(255,255,255,.12); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-            border: 1px solid rgba(255,255,255,.18); border-radius: 16px; padding: 1.1rem 1.2rem;
-        }
+        .restaurant-badge { background: rgba(255,255,255,.12); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,.18); border-radius: 16px; padding: 1.1rem 1.2rem; }
         .restaurant-badge .badge-top { display: flex; align-items: center; gap: .85rem; }
-        .rest-avatar {
-            width: 44px; height: 44px; border-radius: 12px; background: var(--brand);
-            display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;
-            box-shadow: 0 4px 12px var(--brand-glow);
-        }
+        .rest-avatar { width: 44px; height: 44px; border-radius: 12px; background: var(--brand); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; box-shadow: 0 4px 12px var(--brand-glow); }
         .rest-name { font-weight: 700; font-size: .95rem; line-height: 1.2; }
         .rest-tier { font-size: .65rem; font-weight: 700; letter-spacing: .08em; color: rgba(255,255,255,.6); text-transform: uppercase; margin-top: 2px; }
         .status-bar { margin-top: .9rem; }
@@ -124,30 +89,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .status-fill { height: 100%; width: 0; background: linear-gradient(90deg, #22c55e, #86efac); border-radius: 4px; animation: fillIn 1.2s ease .5s forwards; }
         @keyframes fillIn { to { width: 92%; } }
         .panel-footer { font-size: .7rem; color: rgba(255,255,255,.4); }
-
         .panel-right { width: 440px; flex-shrink: 0; background: var(--white); display: flex; flex-direction: column; justify-content: center; padding: 3rem 2.8rem; }
         .form-heading { font-size: 1.75rem; font-weight: 800; color: var(--text-dark); line-height: 1.15; }
         .form-subhead { font-size: .85rem; color: var(--text-mid); margin-top: .35rem; margin-bottom: 2rem; }
-        .error-banner {
-            background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: .75rem 1rem;
-            font-size: .82rem; color: #991b1b; display: flex; align-items: center; gap: .6rem;
-            margin-bottom: 1.25rem; animation: shake .4s ease;
-        }
+        .error-banner { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: .75rem 1rem; font-size: .82rem; color: #991b1b; display: flex; align-items: center; gap: .6rem; margin-bottom: 1.25rem; animation: shake .4s ease; }
         @keyframes shake { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
-        .field-label {
-            font-size: .7rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
-            color: var(--text-mid); margin-bottom: .45rem; display: flex; justify-content: space-between; align-items: center;
-        }
+        .field-label { font-size: .7rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--text-mid); margin-bottom: .45rem; display: flex; justify-content: space-between; align-items: center; }
         .field-label a { font-size: .72rem; font-weight: 600; color: var(--brand); text-decoration: none; text-transform: none; letter-spacing: 0; }
         .field-label a:hover { text-decoration: underline; }
         .input-wrap { position: relative; margin-bottom: 1.1rem; }
         .input-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-light); font-size: .85rem; pointer-events: none; }
-        .form-input {
-            width: 100%; height: 48px; padding: 0 1rem 0 2.65rem;
-            border: 1.5px solid var(--border); border-radius: 10px; background: var(--input-bg);
-            font-family: 'Inter', sans-serif; font-size: .88rem; color: var(--text-dark); outline: none;
-            transition: border-color .2s, box-shadow .2s;
-        }
+        .form-input { width: 100%; height: 48px; padding: 0 1rem 0 2.65rem; border: 1.5px solid var(--border); border-radius: 10px; background: var(--input-bg); font-family: 'Inter', sans-serif; font-size: .88rem; color: var(--text-dark); outline: none; transition: border-color .2s, box-shadow .2s; }
         .form-input::placeholder { color: var(--text-light); }
         .form-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-glow); background: var(--white); }
         .pw-wrap { position: relative; }
@@ -157,12 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .remember-row { display: flex; align-items: center; gap: .55rem; margin-bottom: 1.4rem; }
         .remember-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--brand); cursor: pointer; }
         .remember-row label { font-size: .82rem; color: var(--text-mid); cursor: pointer; }
-        .btn-login {
-            width: 100%; height: 50px; background: var(--brand); color: var(--white);
-            font-family: 'Inter', sans-serif; font-size: .95rem; font-weight: 700; border: none; border-radius: 10px;
-            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: .6rem;
-            transition: background .2s, transform .15s, box-shadow .2s; box-shadow: 0 4px 14px var(--brand-glow);
-        }
+        .btn-login { width: 100%; height: 50px; background: var(--brand); color: var(--white); font-family: 'Inter', sans-serif; font-size: .95rem; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: .6rem; transition: background .2s, transform .15s, box-shadow .2s; box-shadow: 0 4px 14px var(--brand-glow); }
         .btn-login:hover { background: var(--brand-dark); transform: translateY(-2px); box-shadow: 0 8px 20px var(--brand-glow); }
         .btn-login:active { transform: translateY(0); }
         .divider { display: flex; align-items: center; gap: .75rem; margin: 1.6rem 0 1.2rem; color: var(--text-light); font-size: .75rem; font-weight: 500; text-transform: uppercase; letter-spacing: .07em; }
@@ -178,12 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .page-footer { position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%); display: flex; gap: 1.5rem; font-size: .74rem; color: var(--text-light); }
         .page-footer a { color: var(--text-light); text-decoration: none; display: flex; align-items: center; gap: .35rem; transition: color .2s; }
         .page-footer a:hover { color: var(--brand); }
-        @media (max-width: 720px) {
-            .login-card { flex-direction: column; max-width: 420px; border-radius: 20px; }
-            .panel-left { min-height: 200px; padding: 1.5rem; }
-            .panel-right { width: 100%; padding: 2rem 1.5rem; }
-            .restaurant-badge { display: none; }
-        }
+        @media (max-width: 720px) { .login-card { flex-direction: column; max-width: 420px; border-radius: 20px; } .panel-left { min-height: 200px; padding: 1.5rem; } .panel-right { width: 100%; padding: 2rem 1.5rem; } .restaurant-badge { display: none; } }
     </style>
 </head>
 <body>
@@ -245,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button class="btn-alt" type="button"><i class="fa-solid fa-key"></i> SSO</button>
                 <button class="btn-alt" type="button"><i class="fa-solid fa-table-cells"></i> Corporate</button>
             </div>
-            <div class="register-row">New to the platform? <a href="#">Register your Restaurant</a></div>
+            <div class="register-row">New to the platform? <a href="register.php">Register your Restaurant</a></div>
         </div>
     </div>
 </div>
