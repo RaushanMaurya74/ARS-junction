@@ -403,7 +403,7 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
                                 <option value="">-- Select Restaurant (for Owner/Delivery) --</option>
                                 <?php foreach ($restaurants_list as $res): ?>
                                     <option value="<?php echo $res['restaurant_id']; ?>"><?php echo htmlspecialchars($res['name']); ?></option>
-                                  <?php endforeach; ?>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                         <button class="btn btn-primary w-100" type="submit">Create User</button>

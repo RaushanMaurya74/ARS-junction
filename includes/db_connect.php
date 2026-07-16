@@ -204,8 +204,14 @@ try {
     // Set custom statement class
     $conn->setAttribute(PDO::ATTR_STATEMENT_CLASS, ['CompatiblePDOStatement', [$conn]]);
 } catch (PDOException $e) {
-    // If it is an API request, do not die; let the API return a clean JSON error response
-    if (strpos($_SERVER['REQUEST_URI'] ?? '', 'api/') !== false || strpos($_SERVER['PHP_SELF'] ?? '', 'api/') !== false) {
+    // If it is a direct API JSON request, do not die; let the API return a clean JSON error response
+    // Note: routed pages (restaurant_router, admin_router, delivery_router) pass through api/ but are full HTML pages, so they should die properly.
+    $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+    $isDirectApi = (strpos($requestUri, 'api/') !== false)
+                && (strpos($requestUri, 'restaurant_router') === false)
+                && (strpos($requestUri, 'admin_router') === false)
+                && (strpos($requestUri, 'delivery_router') === false);
+    if ($isDirectApi) {
         $conn = null;
     } else {
         die("Database connection failed: " . $e->getMessage());
