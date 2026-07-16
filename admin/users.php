@@ -4,13 +4,24 @@ require_once 'admin_header.php';
 
 $success_msg = '';
 $error_msg = '';
+$restaurants_list = admin_get_all_restaurants(200, 0);
 
-// Handle user addition/deletion
+// Handle user addition/deletion/update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['add_user'])) {
         $result = admin_add_user($_POST);
         if ($result['success']) {
             $success_msg = 'User added successfully.';
+        } else {
+            $error_msg = $result['message'];
+        }
+    }
+    
+    if (isset($_POST['update_user'])) {
+        $user_id = (int)$_POST['user_id'];
+        $result = admin_update_user($user_id, $_POST);
+        if ($result['success']) {
+            $success_msg = 'User updated successfully.';
         } else {
             $error_msg = $result['message'];
         }
@@ -184,6 +195,75 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
                             </p>
                         </div>
                     </div>
+                    
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Edit User Details & Roles</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" action="users.php?view=<?php echo $view_user['user_id']; ?>">
+                                <input type="hidden" name="update_user" value="1">
+                                <input type="hidden" name="user_id" value="<?php echo $view_user['user_id']; ?>">
+                                
+                                <div class="mb-2">
+                                    <label class="form-label small fw-bold">Full Name</label>
+                                    <input type="text" class="form-control form-control-sm" name="name" value="<?php echo htmlspecialchars($view_user['name']); ?>" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small fw-bold">Email Address</label>
+                                    <input type="email" class="form-control form-control-sm" name="email" value="<?php echo htmlspecialchars($view_user['email']); ?>" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small fw-bold">New Password (leave blank to keep current)</label>
+                                    <input type="password" class="form-control form-control-sm" name="password" placeholder="Enter new password">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small fw-bold">Phone</label>
+                                    <input type="tel" class="form-control form-control-sm" name="phone" value="<?php echo htmlspecialchars($view_user['phone'] ?? ''); ?>">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small fw-bold">Address</label>
+                                    <input type="text" class="form-control form-control-sm" name="address" value="<?php echo htmlspecialchars($view_user['address'] ?? ''); ?>">
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-6">
+                                        <label class="form-label small fw-bold">City</label>
+                                        <input type="text" class="form-control form-control-sm" name="city" value="<?php echo htmlspecialchars($view_user['city'] ?? ''); ?>">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small fw-bold">State</label>
+                                        <input type="text" class="form-control form-control-sm" name="state" value="<?php echo htmlspecialchars($view_user['state'] ?? ''); ?>">
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small fw-bold">ZIP Code</label>
+                                    <input type="text" class="form-control form-control-sm" name="zip_code" value="<?php echo htmlspecialchars($view_user['zip_code'] ?? ''); ?>">
+                                </div>
+                                <div class="form-check mb-1">
+                                    <input class="form-check-input" type="checkbox" name="is_admin" id="edit_is_admin" <?php echo $view_user['is_admin'] ? 'checked' : ''; ?>>
+                                    <label class="form-check-label small" for="edit_is_admin">Is Admin / Staff</label>
+                                </div>
+                                <div class="form-check mb-1">
+                                    <input class="form-check-input" type="checkbox" name="is_delivery_boy" id="edit_is_delivery_boy" <?php echo $view_user['is_delivery_boy'] ? 'checked' : ''; ?>>
+                                    <label class="form-check-label small" for="edit_is_delivery_boy">Is Delivery Boy</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="is_restaurant_owner" id="edit_is_restaurant_owner" <?php echo ($view_user['is_restaurant_owner'] ?? 0) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label small" for="edit_is_restaurant_owner">Is Restaurant Owner</label>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Associated Restaurant</label>
+                                    <select class="form-select form-select-sm" name="restaurant_id">
+                                        <option value="">-- Select Restaurant --</option>
+                                        <?php foreach ($restaurants_list as $res): ?>
+                                            <option value="<?php echo $res['restaurant_id']; ?>" <?php echo (($view_user['restaurant_id'] ?? null) == $res['restaurant_id']) ? 'selected' : ''; ?>><?php echo htmlspecialchars($res['name']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-primary w-100">Update User Settings</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="col-lg-8">
@@ -299,17 +379,32 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
                             <label class="form-label">ZIP Code</label>
                             <input type="text" class="form-control" name="zip_code">
                         </div>
-                        <div class="form-check mb-2">
+                        <div class="form-check mb-1">
                             <input class="form-check-input" type="checkbox" name="is_delivery_boy" id="is_delivery_boy">
                             <label class="form-check-label" for="is_delivery_boy">
                                 Is Delivery Boy
                             </label>
                         </div>
-                        <div class="form-check mb-3">
+                        <div class="form-check mb-1">
+                            <input class="form-check-input" type="checkbox" name="is_restaurant_owner" id="is_restaurant_owner">
+                            <label class="form-check-label" for="is_restaurant_owner">
+                                Is Restaurant Owner
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
                             <input class="form-check-input" type="checkbox" name="is_admin" id="is_admin">
                             <label class="form-check-label" for="is_admin">
                                 Is Admin / Staff
                             </label>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Associated Restaurant</label>
+                            <select class="form-select" name="restaurant_id">
+                                <option value="">-- Select Restaurant (for Owner/Delivery) --</option>
+                                <?php foreach ($restaurants_list as $res): ?>
+                                    <option value="<?php echo $res['restaurant_id']; ?>"><?php echo htmlspecialchars($res['name']); ?></option>
+                                  <?php endforeach; ?>
+                            </select>
                         </div>
                         <button class="btn btn-primary w-100" type="submit">Create User</button>
                     </form>
@@ -356,6 +451,9 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
                                         <?php endif; ?>
                                         <?php if ($user['is_delivery_boy']): ?>
                                             <span class="badge bg-warning text-dark">Delivery</span>
+                                        <?php endif; ?>
+                                        <?php if ($user['is_restaurant_owner'] ?? 0): ?>
+                                            <span class="badge bg-success">Owner</span>
                                         <?php endif; ?>
                                     </td>
                                     <td><?php echo $user['email']; ?></td>

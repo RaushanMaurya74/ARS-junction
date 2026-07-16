@@ -365,6 +365,8 @@ function admin_add_user($data) {
     $zip_code = clean_input($data['zip_code']);
     $is_admin = isset($data['is_admin']) ? 1 : 0;
     $is_delivery_boy = isset($data['is_delivery_boy']) ? 1 : 0;
+    $is_restaurant_owner = isset($data['is_restaurant_owner']) ? 1 : 0;
+    $restaurant_id = (isset($data['restaurant_id']) && $data['restaurant_id'] !== '') ? intval($data['restaurant_id']) : null;
     
     if (empty($name) || empty($email) || empty($password)) {
         return array('success' => false, 'message' => 'Please fill in all required fields.');
@@ -376,15 +378,61 @@ function admin_add_user($data) {
     
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
     
-    $stmt = $conn->prepare("INSERT INTO users (name, email, password, phone, address, city, state, zip_code, is_admin, is_delivery_boy) 
-                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO users (name, email, password, phone, address, city, state, zip_code, is_admin, is_delivery_boy, is_restaurant_owner, restaurant_id) 
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     
-    if ($stmt->execute([$name, $email, $hashed_password, $phone, $address, $city, $state, $zip_code, $is_admin, $is_delivery_boy])) {
+    if ($stmt->execute([$name, $email, $hashed_password, $phone, $address, $city, $state, $zip_code, $is_admin, $is_delivery_boy, $is_restaurant_owner, $restaurant_id])) {
         return array('success' => true);
     } else {
         return array('success' => false, 'message' => 'Failed to add user.');
     }
 }
+
+// Update user for admin
+function admin_update_user($user_id, $data) {
+    global $conn;
+    
+    $name = clean_input($data['name']);
+    $email = clean_input($data['email']);
+    $phone = clean_input($data['phone']);
+    $address = clean_input($data['address']);
+    $city = clean_input($data['city']);
+    $state = clean_input($data['state']);
+    $zip_code = clean_input($data['zip_code']);
+    
+    $is_admin = isset($data['is_admin']) ? 1 : 0;
+    $is_delivery_boy = isset($data['is_delivery_boy']) ? 1 : 0;
+    $is_restaurant_owner = isset($data['is_restaurant_owner']) ? 1 : 0;
+    $restaurant_id = (isset($data['restaurant_id']) && $data['restaurant_id'] !== '') ? intval($data['restaurant_id']) : null;
+    
+    if (empty($name) || empty($email)) {
+        return array('success' => false, 'message' => 'Please fill in all required fields.');
+    }
+    
+    // Check if email exists for another user
+    $stmt = $conn->prepare("SELECT user_id FROM users WHERE email = ? AND user_id != ?");
+    $stmt->execute([$email, $user_id]);
+    if ($stmt->fetch()) {
+        return array('success' => false, 'message' => 'Email is already taken by another user.');
+    }
+    
+    // If password is provided, update it
+    if (!empty($data['password'])) {
+        $hashed_password = password_hash($data['password'], PASSWORD_DEFAULT);
+        $stmt = $conn->prepare("UPDATE users SET name = ?, email = ?, password = ?, phone = ?, address = ?, city = ?, state = ?, zip_code = ?, is_admin = ?, is_delivery_boy = ?, is_restaurant_owner = ?, restaurant_id = ? WHERE user_id = ?");
+        $params = [$name, $email, $hashed_password, $phone, $address, $city, $state, $zip_code, $is_admin, $is_delivery_boy, $is_restaurant_owner, $restaurant_id, $user_id];
+    } else {
+        $stmt = $conn->prepare("UPDATE users SET name = ?, email = ?, phone = ?, address = ?, city = ?, state = ?, zip_code = ?, is_admin = ?, is_delivery_boy = ?, is_restaurant_owner = ?, restaurant_id = ? WHERE user_id = ?");
+        $params = [$name, $email, $phone, $address, $city, $state, $zip_code, $is_admin, $is_delivery_boy, $is_restaurant_owner, $restaurant_id, $user_id];
+    }
+    
+    if ($stmt->execute($params)) {
+        return array('success' => true);
+    } else {
+        return array('success' => false, 'message' => 'Failed to update user.');
+    }
+}
+
 
 // Delete user for admin
 function admin_delete_user($user_id) {
