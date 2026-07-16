@@ -123,6 +123,12 @@ if (getenv('SUPABASE_DB_HOST') || getenv('SUPABASE_DB_PASSWORD')) {
     $driver = 'pgsql';
 }
 
+// Fallback to mysql if pgsql driver is not loaded in current PHP installation
+if ($driver === 'pgsql' && !in_array('pgsql', PDO::getAvailableDrivers())) {
+    $driver = 'mysql';
+    $host = ''; // Triggers fallback to localhost detection
+}
+
 // Supabase Connection Pooler Hotfix:
 // Direct database connections (db.<ref>.supabase.co:5432) resolve to IPv6-only, which Vercel fails to route.
 // We dynamically rewrite to the IPv4-compatible Session Mode pooler host for ap-northeast-1 region.

@@ -60,8 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = $_POST['action'];
         
         if ($action === 'start_delivery') {
-            $stmt = $conn->prepare("UPDATE orders SET order_status = 'on the way' WHERE order_id = ? AND delivery_boy_id = ?");
-            if ($stmt->execute([$order_id, $db_id])) {
+            $stmt = $conn->prepare("UPDATE orders SET order_status = 'on the way' WHERE order_id = ? AND delivery_boy_id = ? AND restaurant_id = (SELECT restaurant_id FROM users WHERE user_id = ?)");
+            if ($stmt->execute([$order_id, $db_id, $db_id])) {
                 $success_msg = "Order #{$order_id} is now on the way!";
             } else {
                 $error_msg = "Failed to update order status.";
@@ -69,8 +69,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         if ($action === 'complete_delivery') {
-            $stmt = $conn->prepare("UPDATE orders SET order_status = 'delivered' WHERE order_id = ? AND delivery_boy_id = ?");
-            if ($stmt->execute([$order_id, $db_id])) {
+            $stmt = $conn->prepare("UPDATE orders SET order_status = 'delivered' WHERE order_id = ? AND delivery_boy_id = ? AND restaurant_id = (SELECT restaurant_id FROM users WHERE user_id = ?)");
+            if ($stmt->execute([$order_id, $db_id, $db_id])) {
                 $success_msg = "Order #{$order_id} marked as Delivered successfully.";
             } else {
                 $error_msg = "Failed to update order status.";
@@ -78,8 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         if ($action === 'confirm_payment') {
-            $stmt = $conn->prepare("UPDATE orders SET payment_status = 'paid' WHERE order_id = ? AND delivery_boy_id = ?");
-            if ($stmt->execute([$order_id, $db_id])) {
+            $stmt = $conn->prepare("UPDATE orders SET payment_status = 'paid' WHERE order_id = ? AND delivery_boy_id = ? AND restaurant_id = (SELECT restaurant_id FROM users WHERE user_id = ?)");
+            if ($stmt->execute([$order_id, $db_id, $db_id])) {
                 $success_msg = "Payment for Order #{$order_id} marked as Paid.";
             } else {
                 $error_msg = "Failed to confirm payment.";
