@@ -19,6 +19,11 @@ if (!$manager || !$restaurant) {
     header("Location: logout.php");
     exit;
 }
+
+if (isset($restaurant['is_active']) && $restaurant['is_active'] == 0) {
+    header("Location: logout.php?reason=pending");
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

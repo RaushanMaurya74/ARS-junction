@@ -14,6 +14,8 @@ unset($_SESSION['restaurant_owner_name']);
 unset($_SESSION['restaurant_owner_email']);
 unset($_SESSION['restaurant_name']);
 
+$reason = isset($_GET['reason']) ? '?reason=' . urlencode($_GET['reason']) : '';
+
 // Redirect to login
-header("Location: login.php");
+header("Location: login.php" . $reason);
 exit;
