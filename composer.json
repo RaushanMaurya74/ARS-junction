@@ -1,0 +1,14 @@
+{
+    "name": "raushanmaurya74/ars-junction",
+    "description": "ARS Junction Project",
+    "type": "project",
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {},
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    }
+}
