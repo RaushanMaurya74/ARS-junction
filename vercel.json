@@ -18,6 +18,10 @@
       "dest": "/api/delivery_router.php?__route_path__=$1"
     },
     {
+      "src": "/restaurant/(.*)",
+      "dest": "/api/restaurant_router.php?__route_path__=$1"
+    },
+    {
       "src": "/((?!api/).*)",
       "dest": "/api/index.php?__route_path__=$1"
     }
