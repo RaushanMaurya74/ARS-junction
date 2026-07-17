@@ -436,9 +436,16 @@ function get_site_setting($key, $default = '') {
 // Update a site setting by key
 function update_site_setting($key, $value) {
     global $conn;
-    $stmt = $conn->prepare("INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) 
-                          ON DUPLICATE KEY UPDATE setting_value = ?");
-    return $stmt->execute([$key, $value, $value]);
+    $driver = $conn->getAttribute(PDO::ATTR_DRIVER_NAME);
+    if ($driver === 'pgsql') {
+        $stmt = $conn->prepare("INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) 
+                              ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value");
+        return $stmt->execute([$key, $value]);
+    } else {
+        $stmt = $conn->prepare("INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) 
+                              ON DUPLICATE KEY UPDATE setting_value = ?");
+        return $stmt->execute([$key, $value, $value]);
+    }
 }
 
 // Send professional order confirmation email to the buyer
