@@ -197,6 +197,12 @@ $currency_symbol = get_site_setting('currency_symbol', '₹');
                                 <td class="text-muted">Tax (5%):</td>
                                 <td class="text-end"><?php echo format_price($order['tax']); ?></td>
                             </tr>
+                            <?php if (isset($order['discount_amount']) && (float)$order['discount_amount'] > 0): ?>
+                            <tr>
+                                <td class="text-muted">Discount (<?php echo htmlspecialchars($order['promo_code']); ?>):</td>
+                                <td class="text-end text-success">-<?php echo format_price($order['discount_amount']); ?></td>
+                            </tr>
+                            <?php endif; ?>
                             <tr class="border-top">
                                 <td class="fw-bold text-dark pt-2">Grand Total:</td>
                                 <td class="text-end fw-bold text-primary pt-2 fs-5"><?php echo format_price($order['total_amount']); ?></td>

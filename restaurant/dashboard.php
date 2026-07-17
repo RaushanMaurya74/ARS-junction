@@ -381,6 +381,12 @@ $delivery_boys = $stmt_boys->fetchAll(PDO::FETCH_ASSOC);
                                                             <td colspan="3" class="text-end small">Tax (GST):</td>
                                                             <td class="text-end small"><?php echo format_price($order['tax']); ?></td>
                                                         </tr>
+                                                        <?php if (isset($order['discount_amount']) && (float)$order['discount_amount'] > 0): ?>
+                                                        <tr>
+                                                            <td colspan="3" class="text-end small text-success">Discount (<?php echo htmlspecialchars($order['promo_code']); ?>):</td>
+                                                            <td class="text-end small text-success">-<?php echo format_price($order['discount_amount']); ?></td>
+                                                        </tr>
+                                                        <?php endif; ?>
                                                         <tr class="fw-bold bg-light">
                                                             <td colspan="3" class="text-end">Total Amount:</td>
                                                             <td class="text-end text-primary"><?php echo format_price($order['total_amount']); ?></td>

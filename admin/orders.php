@@ -309,6 +309,12 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
                                     <span>Tax:</span>
                                     <span><?php echo format_price($view_order['tax']); ?></span>
                                 </div>
+                                <?php if (isset($view_order['discount_amount']) && (float)$view_order['discount_amount'] > 0): ?>
+                                <div class="d-flex justify-content-between mb-2 text-success">
+                                    <span>Discount (<?php echo htmlspecialchars($view_order['promo_code']); ?>):</span>
+                                    <span>-<?php echo format_price($view_order['discount_amount']); ?></span>
+                                </div>
+                                <?php endif; ?>
                                 <hr>
                                 <div class="d-flex justify-content-between">
                                     <strong>Total:</strong>
