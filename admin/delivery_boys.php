@@ -184,7 +184,7 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
                             </td>
                             <td><?php echo $boy['email']; ?></td>
                             <td><?php echo !empty($boy['phone']) ? $boy['phone'] : 'N/A'; ?></td>
-                            <td><?php echo date('M d, Y', strtotime($boy['created_at'])); ?></td>
+                            <td><?php echo !empty($boy['created_at']) ? date('M d, Y', strtotime($boy['created_at'])) : 'N/A'; ?></td>
                             <td>
                                 <a href="delivery_boys.php?view=<?php echo $boy['user_id']; ?>" class="btn btn-sm btn-info">
                                     <i class="fas fa-eye text-white"></i> View Activity
