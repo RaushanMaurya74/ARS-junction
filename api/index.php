@@ -13,8 +13,8 @@ if ($path === '') {
 // Clean query string parameters if any
 $path = explode('?', $path)[0];
 
-// Basic security check to prevent directory traversal
-if (strpos($path, '..') !== false) {
+// Basic security check to prevent directory traversal or accessing database scripts
+if (strpos($path, '..') !== false || strpos($path, 'database/') === 0) {
     http_response_code(403);
     die('Forbidden');
 }

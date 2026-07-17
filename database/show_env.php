@@ -1,6 +1,4 @@
 <?php
-echo "<pre>";
-print_r($_ENV);
-print_r($_SERVER);
-echo "</pre>";
+header("Location: ../index.php");
+exit;
 ?>

@@ -61,7 +61,7 @@ foreach ($orders as $order) {
         '#' . $order['order_id'],
         $order['customer_name'],
         $order['restaurant_name'],
-        date('M d, Y h:i A', strtotime($order['order_date'])),
+        date('M d, Y h:i A', strtotime($order['order_date'] . ' UTC')),
         strtoupper($order['payment_method']),
         ucfirst($order['payment_status']),
         ucfirst($order['order_status']),

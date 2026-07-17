@@ -296,7 +296,7 @@ $delivery_boys = $stmt_boys->fetchAll(PDO::FETCH_ASSOC);
                                             <strong>#<?php echo $order['order_id']; ?></strong>
                                         </div>
                                         <div class="col-md-3 col-6 text-muted small">
-                                            <i class="fas fa-calendar-alt me-1"></i><?php echo date('M d, Y h:i A', strtotime($order['order_date'])); ?>
+                                            <i class="fas fa-calendar-alt me-1"></i><?php echo date('M d, Y h:i A', strtotime($order['order_date'] . ' UTC')); ?>
                                         </div>
                                         <div class="col-md-3 col-6 mt-2 mt-md-0">
                                             <span class="small">Customer:</span> <strong><?php echo htmlspecialchars($order['customer_name']); ?></strong>
