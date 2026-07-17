@@ -12,77 +12,182 @@ if (is_logged_in()) {
 
 $error = '';
 $success = '';
-$step = 1; // 1: Verify Email/Phone, 2: Reset Password, 3: Completed
+$step = isset($_SESSION['reset_step']) ? (int)$_SESSION['reset_step'] : 1; 
+
+// Email OTP Sender helper
+function send_otp_email($email, $name, $otp) {
+    $site_name = get_site_setting('site_name', 'ARS Junction');
+    $site_email = get_site_setting('site_email', 'officialarsjunction@gmail.com');
+    $site_phone = get_site_setting('site_phone', '7979730721');
+    $site_location = get_site_setting('site_location', 'AT - PIRO, BHOJPUR, BIHAR, INDIA-802207');
+
+    $htmlContent = "
+    <!DOCTYPE html>
+    <html lang='en'>
+    <head>
+        <meta charset='UTF-8'>
+        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+        <title>Password Reset OTP - {$site_name}</title>
+        <style>
+            body { font-family: 'Segoe UI', Helvetica, Arial, sans-serif; background-color: #f6f9fc; margin: 0; padding: 0; color: #333333; }
+            .email-container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #e1e6eb; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+            .header { background: linear-gradient(135deg, #FF5722 0%, #E64A19 100%); color: #ffffff; padding: 30px; text-align: center; }
+            .header h1 { margin: 0; font-size: 24px; font-weight: bold; letter-spacing: 0.5px; }
+            .content { padding: 30px; }
+            .greeting { font-size: 18px; font-weight: 600; margin-top: 0; color: #111111; }
+            .otp-code { font-size: 32px; font-weight: bold; text-align: center; color: #E64A19; letter-spacing: 5px; padding: 15px; margin: 20px 0; background: #f8f9fa; border-radius: 6px; border: 1px dashed #E64A19; }
+            .footer { background-color: #f1f4f7; text-align: center; padding: 20px; font-size: 12px; color: #666666; border-top: 1px solid #e1e6eb; }
+        </style>
+    </head>
+    <body>
+        <div class='email-container'>
+            <div class='header'>
+                <h1>Password Reset Request</h1>
+                <p style='margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;'>Verification code for your Customer account</p>
+            </div>
+            <div class='content'>
+                <p class='greeting'>Hello {$name},</p>
+                <p>We received a request to reset your password. Use the following One-Time Password (OTP) to proceed. This OTP is valid for 15 minutes.</p>
+                
+                <div class='otp-code'>{$otp}</div>
+
+                <p style='color: #666; font-size: 13px;'>If you did not request a password reset, please ignore this email or secure your account.</p>
+            </div>
+            <div class='footer'>
+                <p style='margin: 0 0 5px 0;'><strong>{$site_name} Support</strong></p>
+                <p style='margin: 0 0 10px 0;'>{$site_location} | Phone: +91 {$site_phone}</p>
+                <p style='margin: 0; font-size: 11px; color: #999999;'>This is an automated system email. Please do not reply directly.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    ";
+
+    // Write file copy for fallback/preview
+    $email_dir = __DIR__ . '/uploads/emails';
+    if (!file_exists($email_dir)) {
+        @mkdir($email_dir, 0777, true);
+    }
+    $timestamp = time();
+    $preview_file = $email_dir . "/otp_reset_{$timestamp}.html";
+    @file_put_contents($preview_file, $htmlContent);
+
+    // Send email
+    $to = $email;
+    $subject = "Password Reset OTP - {$site_name}";
+    $headers = "MIME-Version: 1.0" . "\r\n";
+    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+    $headers .= "From: {$site_name} <noreply@arsjunction.com>" . "\r\n";
+    
+    return @mail($to, $subject, $htmlContent, $headers);
+}
 
 // Handle Cancel Action
 if (isset($_GET['action']) && $_GET['action'] === 'cancel') {
+    unset($_SESSION['reset_otp_email']);
+    unset($_SESSION['reset_otp_code']);
+    unset($_SESSION['reset_otp_expiry']);
+    unset($_SESSION['reset_otp_verified']);
     unset($_SESSION['reset_user_id']);
     unset($_SESSION['reset_user_name']);
+    unset($_SESSION['reset_step']);
     header("Location: forgot_password.php");
     exit;
 }
 
 // Handle Form Submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    if (isset($_POST['action']) && $_POST['action'] === 'verify') {
+    // STEP 1: Enter Email & Request OTP
+    if (isset($_POST['action']) && $_POST['action'] === 'request_otp') {
         $email = clean_input($_POST['email']);
-        $phone = clean_input($_POST['phone']);
         
-        if (empty($email) || empty($phone)) {
-            $error = "Please fill in all fields.";
+        if (empty($email)) {
+            $error = "Please enter your registered email address.";
         } else {
-            // Find user by email and phone
-            $stmt = $conn->prepare("SELECT user_id, name FROM users WHERE email = ? AND phone = ?");
-            $stmt->execute([$email, $phone]);
+            // Find user by email
+            $stmt = $conn->prepare("SELECT user_id, name FROM users WHERE email = ?");
+            $stmt->execute([$email]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($user) {
+                // Generate OTP
+                $otp = mt_rand(100000, 999999);
+                $_SESSION['reset_otp_email'] = $email;
+                $_SESSION['reset_otp_code'] = $otp;
+                $_SESSION['reset_otp_expiry'] = time() + 900; // 15 mins
                 $_SESSION['reset_user_id'] = $user['user_id'];
                 $_SESSION['reset_user_name'] = $user['name'];
+                $_SESSION['reset_step'] = 2;
                 $step = 2;
+
+                // Send Email
+                send_otp_email($email, $user['name'], $otp);
+                $success = 'A verification OTP has been sent to your email address.';
             } else {
-                $error = "No account found with that email and phone number combination.";
-            }
-        }
-    } elseif (isset($_POST['action']) && $_POST['action'] === 'reset') {
-        if (!isset($_SESSION['reset_user_id'])) {
-            header("Location: forgot_password.php");
-            exit;
-        }
-        
-        $new_password = $_POST['new_password'];
-        $confirm_password = $_POST['confirm_password'];
-        
-        if (empty($new_password) || empty($confirm_password)) {
-            $error = "Please fill in all fields.";
-            $step = 2;
-        } elseif (strlen($new_password) < 6) {
-            $error = "Password must be at least 6 characters long.";
-            $step = 2;
-        } elseif ($new_password !== $confirm_password) {
-            $error = "Passwords do not match.";
-            $step = 2;
-        } else {
-            $user_id = $_SESSION['reset_user_id'];
-            $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-            
-            // Update password in DB
-            $stmt = $conn->prepare("UPDATE users SET password = ? WHERE user_id = ?");
-            if ($stmt->execute([$hashed_password, $user_id])) {
-                $success = "Your password has been reset successfully! You can now log in.";
-                unset($_SESSION['reset_user_id']);
-                unset($_SESSION['reset_user_name']);
-                $step = 3;
-            } else {
-                $error = "Failed to reset password. Please try again.";
-                $step = 2;
+                $error = "No customer account found with that email address.";
             }
         }
     }
-} else {
-    // If arriving via GET and already verified, check session
-    if (isset($_SESSION['reset_user_id'])) {
-        $step = 2;
+    
+    // STEP 2: Verify OTP
+    elseif (isset($_POST['action']) && $_POST['action'] === 'verify_otp') {
+        $entered_otp = trim($_POST['otp'] ?? '');
+        
+        if (empty($entered_otp)) {
+            $error = 'Please enter the verification OTP.';
+        } elseif (!isset($_SESSION['reset_otp_code']) || time() > $_SESSION['reset_otp_expiry']) {
+            $error = 'OTP has expired. Please request a new one.';
+            $_SESSION['reset_step'] = 1;
+            $step = 1;
+        } elseif ($entered_otp != $_SESSION['reset_otp_code']) {
+            $error = 'Invalid OTP. Please try again.';
+        } else {
+            $_SESSION['reset_otp_verified'] = true;
+            $_SESSION['reset_step'] = 3;
+            $step = 3;
+            $success = 'OTP verified successfully. You can now set your new password.';
+        }
+    }
+    
+    // STEP 3: Reset Password
+    elseif (isset($_POST['action']) && $_POST['action'] === 'reset_password') {
+        if (!isset($_SESSION['reset_otp_verified']) || !$_SESSION['reset_otp_verified']) {
+            $error = 'Session expired. Please start over.';
+            $_SESSION['reset_step'] = 1;
+            $step = 1;
+        } else {
+            $new_password = $_POST['new_password'];
+            $confirm_password = $_POST['confirm_password'];
+            
+            if (empty($new_password) || empty($confirm_password)) {
+                $error = "Please fill in all fields.";
+            } elseif (strlen($new_password) < 6) {
+                $error = "Password must be at least 6 characters long.";
+            } elseif ($new_password !== $confirm_password) {
+                $error = "Passwords do not match.";
+            } else {
+                $user_id = $_SESSION['reset_user_id'];
+                $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+                
+                // Update password in DB
+                $stmt = $conn->prepare("UPDATE users SET password = ? WHERE user_id = ?");
+                if ($stmt->execute([$hashed_password, $user_id])) {
+                    // Clear reset session variables
+                    unset($_SESSION['reset_otp_email']);
+                    unset($_SESSION['reset_otp_code']);
+                    unset($_SESSION['reset_otp_expiry']);
+                    unset($_SESSION['reset_otp_verified']);
+                    unset($_SESSION['reset_user_id']);
+                    unset($_SESSION['reset_user_name']);
+                    unset($_SESSION['reset_step']);
+                    
+                    $success = "Your password has been reset successfully! You can now log in.";
+                    $step = 4;
+                } else {
+                    $error = "Failed to reset password. Please try again.";
+                }
+            }
+        }
     }
 }
 ?>
@@ -438,7 +543,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <!-- ═══ RIGHT PANEL ══════════════════════════════════ -->
         <div class="panel-right">
             <h1 class="form-heading">Recover Password</h1>
-            <p class="form-subhead">Verification & recovery using registered Email & Phone.</p>
+            <p class="form-subhead">Verification & recovery using secure Email OTP code.</p>
 
             <?php if (!empty($error)): ?>
                 <div class="error-banner">
@@ -454,9 +559,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <?php endif; ?>
 
             <?php if ($step === 1): ?>
-                <!-- STEP 1: Verify Email/Phone -->
+                <!-- STEP 1: Enter Email -->
                 <form action="forgot_password.php" method="post" autocomplete="off">
-                    <input type="hidden" name="action" value="verify">
+                    <input type="hidden" name="action" value="request_otp">
                     
                     <div>
                         <div class="field-label">Email Address</div>
@@ -473,29 +578,44 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </div>
                     </div>
 
+                    <button type="submit" class="btn-login" id="requestOtpBtn">
+                        Send Verification Code <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+            <?php elseif ($step === 2): ?>
+                <!-- STEP 2: Verify OTP -->
+                <form action="forgot_password.php" method="post" autocomplete="off">
+                    <input type="hidden" name="action" value="verify_otp">
+                    
                     <div>
-                        <div class="field-label">Registered Mobile Number</div>
+                        <div class="field-label">6-Digit Verification Code</div>
                         <div class="input-wrap">
-                            <i class="fa-solid fa-phone input-icon"></i>
+                            <i class="fa-solid fa-shield-halved input-icon"></i>
                             <input
-                                type="tel"
-                                id="phone"
-                                name="phone"
+                                type="text"
+                                id="otp"
+                                name="otp"
                                 class="form-input"
-                                placeholder="10-digit number"
+                                placeholder="Enter 6-digit OTP"
                                 required
+                                maxlength="6"
+                                autocomplete="one-time-code"
                             >
                         </div>
                     </div>
 
-                    <button type="submit" class="btn-login" id="loginBtn">
-                        Verify Account <i class="fa-solid fa-circle-check"></i>
+                    <button type="submit" class="btn-login" id="verifyOtpBtn">
+                        Verify Code <i class="fa-solid fa-circle-check"></i>
                     </button>
+
+                    <div class="text-center mt-3">
+                        <a href="forgot_password.php?action=cancel" class="text-muted small">Start Over</a>
+                    </div>
                 </form>
-            <?php elseif ($step === 2): ?>
-                <!-- STEP 2: Reset Password -->
+            <?php elseif ($step === 3): ?>
+                <!-- STEP 3: Reset Password -->
                 <form action="forgot_password.php" method="post" autocomplete="off">
-                    <input type="hidden" name="action" value="reset">
+                    <input type="hidden" name="action" value="reset_password">
                     
                     <div>
                         <div class="field-label">New Password</div>
@@ -541,8 +661,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <a href="forgot_password.php?action=cancel" class="text-muted small">Start Over</a>
                     </div>
                 </form>
-            <?php elseif ($step === 3): ?>
-                <!-- STEP 3: Completed Successfully -->
+            <?php elseif ($step === 4): ?>
+                <!-- STEP 4: Completed Successfully -->
                 <div class="text-center py-4">
                     <i class="fa-solid fa-circle-check fa-4x text-success mb-3 animate__animated animate__bounceIn"></i>
                     <h5 class="fw-bold mb-2">Password Updated!</h5>
@@ -553,7 +673,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
             <?php endif; ?>
 
-            <?php if ($step !== 3): ?>
+            <?php if ($step !== 4): ?>
             <div class="back-row">
                 <a href="login.php"><i class="fa-solid fa-arrow-left me-1"></i> Back to Login</a>
             </div>
@@ -591,7 +711,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     const form = document.querySelector('form');
     if (form) {
         form.addEventListener('submit', function () {
-            const btn = document.getElementById('loginBtn') || document.getElementById('resetBtn');
+            const btn = document.getElementById('requestOtpBtn') || document.getElementById('verifyOtpBtn') || document.getElementById('resetBtn');
             if (btn) {
                 btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing\u2026';
                 btn.style.opacity = '.85';
