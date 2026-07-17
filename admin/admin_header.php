@@ -75,6 +75,11 @@ if (!$admin) {
                     <i class="fas fa-map-marker-alt me-2"></i> Delivery Locations
                 </a>
             </li>
+            <li class="<?php echo (basename($_SERVER['PHP_SELF']) == 'promo_codes.php') ? 'active' : ''; ?>">
+                <a href="promo_codes.php">
+                    <i class="fas fa-ticket-alt me-2"></i> Promo Codes
+                </a>
+            </li>
             <li class="<?php echo (basename($_SERVER['PHP_SELF']) == 'reviews.php') ? 'active' : ''; ?>">
                 <a href="reviews.php">
                     <i class="fas fa-star me-2"></i> Reviews

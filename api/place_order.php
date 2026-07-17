@@ -95,15 +95,44 @@ if ($subtotal <= 0) {
 // Use the location specific delivery charge
 $delivery_fee = (float)$location['delivery_charge'];
 $tax = round($subtotal * 0.05, 2);
-$total = $subtotal + $delivery_fee + $tax;
+
+// Re-validate and calculate discount server-side using applied promo code from session
+$discount = 0.00;
+$applied_code = null;
+if (!empty($_SESSION['applied_promo_code'])) {
+    $stmt_promo = $conn->prepare("SELECT * FROM promo_codes WHERE UPPER(code) = UPPER(?) AND is_active = 1 LIMIT 1");
+    $stmt_promo->execute([$_SESSION['applied_promo_code']]);
+    $promo = $stmt_promo->fetch(PDO::FETCH_ASSOC);
+    if ($promo && $subtotal >= (float)$promo['min_order_amount']) {
+        $applied_code = $promo['code'];
+        $val = (float)$promo['discount_value'];
+        if ($promo['discount_type'] === 'percentage') {
+            $discount = ($subtotal * $val) / 100;
+            if (!empty($promo['max_discount_amount'])) {
+                $max_d = (float)$promo['max_discount_amount'];
+                if ($discount > $max_d) {
+                    $discount = $max_d;
+                }
+            }
+        } else {
+            $discount = $val;
+            if ($discount > $subtotal) {
+                $discount = $subtotal;
+            }
+        }
+        $discount = round($discount, 2);
+    }
+}
+
+$total = $subtotal + $delivery_fee + $tax - $discount;
 $payment_status = ($payment_method === 'cash' || $payment_method === 'upi') ? 'pending' : 'paid';
 
 try {
     $conn->beginTransaction();
 
-    $stmt = $conn->prepare("INSERT INTO orders (user_id, restaurant_id, delivery_address, delivery_phone, subtotal, delivery_fee, tax, total_amount, payment_method, payment_status, order_status, notes)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)");
-    $stmt->execute([$user_id, $restaurant_id, $delivery_address, $phone, $subtotal, $delivery_fee, $tax, $total, $payment_method, $payment_status, $notes]);
+    $stmt = $conn->prepare("INSERT INTO orders (user_id, restaurant_id, delivery_address, delivery_phone, subtotal, delivery_fee, tax, promo_code, discount_amount, total_amount, payment_method, payment_status, order_status, notes)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)");
+    $stmt->execute([$user_id, $restaurant_id, $delivery_address, $phone, $subtotal, $delivery_fee, $tax, $applied_code, $discount, $total, $payment_method, $payment_status, $notes]);
     $order_id = $conn->lastInsertId();
 
     $stmt = $conn->prepare("INSERT INTO order_items (order_id, item_id, quantity, price) VALUES (?, ?, ?, ?)");
@@ -115,6 +144,10 @@ try {
     $stmt->execute([$user_id]);
 
     $conn->commit();
+    
+    // Clear applied promo code from session upon successful order
+    unset($_SESSION['applied_promo_code']);
+    
     echo json_encode(['success' => true, 'order_id' => $order_id]);
 } catch (PDOException $e) {
     if ($conn->inTransaction()) {
@@ -123,4 +156,3 @@ try {
     echo json_encode(['success' => false, 'message' => 'Unable to place order. Please try again.']);
 }
 ?>
-
