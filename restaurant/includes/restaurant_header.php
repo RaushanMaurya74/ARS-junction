@@ -75,7 +75,30 @@ if (isset($restaurant['is_active']) && $restaurant['is_active'] == 0) {
                     <i class="fas fa-store-alt"></i> Profile & Settings
                 </a>
             </li>
-            <li class="mt-4 pt-4 border-top border-secondary">
+            
+            <li class="nav-label mt-3 px-3 text-uppercase text-muted fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px; opacity: 0.8;">ERP Modules</li>
+            <li class="<?php echo (basename($_SERVER['PHP_SELF']) == 'inventory.php') ? 'active' : ''; ?>">
+                <a href="inventory.php">
+                    <i class="fas fa-boxes"></i> Inventory ERP
+                </a>
+            </li>
+            <li class="<?php echo (basename($_SERVER['PHP_SELF']) == 'suppliers.php') ? 'active' : ''; ?>">
+                <a href="suppliers.php">
+                    <i class="fas fa-handshake"></i> Suppliers
+                </a>
+            </li>
+            <li class="<?php echo (basename($_SERVER['PHP_SELF']) == 'billing.php') ? 'active' : ''; ?>">
+                <a href="billing.php">
+                    <i class="fas fa-file-invoice-dollar"></i> Billing ERP
+                </a>
+            </li>
+            <li class="<?php echo (basename($_SERVER['PHP_SELF']) == 'reports.php') ? 'active' : ''; ?>">
+                <a href="reports.php">
+                    <i class="fas fa-chart-line"></i> ERP Reports
+                </a>
+            </li>
+
+            <li class="mt-3 pt-3 border-top border-secondary">
                 <a href="logout.php">
                     <i class="fas fa-sign-out-alt text-danger"></i> <span class="text-danger">Logout</span>
                 </a>
