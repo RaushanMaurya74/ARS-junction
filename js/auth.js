@@ -374,7 +374,7 @@ function setupGoogleSignIn(apiKeys) {
                         theme: 'outline', 
                         size: 'large', 
                         width: '100%', 
-                        text: 'signin_with',
+                        text: 'continue_with',
                         shape: 'rectangular',
                         logo_alignment: 'left'
                     }

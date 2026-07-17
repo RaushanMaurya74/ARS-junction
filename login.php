@@ -512,16 +512,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="row g-2 justify-content-center" style="display: flex; gap: 0.5rem;">
                 <?php if ($fb_enabled == '1'): ?>
                 <div style="flex: 1;">
-                    <button id="facebook-login" class="social-login-btn w-100" style="color: #1877f2; border-color: #e5e7eb;">
-                        <i class="fab fa-facebook-f" style="margin-right: 6px;"></i> Facebook
+                    <button id="facebook-login" class="social-login-btn w-100" style="color: #3c4043; border-color: #dadce0;">
+                        <i class="fab fa-facebook-f" style="margin-right: 8px; color: #1877f2;"></i> Continue with Facebook
                     </button>
                 </div>
                 <?php endif; ?>
                 
                 <?php if ($google_enabled == '1'): ?>
                 <div style="flex: 1;">
-                    <button id="google-login" class="social-login-btn w-100" style="color: #ea4335; border-color: #e5e7eb;">
-                        <i class="fab fa-google" style="margin-right: 6px;"></i> Google
+                    <button id="google-login" class="social-login-btn w-100" style="color: #3c4043; border-color: #dadce0;">
+                        <i class="fab fa-google" style="margin-right: 8px; color: #ea4335;"></i> Continue with Google
                     </button>
                     <div id="google-login-container" style="width: 100%;"></div>
                 </div>
