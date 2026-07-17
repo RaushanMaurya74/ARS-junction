@@ -263,6 +263,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-bottom: 1.25rem;
             animation: shake .4s ease;
         }
+        .success-banner {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 10px;
+            padding: .75rem 1rem;
+            font-size: .82rem;
+            color: #166534;
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            margin-bottom: 1.25rem;
+        }
         @keyframes shake {
             0%,100% { transform: translateX(0); }
             20%,60%  { transform: translateX(-6px); }
@@ -516,6 +528,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             <?php endif; ?>
 
+            <?php if (isset($_GET['reset']) && $_GET['reset'] === 'success'): ?>
+                <div class="success-banner">
+                    <i class="fa-solid fa-circle-check"></i>
+                    Your password has been reset successfully! You can now log in.
+                </div>
+            <?php endif; ?>
+
             <form method="post" action="login.php" autocomplete="off">
                 <!-- Email -->
                 <div>
@@ -539,7 +558,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div>
                     <div class="field-label">
                         Password
-                        <a href="#">Forgot Password?</a>
+                        <a href="forgot_password.php">Forgot Password?</a>
                     </div>
                     <div class="input-wrap pw-wrap">
                         <i class="fa-solid fa-lock input-icon"></i>
