@@ -521,11 +521,20 @@ function send_order_confirmation_email($order_id) {
                             <td style='text-align: right;'>&#8377;" . number_format($item_total, 2) . "</td>
                         </tr>";
                     }
-                    
-                    $subtotal = number_format($order['subtotal'], 2);
+                                   $subtotal = number_format($order['subtotal'], 2);
                     $delivery_fee = number_format($order['delivery_fee'], 2);
                     $tax = number_format($order['tax'], 2);
                     $grand_total = number_format($order['total_amount'], 2);
+
+                    $discount_row = "";
+                    if (isset($order['discount_amount']) && (float)$order['discount_amount'] > 0) {
+                        $discount_val = number_format($order['discount_amount'], 2);
+                        $discount_row = "
+                        <tr>
+                            <td style='color: #666;'>Discount (" . ($order['promo_code'] ?? '') . "):</td>
+                            <td style='text-align: right; color: #28a745;'>-&#8377;{$discount_val}</td>
+                        </tr>";
+                    }
 
     $htmlContent .= "
                     </tbody>
@@ -545,6 +554,7 @@ function send_order_confirmation_email($order_id) {
                         <td style='color: #666;'>Tax (5%):</td>
                         <td style='text-align: right;'>&#8377;{$tax}</td>
                     </tr>
+                    {$discount_row}
                     <tr class='grand-total'>
                         <td>Grand Total:</td>
                         <td style='text-align: right;'>&#8377;{$grand_total}</td>
@@ -917,9 +927,11 @@ function get_compressed_base64_image($tmp_name, $ext, $max_width = 300, $max_hei
     }
     $compressed_data = ob_get_clean();
 
-    // Free resources
-    imagedestroy($src_img);
-    imagedestroy($dst_img);
+    // Free resources (imagedestroy is deprecated in PHP 8.5+ and has no effect since PHP 8.0)
+    if (PHP_VERSION_ID < 80000) {
+        imagedestroy($src_img);
+        imagedestroy($dst_img);
+    }
 
     return 'data:image/' . ($ext === 'png' ? 'png' : ($ext === 'gif' ? 'gif' : 'jpeg')) . ';base64,' . base64_encode($compressed_data);
 }
