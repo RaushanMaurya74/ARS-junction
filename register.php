@@ -371,6 +371,42 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         .register-row a:hover { text-decoration: underline; }
 
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            margin: 1.5rem 0 1rem;
+            color: var(--text-light);
+            font-size: .75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+        .social-login-btn {
+            border: 1.5px solid var(--border);
+            background: var(--white);
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 44px;
+            cursor: pointer;
+            transition: border-color .2s, background .2s;
+        }
+        .social-login-btn:hover {
+            border-color: var(--brand);
+            background: #f1f8f2;
+        }
+        .social-login-btn i { font-size: 0.95rem; }
+
         @media (max-width: 720px) {
             .login-card { flex-direction: column; max-width: 420px; border-radius: 20px; height: 95vh; }
             .panel-left  { min-height: 160px; padding: 1.2rem; }
@@ -522,6 +558,34 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </button>
             </form>
 
+            <!-- Social Logins -->
+            <?php 
+            $fb_enabled = get_site_setting('facebook_login_enabled', '0');
+            $google_enabled = get_site_setting('google_login_enabled', '1');
+            
+            if ($fb_enabled == '1' || $google_enabled == '1'): 
+            ?>
+            <div class="divider">or sign up with</div>
+            <div class="row g-2 justify-content-center" style="display: flex; gap: 0.5rem;">
+                <?php if ($fb_enabled == '1'): ?>
+                <div style="flex: 1;">
+                    <button id="facebook-login" class="social-login-btn w-100" style="color: #1877f2; border-color: #e5e7eb;">
+                        <i class="fab fa-facebook-f" style="margin-right: 6px;"></i> Facebook
+                    </button>
+                </div>
+                <?php endif; ?>
+                
+                <?php if ($google_enabled == '1'): ?>
+                <div style="flex: 1;">
+                    <button id="google-login" class="social-login-btn w-100" style="color: #ea4335; border-color: #e5e7eb;">
+                        <i class="fab fa-google" style="margin-right: 6px;"></i> Google
+                    </button>
+                    <div id="google-login-container" style="display:none; width: 100%;"></div>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
+
             <!-- Login Link -->
             <div class="register-row">
                 Already have an account? <a href="login.php">Log In</a>
@@ -530,6 +594,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     </div>
 </div>
+
+<!-- jQuery and Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Auth JS -->
+<script src="js/auth.js"></script>
 
 <script>
     // Password show/hide toggle
@@ -551,7 +621,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         pwIconConfirm.className = show ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
     });
 
-    // Loading state on submit
+    // Loading state on submit (ignore if social login triggered)
     document.querySelector('form').addEventListener('submit', function () {
         const btn = document.getElementById('registerBtn');
         btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Creating Account\u2026';
