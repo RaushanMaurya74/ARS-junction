@@ -52,6 +52,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error_msg = 'Error uploading file.';
         }
     }
+
+    // Handle Profile Image Removal
+    if (isset($_POST['remove_photo'])) {
+        $stmt = $conn->prepare("UPDATE users SET profile_image = NULL WHERE user_id = ?");
+        if ($stmt->execute([$db_id])) {
+            $success_msg = 'Profile photo removed successfully!';
+            // Refresh user data
+            $db_user = get_user_by_id($db_id);
+        } else {
+            $error_msg = 'Failed to remove profile photo.';
+        }
+    }
     
     // Handle order actions
     if (isset($_POST['action'])) {
@@ -221,6 +233,14 @@ $active_tab = isset($_GET['tab']) && $_GET['tab'] === 'history' ? 'history' : 'a
                             <input type="hidden" name="upload_photo" value="1">
                         </form>
                     </div>
+                    <?php if (has_image($db_user['profile_image'], true)): ?>
+                        <form method="post" action="dashboard.php" class="mb-2 text-center">
+                            <input type="hidden" name="remove_photo" value="1">
+                            <button type="submit" class="btn btn-xs btn-outline-danger py-1 px-2" style="font-size: 0.72rem; border-radius: 4px;">
+                                <i class="fas fa-trash-alt me-1"></i> Remove Photo
+                            </button>
+                        </form>
+                    <?php endif; ?>
                     <h5 class="fw-bold mb-1"><?php echo htmlspecialchars($db_user['name']); ?></h5>
                     <p class="text-muted small mb-2"><?php echo htmlspecialchars($db_user['email']); ?></p>
                     <div class="mb-3">

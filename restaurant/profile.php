@@ -61,6 +61,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Form 3: Remove Banner Image
+    if (isset($_POST['remove_banner'])) {
+        $stmt = $conn->prepare("UPDATE restaurants SET image = NULL WHERE restaurant_id = ?");
+        if ($stmt->execute([$restaurant_id])) {
+            $success_msg = 'Restaurant banner image removed successfully.';
+            $restaurant = get_restaurant_by_id($restaurant_id);
+        } else {
+            $error_msg = 'Failed to remove banner image.';
+        }
+    }
+
     // Form 2: Update Manager Login Settings
     if (isset($_POST['update_manager'])) {
         $manager_name = clean_input($_POST['manager_name']);
@@ -193,14 +204,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="mb-4">
                             <label class="form-label small fw-bold">Restaurant Banner Image</label>
                             <?php if (has_image($restaurant['image'], true)): ?>
-                                <div class="mb-2">
+                                <div class="mb-2 position-relative d-inline-block" style="display: inline-block; position: relative;">
                                     <img src="<?php echo get_image_url($restaurant['image'], true); ?>" class="img-thumbnail rounded" style="max-height: 120px; width: 100%; object-fit: cover;">
+                                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" onclick="document.getElementById('remove-banner-form').submit();" title="Remove Banner Image" style="position: absolute; top: 5px; right: 5px;">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
                                 </div>
                             <?php endif; ?>
                             <input class="form-control" type="file" name="banner_image" accept="image/*">
                         </div>
 
                         <button type="submit" class="btn btn-primary fw-bold px-4">Save Restaurant Settings</button>
+                    </form>
+                    
+                    <form id="remove-banner-form" method="post" style="display: none;">
+                        <input type="hidden" name="remove_banner" value="1">
                     </form>
                 </div>
             </div>

@@ -30,6 +30,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_photo'])) {
     }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_photo'])) {
+    $stmt = $conn->prepare("UPDATE users SET profile_image = NULL WHERE user_id = ?");
+    if ($stmt->execute([$admin_id])) {
+        $success_msg = 'Profile photo removed successfully!';
+        $admin = get_admin_by_id($admin_id);
+    } else {
+        $error_msg = 'Failed to remove profile photo.';
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['upload_photo'])) {
     $name = trim($_POST['name']);
     $email = trim($_POST['email']);
@@ -118,15 +128,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['upload_photo'])) {
                         <?php endif; ?>
                     </div>
                     
-                    <form method="post" action="profile.php" enctype="multipart/form-data" class="mb-3">
+                    <form method="post" action="profile.php" enctype="multipart/form-data" class="mb-2">
                         <div class="mb-2">
-                            <label for="admin_profile_pic" class="form-label btn btn-sm btn-outline-secondary px-3">
+                            <label for="admin_profile_pic" class="form-label btn btn-sm btn-outline-secondary px-3 mb-0">
                                 <i class="fas fa-camera me-1"></i> Update Photo
                             </label>
                             <input type="file" id="admin_profile_pic" name="profile_pic" accept="image/*" class="d-none" onchange="this.form.submit()">
                         </div>
                         <input type="hidden" name="upload_photo" value="1">
                     </form>
+                    
+                    <?php if (has_image($admin['profile_image'], true)): ?>
+                    <form method="post" action="profile.php" class="mb-3">
+                        <input type="hidden" name="remove_photo" value="1">
+                        <button type="submit" class="btn btn-sm btn-outline-danger px-3">
+                            <i class="fas fa-trash-alt me-1"></i> Remove Photo
+                        </button>
+                    </form>
+                    <?php endif; ?>
                     <h4 class="font-weight-bold text-gray-800"><?php echo htmlspecialchars($admin['name']); ?></h4>
                     <p class="text-muted small mb-3">System Administrator</p>
                     <span class="badge bg-primary px-3 py-2">Full Permissions</span>

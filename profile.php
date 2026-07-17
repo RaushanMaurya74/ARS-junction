@@ -41,6 +41,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['upload_photo'])) {
     }
 }
 
+// Handle Profile Image Removal
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['remove_photo'])) {
+    $stmt = $conn->prepare("UPDATE users SET profile_image = NULL WHERE user_id = ?");
+    if ($stmt->execute([$user_id])) {
+        $success_msg = 'Profile photo removed successfully!';
+        $user = get_user_by_id($user_id); // Refresh user data
+    } else {
+        $error_msg = 'Failed to remove profile photo.';
+    }
+}
+
 // Handle profile update
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_profile'])) {
     $name = clean_input($_POST['name']);
@@ -111,7 +122,7 @@ $extra_js = '<script src="js/auth.js"></script>';
                         <?php endif; ?>
                     </div>
                     
-                    <form method="post" action="profile.php" enctype="multipart/form-data" class="mb-3">
+                    <form method="post" action="profile.php" enctype="multipart/form-data" class="mb-2">
                         <div class="mb-2">
                             <label for="profile_pic" class="form-label btn btn-sm btn-outline-secondary w-100 mb-0">
                                 <i class="fas fa-camera me-1"></i> Choose Photo
@@ -120,6 +131,15 @@ $extra_js = '<script src="js/auth.js"></script>';
                         </div>
                         <input type="hidden" name="upload_photo" value="1">
                     </form>
+                    
+                    <?php if (!empty($user['profile_image'])): ?>
+                    <form method="post" action="profile.php" class="mb-3">
+                        <input type="hidden" name="remove_photo" value="1">
+                        <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                            <i class="fas fa-trash-alt me-1"></i> Remove Photo
+                        </button>
+                    </form>
+                    <?php endif; ?>
                     
                     <h5 class="mb-1"><?php echo $user['name']; ?></h5>
                     <p class="text-muted small"><?php echo $user['email']; ?></p>
