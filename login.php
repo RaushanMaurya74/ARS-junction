@@ -374,15 +374,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             background: var(--border);
         }
         .social-login-btn {
-            border: 1.5px solid var(--border);
+            border: 1px solid #dadce0;
             background: var(--white);
-            border-radius: 10px;
-            font-size: 0.85rem;
-            font-weight: 600;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 44px;
+            height: 40px;
             cursor: pointer;
             transition: border-color .2s, background .2s;
         }
@@ -390,7 +390,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border-color: var(--brand);
             background: #fff5f2;
         }
-        .social-login-btn i { font-size: 0.95rem; }
+        .social-login-btn i { font-size: 0.9rem; }
 
         @media (max-width: 720px) {
             .login-card { flex-direction: column; max-width: 420px; border-radius: 20px; }
