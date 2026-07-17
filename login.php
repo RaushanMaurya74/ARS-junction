@@ -1,18 +1,17 @@
 <?php
-// Start session and include required files, but don't output anything yet
+// Start session and include required files
 require_once 'includes/db_connect.php';
 require_once 'includes/functions.php';
 require_once 'includes/auth.php';
-
-$page_title = "Login";
-$error = '';
-$email = '';
 
 // Redirect if already logged in
 if (is_logged_in()) {
     header("Location: index.php");
     exit;
 }
+
+$error = '';
+$email = '';
 
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -33,119 +32,466 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $error = 'Invalid email or password. Please try again.';
     }
 }
-
-// Extra CSS and JS
-$extra_css = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">';
-$extra_js = '<script src="js/auth.js"></script>';
-
-// Now include the header which will output HTML
-require_once 'includes/header.php';
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — ARS Junction</title>
+    <meta name="description" content="Sign in to your ARS Junction account to order delicious food.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-10">
-            <div class="card border-0 shadow-lg overflow-hidden">
-                <div class="row g-0">
-                    <!-- Image column (visible on medium and larger screens) -->
-                    <div class="col-md-5 d-none d-md-block">
-                        <div class="bg-primary h-100 d-flex flex-column justify-content-center text-center text-white p-4" style="background: linear-gradient(135deg, var(--primary-color) 0%, #ff7e47 100%);">
-                            <div class="my-4 py-4">
-                                <img src="images/logo.png" alt="ARS JUNCTION Logo" class="img-fluid mb-4" style="max-width: 150px;">
-                                <h2 class="display-6 fw-bold mb-3">Welcome Back!</h2>
-                                <p class="lead">Access your account to enjoy delicious food from the best restaurants around you.</p>
-                                <p class="mt-4">Your food journey is just a login away.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Login form column -->
-                    <div class="col-md-7">
-                        <div class="auth-container animate__animated animate__fadeIn p-4 p-md-5">
-                            <!-- Mobile logo (visible on small screens) -->
-                            <div class="text-center mb-4 d-md-none">
-                                <img src="images/logo.png" alt="ARS JUNCTION Logo" class="img-fluid mb-3" style="max-width: 120px;">
-                                <h2 class="text-primary">Welcome Back!</h2>
-                            </div>
-                            
-                            <h3 class="fw-bold mb-4 d-none d-md-block">Sign In to Your Account</h3>
-                            
-                            <?php if (!empty($error)): ?>
-                            <div class="alert alert-danger"><?php echo $error; ?></div>
-                            <?php endif; ?>
-                            
-                            <form id="login-form" action="login.php" method="post">
-                                <div class="mb-3">
-                                    <label for="email" class="form-label">Email Address</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0"><i class="fas fa-envelope text-muted"></i></span>
-                                        <input type="email" class="form-control border-start-0" id="email" name="email" value="<?php echo $email; ?>" placeholder="Your email address" required>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="password" class="form-label">Password</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-light border-end-0"><i class="fas fa-lock text-muted"></i></span>
-                                        <input type="password" class="form-control border-start-0 border-end-0" id="password" name="password" placeholder="Your password" required>
-                                        <button class="input-group-text bg-light border-start-0" type="button" id="toggle-password" onclick="togglePasswordVisibility('password', 'toggle-password')">
-                                            <i class="fas fa-eye text-muted"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mb-4">
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
-                                        <label class="form-check-label" for="remember">Remember me</label>
-                                    </div>
-                                    <a href="forgot_password.php" class="text-decoration-none text-primary fw-semibold">Forgot Password?</a>
-                                </div>
-                                <button type="submit" class="btn btn-primary w-100 py-2 mb-3">Sign In</button>
-                            </form>
-                            
-                            <?php 
-                            $fb_enabled = get_site_setting('facebook_login_enabled', '0');
-                            $google_enabled = get_site_setting('google_login_enabled', '1');
-                            
-                            if ($fb_enabled == '1' || $google_enabled == '1'): 
-                            ?>
-                            <div class="position-relative text-center my-4">
-                                <hr>
-                                <span class="position-absolute top-50 start-50 translate-middle px-3 bg-white text-muted">or continue with</span>
-                            </div>
-                            
-                            <div class="social-login mb-4">
-                                <div class="row justify-content-center">
-                                    <?php if ($fb_enabled == '1'): ?>
-                                    <div class="<?php echo ($google_enabled == '1') ? 'col-sm-6 mb-2 mb-sm-0' : 'col-12'; ?>">
-                                        <button id="facebook-login" class="btn btn-outline-primary w-100 social-login-btn">
-                                            <i class="fab fa-facebook-f"></i> Facebook
-                                        </button>
-                                    </div>
-                                    <?php endif; ?>
-                                    
-                                    <?php if ($google_enabled == '1'): ?>
-                                    <div class="<?php echo ($fb_enabled == '1') ? 'col-sm-6' : 'col-12'; ?>">
-                                        <button id="google-login" class="btn btn-outline-danger w-100 social-login-btn">
-                                            <i class="fab fa-google"></i> Google
-                                        </button>
-                                        <div id="google-login-container" style="width: 100%;"></div>
-                                    </div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                            <?php endif; ?>
-                            
-                            <div class="text-center">
-                                <p class="mb-0">Don't have an account? <a href="register.php" class="text-decoration-none fw-semibold">Register Now</a></p>
-                            </div>
-                        </div>
+        :root {
+            --brand:      #e64a19; /* Warm Orange/Red for Customers */
+            --brand-dark: #d84315;
+            --brand-glow: rgba(230, 74, 25, 0.35);
+            --text-dark:  #111827;
+            --text-mid:   #6b7280;
+            --text-light: #9ca3af;
+            --border:     #e5e7eb;
+            --input-bg:   #f9fafb;
+            --white:      #ffffff;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: #f3f4f6;
+        }
+
+        .login-wrap {
+            display: flex;
+            height: 100vh;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .login-card {
+            display: flex;
+            width: 100%;
+            max-width: 960px;
+            min-height: 600px;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 60px rgba(0,0,0,.18);
+            animation: fadeUp .5s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── LEFT PANEL ─────────────────────────────── */
+        .panel-left {
+            flex: 1;
+            position: relative;
+            background: url('images/restaurant_2.jpg') center/cover no-repeat;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2.25rem 2rem;
+            color: var(--white);
+            min-width: 0;
+        }
+
+        .panel-left::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                160deg,
+                rgba(230, 74, 25, 0.90) 0%,
+                rgba(216, 67, 21, 0.75) 50%,
+                rgba(255, 126, 71, 0.20) 100%
+            );
+        }
+
+        .panel-left > * { position: relative; z-index: 1; }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -.5px;
+        }
+
+        .brand-tagline {
+            margin-top: .5rem;
+            font-size: .82rem;
+            font-weight: 400;
+            color: rgba(255,255,255,.7);
+            max-width: 220px;
+            line-height: 1.5;
+        }
+
+        .customer-badge {
+            background: rgba(255,255,255,.12);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255,255,255,.18);
+            border-radius: 16px;
+            padding: 1.1rem 1.2rem;
+        }
+
+        .customer-badge .badge-top {
+            display: flex;
+            align-items: center;
+            gap: .85rem;
+        }
+
+        .cust-avatar {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            background: var(--brand);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px var(--brand-glow);
+        }
+
+        .cust-name { font-weight: 700; font-size: .95rem; line-height: 1.2; }
+        .cust-tier {
+            font-size: .65rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            color: rgba(255,255,255,.6);
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .status-bar { margin-top: .9rem; }
+        .status-label {
+            font-size: .7rem;
+            color: rgba(255,255,255,.55);
+            margin-bottom: .35rem;
+        }
+        .status-track {
+            height: 4px;
+            background: rgba(255,255,255,.18);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .status-fill {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, #22c55e, #86efac);
+            border-radius: 4px;
+            animation: fillIn 1.2s ease .5s forwards;
+        }
+        @keyframes fillIn { to { width: 100%; } }
+
+        .panel-footer {
+            font-size: .7rem;
+            color: rgba(255,255,255,.4);
+        }
+
+        /* ── RIGHT PANEL ─────────────────────────────── */
+        .panel-right {
+            width: 440px;
+            flex-shrink: 0;
+            background: var(--white);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 3rem 2.8rem;
+        }
+
+        .form-heading { font-size: 1.75rem; font-weight: 800; color: var(--text-dark); line-height: 1.15; }
+        .form-subhead { font-size: .85rem; color: var(--text-mid); margin-top: .35rem; margin-bottom: 2rem; }
+
+        .error-banner {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            padding: .75rem 1rem;
+            font-size: .82rem;
+            color: #991b1b;
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            margin-bottom: 1.25rem;
+            animation: shake .4s ease;
+        }
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            20%,60%  { transform: translateX(-6px); }
+            40%,80%  { transform: translateX(6px); }
+        }
+
+        .field-label {
+            font-size: .7rem;
+            font-weight: 700;
+            letter-spacing: .07em;
+            text-transform: uppercase;
+            color: var(--text-mid);
+            margin-bottom: .45rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .field-label a {
+            font-size: .72rem;
+            font-weight: 600;
+            color: var(--brand);
+            text-decoration: none;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+        .field-label a:hover { text-decoration: underline; }
+
+        .input-wrap {
+            position: relative;
+            margin-bottom: 1.1rem;
+        }
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            font-size: .85rem;
+            pointer-events: none;
+        }
+        .form-input {
+            width: 100%;
+            height: 48px;
+            padding: 0 1rem 0 2.65rem;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            background: var(--input-bg);
+            font-family: 'Inter', sans-serif;
+            font-size: .88rem;
+            color: var(--text-dark);
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .form-input::placeholder { color: var(--text-light); }
+        .form-input:focus {
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px var(--brand-glow);
+            background: var(--white);
+        }
+
+        .pw-wrap { position: relative; }
+        .pw-wrap .form-input { padding-right: 3rem; }
+        .pw-toggle {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            padding: 0;
+            font-size: .9rem;
+            transition: color .2s;
+        }
+        .pw-toggle:hover { color: var(--brand); }
+
+        .remember-row {
+            display: flex;
+            align-items: center;
+            gap: .55rem;
+            margin-bottom: 1.4rem;
+        }
+        .remember-row input[type="checkbox"] {
+            width: 16px; height: 16px;
+            border-radius: 4px;
+            accent-color: var(--brand);
+            cursor: pointer;
+        }
+        .remember-row label {
+            font-size: .82rem;
+            color: var(--text-mid);
+            cursor: pointer;
+        }
+
+        .btn-login {
+            width: 100%;
+            height: 50px;
+            background: var(--brand);
+            color: var(--white);
+            font-family: 'Inter', sans-serif;
+            font-size: .95rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .6rem;
+            letter-spacing: -.01em;
+            transition: background .2s, transform .15s, box-shadow .2s;
+            box-shadow: 0 4px 14px var(--brand-glow);
+        }
+        .btn-login:hover {
+            background: var(--brand-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px var(--brand-glow);
+        }
+        .btn-login:active { transform: translateY(0); }
+
+        .register-row {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: .82rem;
+            color: var(--text-mid);
+        }
+        .register-row a {
+            color: var(--brand);
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .register-row a:hover { text-decoration: underline; }
+
+        @media (max-width: 720px) {
+            .login-card { flex-direction: column; max-width: 420px; border-radius: 20px; }
+            .panel-left  { min-height: 200px; padding: 1.5rem; }
+            .panel-right { width: 100%; padding: 2rem 1.5rem; }
+            .customer-badge { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-wrap">
+    <div class="login-card">
+
+        <!-- ═══ LEFT PANEL ═══════════════════════════════════ -->
+        <div class="panel-left">
+            <div>
+                <div class="brand-logo">
+                    <img src="images/ars_logo.png" alt="ARS Logo" style="height: 38px; width: auto; object-fit: contain; border-radius: 4px;">
+                    ARS Junction
+                </div>
+                <p class="brand-tagline">Satisfying your cravings with surgical precision.</p>
+            </div>
+
+            <div class="customer-badge">
+                <div class="badge-top">
+                    <div class="cust-avatar"><i class="fa-solid fa-utensils"></i></div>
+                    <div>
+                        <div class="cust-name">Foodie Express</div>
+                        <div class="cust-tier">Verified Customer</div>
                     </div>
                 </div>
+                <div class="status-bar">
+                    <div class="status-label">
+                        <i class="fa-solid fa-circle-check" style="color:#22c55e;font-size:.55rem;vertical-align:middle;margin-right:4px;"></i>
+                        Secure Order Gateway: Active
+                    </div>
+                    <div class="status-track"><div class="status-fill"></div></div>
+                </div>
+            </div>
+
+            <div class="panel-footer">&copy; 2024 ARS Junction Intelligence Systems</div>
+        </div>
+
+        <!-- ═══ RIGHT PANEL ══════════════════════════════════ -->
+        <div class="panel-right">
+            <h1 class="form-heading">Welcome Back</h1>
+            <p class="form-subhead">Sign in to your account to order delicious food.</p>
+
+            <?php if (!empty($error)): ?>
+                <div class="error-banner">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <?php echo htmlspecialchars($error); ?>
+                </div>
+            <?php endif; ?>
+
+            <form action="login.php" method="post" autocomplete="off">
+                <!-- Email -->
+                <div>
+                    <div class="field-label">Email Address</div>
+                    <div class="input-wrap">
+                        <i class="fa-regular fa-envelope input-icon"></i>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            class="form-input"
+                            placeholder="you@example.com"
+                            value="<?php echo htmlspecialchars($email); ?>"
+                            required
+                            autocomplete="username"
+                        >
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <div class="field-label">
+                        Password
+                        <a href="forgot_password.php">Forgot Password?</a>
+                    </div>
+                    <div class="input-wrap pw-wrap">
+                        <i class="fa-solid fa-lock input-icon"></i>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-input"
+                            placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;"
+                            required
+                            autocomplete="current-password"
+                        >
+                        <button type="button" class="pw-toggle" id="pwToggle" aria-label="Toggle password visibility">
+                            <i class="fa-regular fa-eye" id="pwIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Remember me -->
+                <div class="remember-row">
+                    <input type="checkbox" id="remember" name="remember">
+                    <label for="remember">Remember me on this device</label>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" class="btn-login" id="loginBtn">
+                    Sign In <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <!-- Register -->
+            <div class="register-row">
+                New to the platform? <a href="register.php">Create an Account</a>
             </div>
         </div>
+
     </div>
 </div>
 
-<?php
-require_once 'includes/footer.php';
-?>
+<script>
+    // Password show/hide toggle
+    const pwToggle = document.getElementById('pwToggle');
+    const pwInput  = document.getElementById('password');
+    const pwIcon   = document.getElementById('pwIcon');
+    pwToggle.addEventListener('click', () => {
+        const show = pwInput.type === 'password';
+        pwInput.type = show ? 'text' : 'password';
+        pwIcon.className = show ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+    });
+
+    // Loading state on submit
+    document.querySelector('form').addEventListener('submit', function () {
+        const btn = document.getElementById('loginBtn');
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Authenticating\u2026';
+        btn.style.opacity = '.85';
+        btn.disabled = true;
+    });
+</script>
+</body>
+</html>
