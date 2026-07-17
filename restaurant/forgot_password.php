@@ -432,6 +432,16 @@ if (isset($_GET['action']) && $_GET['action'] === 'cancel') {
             <?php endif; ?>
             <?php if ($success_msg): ?>
                 <div class="success-banner"><i class="fas fa-check-circle me-2"></i><?php echo $success_msg; ?></div>
+                <?php 
+                $smtp_pw = get_site_setting('smtp_password', '');
+                if (empty($smtp_pw) && isset($_SESSION['reset_otp_code']) && $step === 2): 
+                ?>
+                <div style="background: #fffbeb; border: 1px solid #fef3c7; color: #b45309; border-radius: 10px; padding: 0.75rem 1rem; font-size: 0.82rem; margin-bottom: 1.25rem; line-height: 1.4;">
+                    <i class="fa-solid fa-bug" style="margin-right: 6px; color: #d97706;"></i> 
+                    <strong>Sandbox Mode:</strong> Since your SMTP password is not set in the Admin Panel, you can verify using this OTP: 
+                    <strong style="font-size: 1.15rem; color: #d97706; display: block; margin-top: 6px; letter-spacing: 2px; text-align: center; background: #fff; padding: 6px; border-radius: 6px; border: 1px dashed #d97706;"><?php echo $_SESSION['reset_otp_code']; ?></strong>
+                </div>
+                <?php endif; ?>
             <?php endif; ?>
 
             <?php if ($step === 1): ?>
