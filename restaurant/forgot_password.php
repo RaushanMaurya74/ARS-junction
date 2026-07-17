@@ -76,14 +76,8 @@ function send_otp_email($email, $name, $otp) {
     $preview_file = $email_dir . "/otp_reset_{$timestamp}.html";
     @file_put_contents($preview_file, $htmlContent);
 
-    // Send email
-    $to = $email;
-    $subject = "Password Reset OTP - {$site_name}";
-    $headers = "MIME-Version: 1.0" . "\r\n";
-    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-    $headers .= "From: {$site_name} <noreply@arsjunction.com>" . "\r\n";
-    
-    return @mail($to, $subject, $htmlContent, $headers);
+    // Send email via custom SMTP
+    return send_smtp_email($email, "Password Reset OTP - {$site_name}", $htmlContent);
 }
 
 // Handle Form Submissions

@@ -606,15 +606,7 @@ function send_order_confirmation_email($order_id) {
     $preview_file = $email_dir . "/order_confirm_{$order_id}.html";
     @file_put_contents($preview_file, $htmlContent);
 
-    // 2. Trigger the actual PHP mail() function
-    $to = $buyer_email;
-    $subject = "Order Confirmed #{$order_id} - {$site_name}";
-    $headers = "MIME-Version: 1.0" . "\r\n";
-    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-    $headers .= "From: {$site_name} <noreply@arsjunction.com>" . "\r\n";
-    $headers .= "Reply-To: {$site_email}" . "\r\n";
-
-    return @mail($to, $subject, $htmlContent, $headers);
+    return send_smtp_email($buyer_email, "Order Confirmed #{$order_id} - {$site_name}", $htmlContent, ["Reply-To" => $site_email]);
 }
 
 // Automatically assign confirmed orders to online delivery boys after 3 minutes
@@ -748,14 +740,7 @@ function send_welcome_email($user_id) {
     $preview_file = $email_dir . "/welcome_{$user_id}.html";
     @file_put_contents($preview_file, $htmlContent);
 
-    $to = $buyer_email;
-    $subject = "Welcome to {$site_name}! Account Confirmed";
-    $headers = "MIME-Version: 1.0" . "\r\n";
-    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-    $headers .= "From: {$site_name} <noreply@arsjunction.com>" . "\r\n";
-    $headers .= "Reply-To: {$site_email}" . "\r\n";
-
-    return @mail($to, $subject, $htmlContent, $headers);
+    return send_smtp_email($buyer_email, "Welcome to {$site_name}! Account Confirmed", $htmlContent, ["Reply-To" => $site_email]);
 }
 
 // Send login alert confirmation email
@@ -831,14 +816,7 @@ function send_login_confirmation_email($user_id) {
     $preview_file = $email_dir . "/login_confirm_{$user_id}_{$timestamp}.html";
     @file_put_contents($preview_file, $htmlContent);
 
-    $to = $buyer_email;
-    $subject = "Security Alert: Successful Login - {$site_name}";
-    $headers = "MIME-Version: 1.0" . "\r\n";
-    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-    $headers .= "From: {$site_name} <noreply@arsjunction.com>" . "\r\n";
-    $headers .= "Reply-To: {$site_email}" . "\r\n";
-
-    return @mail($to, $subject, $htmlContent, $headers);
+    return send_smtp_email($buyer_email, "Security Alert: Successful Login - {$site_name}", $htmlContent, ["Reply-To" => $site_email]);
 }
 
 // Helper to determine active image URL supporting Base64 or local paths
@@ -942,5 +920,117 @@ function get_compressed_base64_image($tmp_name, $ext, $max_width = 300, $max_hei
     }
 
     return 'data:image/' . ($ext === 'png' ? 'png' : ($ext === 'gif' ? 'gif' : 'jpeg')) . ';base64,' . base64_encode($compressed_data);
+}
+
+/**
+ * Custom SMTP Socket Email Sender
+ * Sends emails using raw sockets connecting to SMTP host with SSL/TLS encryption.
+ */
+function send_smtp_email($to, $subject, $htmlContent, $custom_headers = []) {
+    // Load configurations
+    $host = get_site_setting('smtp_host', 'smtp.gmail.com');
+    $port = (int)get_site_setting('smtp_port', '465');
+    $username = get_site_setting('smtp_username', 'officialarsjunction@gmail.com');
+    $password = get_site_setting('smtp_password', '');
+    $encryption = get_site_setting('smtp_encryption', 'ssl');
+    $site_name = get_site_setting('site_name', 'ARS Junction');
+
+    // Fallback to native mail() if App Password is not configured
+    if (empty($password)) {
+        $headers = "MIME-Version: 1.0" . "\r\n";
+        $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+        $headers .= "From: {$site_name} <{$username}>" . "\r\n";
+        foreach ($custom_headers as $hKey => $hVal) {
+            $headers .= "{$hKey}: {$hVal}" . "\r\n";
+        }
+        return @mail($to, $subject, $htmlContent, $headers);
+    }
+
+    $socket_host = ($encryption === 'ssl') ? "ssl://{$host}" : $host;
+    $socket = @fsockopen($socket_host, $port, $errno, $errstr, 15);
+    if (!$socket) {
+        // Fallback on connection failure
+        error_log("SMTP connection failed: {$errstr} ({$errno})");
+        return false;
+    }
+
+    // Helper to read SMTP server responses
+    $readResponse = function($socket, $expectedCode) {
+        $response = "";
+        while ($str = fgets($socket, 515)) {
+            $response .= $str;
+            if (substr($str, 3, 1) === " ") {
+                break;
+            }
+        }
+        $code = (int)substr($response, 0, 3);
+        if ($code !== $expectedCode) {
+            error_log("SMTP unexpected response: {$response} (expected {$expectedCode})");
+            return false;
+        }
+        return true;
+    };
+
+    if (!$readResponse($socket, 220)) { fclose($socket); return false; }
+
+    fwrite($socket, "EHLO localhost\r\n");
+    if (!$readResponse($socket, 250)) { fclose($socket); return false; }
+
+    if ($encryption === 'tls') {
+        fwrite($socket, "STARTTLS\r\n");
+        if (!$readResponse($socket, 220)) { fclose($socket); return false; }
+        
+        // Upgrade connection to TLS
+        if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+            error_log("SMTP TLS Handshake failed");
+            fclose($socket);
+            return false;
+        }
+        
+        fwrite($socket, "EHLO localhost\r\n");
+        if (!$readResponse($socket, 250)) { fclose($socket); return false; }
+    }
+
+    // Authenticate
+    fwrite($socket, "AUTH LOGIN\r\n");
+    if (!$readResponse($socket, 334)) { fclose($socket); return false; }
+
+    fwrite($socket, base64_encode($username) . "\r\n");
+    if (!$readResponse($socket, 334)) { fclose($socket); return false; }
+
+    fwrite($socket, base64_encode($password) . "\r\n");
+    if (!$readResponse($socket, 235)) { fclose($socket); return false; }
+
+    // Mail transaction
+    fwrite($socket, "MAIL FROM:<{$username}>\r\n");
+    if (!$readResponse($socket, 250)) { fclose($socket); return false; }
+
+    fwrite($socket, "RCPT TO:<{$to}>\r\n");
+    if (!$readResponse($socket, 250)) { fclose($socket); return false; }
+
+    fwrite($socket, "DATA\r\n");
+    if (!$readResponse($socket, 354)) { fclose($socket); return false; }
+
+    // Build mail message headers and body
+    $headers = "MIME-Version: 1.0\r\n";
+    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+    $headers .= "From: =?UTF-8?B?" . base64_encode($site_name) . "?= <{$username}>\r\n";
+    $headers .= "To: <{$to}>\r\n";
+    $headers .= "Subject: =?UTF-8?B?" . base64_encode($subject) . "?=\r\n";
+    $headers .= "Date: " . date('r') . "\r\n";
+    
+    foreach ($custom_headers as $hKey => $hVal) {
+        $headers .= "{$hKey}: {$hVal}\r\n";
+    }
+
+    $message = $headers . "\r\n" . $htmlContent . "\r\n.\r\n";
+    fwrite($socket, $message);
+    if (!$readResponse($socket, 250)) { fclose($socket); return false; }
+
+    fwrite($socket, "QUIT\r\n");
+    $readResponse($socket, 221);
+    fclose($socket);
+
+    return true;
 }
 ?>
