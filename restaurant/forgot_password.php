@@ -3,8 +3,8 @@
  * Restaurant Owner Portal - Forgot Password with Email OTP Verification
  */
 
-require_once 'auth.php';
-require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 if (is_restaurant_logged_in()) {
     header("Location: dashboard.php");
@@ -68,7 +68,7 @@ function send_otp_email($email, $name, $otp) {
     ";
 
     // Write file copy for fallback/preview
-    $email_dir = dirname(dirname(__DIR__)) . '/uploads/emails';
+    $email_dir = dirname(__DIR__) . '/uploads/emails';
     if (!file_exists($email_dir)) {
         @mkdir($email_dir, 0777, true);
     }
