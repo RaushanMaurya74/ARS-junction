@@ -343,9 +343,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     </a>
                 </div>
             </div>
-            <div class="col-md-6 text-center">
-                 <img src="https://images.unsplash.com/photo-1512152272829-e3139592d56f?auto=format&fit=crop&w=800&q=80" class="img-fluid rounded shadow-sm" alt="Mobile App" style="max-height: 400px; border-radius: 12px; object-fit: cover; width: 100%;">
-            </div>
+             <div class="col-md-6 text-center">
+                 <img src="images/app_mockup.jpg" class="img-fluid rounded shadow-sm" alt="Mobile App" style="max-height: 400px; border-radius: 12px; object-fit: cover; width: 100%;">
+             </div>
         </div>
     </div>
 </section>
