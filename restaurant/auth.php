@@ -3,14 +3,13 @@
  * Restaurant Owner Portal - Authentication Helper
  */
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Bootstrap DB connection (uses __DIR__ so the path is always correct
-// regardless of which directory the Vercel router chdir'd into).
+// Bootstrap DB connection first so the custom CookieSessionHandler is registered
 if (!isset($conn)) {
     require_once __DIR__ . '/../includes/db_connect.php';
+}
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 
 function is_restaurant_logged_in() {
