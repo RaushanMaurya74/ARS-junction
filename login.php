@@ -523,7 +523,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <button id="google-login" class="social-login-btn w-100" style="color: #ea4335; border-color: #e5e7eb;">
                         <i class="fab fa-google" style="margin-right: 6px;"></i> Google
                     </button>
-                    <div id="google-login-container" style="display:none; width: 100%;"></div>
+                    <div id="google-login-container" style="width: 100%;"></div>
                 </div>
                 <?php endif; ?>
             </div>
