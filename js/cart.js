@@ -58,19 +58,70 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             
             const promoCode = document.getElementById('promo-code').value;
+            const subtotalElement = document.getElementById('cart-subtotal');
             
+            // If they enter empty code, clear the coupon
             if (promoCode.trim() === '') {
-                showToast('Please enter a promo code', 'danger');
+                fetch('api/apply_promo.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `code=&subtotal=0`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const discountElement = document.getElementById('discount-amount');
+                    if (discountElement) {
+                        discountElement.innerHTML = formatCurrency(0.00);
+                        const hiddenPromoInput = document.getElementById('applied-promo-code');
+                        if (hiddenPromoInput) {
+                            hiddenPromoInput.value = '';
+                        }
+                    }
+                    calculateOrderSummary();
+                    showToast('Promo code cleared.');
+                });
                 return;
             }
             
-            // Mock promo code verification - in real app would check against database
-            if (promoCode.toUpperCase() === 'WELCOME10') {
-                applyDiscount(10);
-                showToast('Promo code applied successfully!');
-            } else {
-                showToast('Invalid promo code', 'danger');
+            if (!subtotalElement) {
+                showToast('Unable to determine cart subtotal', 'danger');
+                return;
             }
+            
+            const subtotal = parsePrice(subtotalElement.textContent || subtotalElement.innerHTML);
+            
+            // AJAX call to apply promo API
+            fetch('api/apply_promo.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `code=${encodeURIComponent(promoCode)}&subtotal=${subtotal}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const discountElement = document.getElementById('discount-amount');
+                    if (discountElement) {
+                        discountElement.innerHTML = formatCurrency(data.discount_amount);
+                        // Save applied code value in hidden input if on checkout page
+                        const hiddenPromoInput = document.getElementById('applied-promo-code');
+                        if (hiddenPromoInput) {
+                            hiddenPromoInput.value = data.code;
+                        }
+                    }
+                    calculateOrderSummary();
+                    showToast(data.message || 'Promo code applied successfully!');
+                } else {
+                    showToast(data.message || 'Invalid promo code', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error applying promo code:', error);
+                showToast('An error occurred while applying the promo code', 'danger');
+            });
         });
     }
     // General Decrease Quantity control (for both menu pages and cart page)

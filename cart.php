@@ -18,6 +18,36 @@ require_once 'includes/header.php';
 $cart_items = get_cart_items($_SESSION['user_id']);
 $cart_subtotal = calculate_cart_total($_SESSION['user_id']);
 
+// Pre-validate applied promo code in session
+$discount_amount = 0.00;
+$promo_code_value = '';
+if (!empty($_SESSION['applied_promo_code'])) {
+    $stmt_promo = $conn->prepare("SELECT * FROM promo_codes WHERE UPPER(code) = UPPER(?) AND is_active = 1 LIMIT 1");
+    $stmt_promo->execute([$_SESSION['applied_promo_code']]);
+    $promo = $stmt_promo->fetch(PDO::FETCH_ASSOC);
+    if ($promo && $cart_subtotal >= (float)$promo['min_order_amount']) {
+        $promo_code_value = $promo['code'];
+        $val = (float)$promo['discount_value'];
+        if ($promo['discount_type'] === 'percentage') {
+            $discount_amount = ($cart_subtotal * $val) / 100;
+            if (!empty($promo['max_discount_amount'])) {
+                $max_d = (float)$promo['max_discount_amount'];
+                if ($discount_amount > $max_d) {
+                    $discount_amount = $max_d;
+                }
+            }
+        } else {
+            $discount_amount = $val;
+            if ($discount_amount > $cart_subtotal) {
+                $discount_amount = $cart_subtotal;
+            }
+        }
+        $discount_amount = round($discount_amount, 2);
+    } else {
+        unset($_SESSION['applied_promo_code']);
+    }
+}
+
 // Check if cart has items from multiple restaurants
 $multiple_restaurants = is_cart_from_multiple_restaurants($_SESSION['user_id']);
 
@@ -125,16 +155,20 @@ $extra_js = '<script src="js/cart.js"></script>';
                         <span>Tax (5%):</span>
                         <span id="tax-amount"><?php echo format_price($cart_subtotal * 0.05); ?></span>
                     </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Discount:</span>
+                        <span id="discount-amount"><?php echo format_price($discount_amount); ?></span>
+                    </div>
                     <hr>
                     <div class="d-flex justify-content-between mb-3">
                         <strong>Total:</strong>
-                        <strong id="total-amount"><?php echo format_price($cart_subtotal + 40.00 + ($cart_subtotal * 0.05)); ?></strong>
+                        <strong id="total-amount"><?php echo format_price($cart_subtotal + 40.00 + ($cart_subtotal * 0.05) - $discount_amount); ?></strong>
                     </div>
                     
                     <div class="mb-3">
                         <form id="promo-code-form">
                             <div class="input-group">
-                                <input type="text" id="promo-code" class="form-control" placeholder="Promo Code">
+                                <input type="text" id="promo-code" class="form-control" placeholder="Promo Code" value="<?php echo htmlspecialchars($promo_code_value); ?>">
                                 <button class="btn btn-outline-secondary" type="submit">Apply</button>
                             </div>
                         </form>

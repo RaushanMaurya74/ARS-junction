@@ -162,6 +162,12 @@ $restaurant = get_restaurant_by_id($order['restaurant_id']);
                                 <span>Tax:</span>
                                 <span><?php echo format_price($order['tax']); ?></span>
                             </div>
+                            <?php if (isset($order['discount_amount']) && (float)$order['discount_amount'] > 0): ?>
+                            <div class="d-flex justify-content-between mb-2 text-success">
+                                <span>Discount (<?php echo htmlspecialchars($order['promo_code']); ?>):</span>
+                                <span>-<?php echo format_price($order['discount_amount']); ?></span>
+                            </div>
+                            <?php endif; ?>
                             <hr>
                             <div class="d-flex justify-content-between">
                                 <strong>Total:</strong>

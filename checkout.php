@@ -37,6 +37,36 @@ $user = get_user_by_id($_SESSION['user_id']);
 // Calculate totals
 $cart_subtotal = calculate_cart_total($_SESSION['user_id']);
 
+// Pre-validate applied promo code in session
+$discount_amount = 0.00;
+$promo_code_value = '';
+if (!empty($_SESSION['applied_promo_code'])) {
+    $stmt_promo = $conn->prepare("SELECT * FROM promo_codes WHERE UPPER(code) = UPPER(?) AND is_active = 1 LIMIT 1");
+    $stmt_promo->execute([$_SESSION['applied_promo_code']]);
+    $promo = $stmt_promo->fetch(PDO::FETCH_ASSOC);
+    if ($promo && $cart_subtotal >= (float)$promo['min_order_amount']) {
+        $promo_code_value = $promo['code'];
+        $val = (float)$promo['discount_value'];
+        if ($promo['discount_type'] === 'percentage') {
+            $discount_amount = ($cart_subtotal * $val) / 100;
+            if (!empty($promo['max_discount_amount'])) {
+                $max_d = (float)$promo['max_discount_amount'];
+                if ($discount_amount > $max_d) {
+                    $discount_amount = $max_d;
+                }
+            }
+        } else {
+            $discount_amount = $val;
+            if ($discount_amount > $cart_subtotal) {
+                $discount_amount = $cart_subtotal;
+            }
+        }
+        $discount_amount = round($discount_amount, 2);
+    } else {
+        unset($_SESSION['applied_promo_code']);
+    }
+}
+
 // Get delivery fee from the restaurant (fallback)
 $restaurant_id = $cart_items[0]['restaurant_id'];
 $restaurant = get_restaurant_by_id($restaurant_id);
@@ -56,7 +86,7 @@ if (!empty($user['zip_code'])) {
 $tax = $cart_subtotal * 0.05;
 
 // Calculate total
-$total = $cart_subtotal + $delivery_fee + $tax;
+$total = $cart_subtotal + $delivery_fee + $tax - $discount_amount;
 
 // Extra JS
 $extra_js = '<script src="js/cart.js"></script>';
@@ -82,6 +112,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </div>
                     <div class="card-body">
                             <input type="hidden" name="restaurant_id" value="<?php echo $restaurant_id; ?>">
+                            <input type="hidden" name="promo_code" id="applied-promo-code" value="<?php echo htmlspecialchars($promo_code_value); ?>">
                             
                             <div class="mb-3">
                                 <label for="name" class="form-label">Full Name</label>
@@ -204,7 +235,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span>Discount:</span>
-                            <span id="discount-amount">₹0.00</span>
+                            <span id="discount-amount"><?php echo format_price($discount_amount); ?></span>
                         </div>
                         
                         <hr>
@@ -217,7 +248,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <div class="mb-3">
                             <form id="promo-code-form">
                                 <div class="input-group">
-                                    <input type="text" id="promo-code" class="form-control" placeholder="Promo Code">
+                                    <input type="text" id="promo-code" class="form-control" placeholder="Promo Code" value="<?php echo htmlspecialchars($promo_code_value); ?>">
                                     <button class="btn btn-outline-secondary" type="submit">Apply</button>
                                 </div>
                             </form>
@@ -265,7 +296,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     const subtotal = parseFloat(<?php echo json_encode($cart_subtotal); ?>);
                     const deliveryFee = parseFloat(data.delivery_charge);
                     const tax = Math.round(subtotal * 0.05 * 100) / 100;
-                    const total = subtotal + deliveryFee + tax;
+                    const discountEl = document.getElementById('discount-amount');
+                    const discount = discountEl ? parsePrice(discountEl.textContent || discountEl.innerHTML) : 0;
+                    const total = subtotal + deliveryFee + tax - discount;
                     
                     const deliveryFeeEl = document.getElementById('delivery-fee');
                     if (deliveryFeeEl) deliveryFeeEl.textContent = '₹' + deliveryFee.toFixed(2);
