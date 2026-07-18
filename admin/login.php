@@ -60,7 +60,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         html, body {
             height: 100%;
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(rgba(15, 23, 42, 0.70), rgba(15, 23, 42, 0.85)), url('../images/restaurant_4.jpg') center/cover no-repeat fixed;
+            background: linear-gradient(rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.94)), url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=1600') center/cover no-repeat fixed;
         }
 
         .login-wrap {
