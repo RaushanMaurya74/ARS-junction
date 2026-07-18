@@ -10,9 +10,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
         if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
-            // Read file content and encode to base64
-            $file_data = file_get_contents($_FILES['image']['tmp_name']);
-            $uploaded_image = 'data:image/' . $ext . ';base64,' . base64_encode($file_data);
+            // Compress and encode to base64 (800x400 banner dimensions)
+            $uploaded_image = get_compressed_base64_image($_FILES['image']['tmp_name'], $ext, 800, 400);
         }
     }
 
@@ -109,11 +108,18 @@ if (isset($_GET['edit'])) {
                         
                         <div class="mb-3">
                             <label class="form-label">Restaurant Image Banner</label>
-                            <?php if ($edit_restaurant && !empty($edit_restaurant['image'])): ?>
+                            <?php 
+                            if ($edit_restaurant && !empty($edit_restaurant['image'])): 
+                                $edit_image_url = get_image_url($edit_restaurant['image'], true);
+                                if (!empty($edit_image_url)):
+                            ?>
                                 <div class="mb-2">
-                                    <img src="../<?php echo $edit_restaurant['image']; ?>" class="img-thumbnail" style="max-height: 100px;">
+                                    <img src="<?php echo $edit_image_url; ?>" class="img-thumbnail" style="max-height: 100px;">
                                 </div>
-                            <?php endif; ?>
+                            <?php 
+                                endif;
+                            endif; 
+                            ?>
                             <input class="form-control" type="file" name="image" accept="image/*">
                         </div>
 
@@ -152,8 +158,11 @@ if (isset($_GET['edit'])) {
                         <?php foreach ($restaurants as $restaurant): ?>
                             <tr>
                                 <td>
-                                    <?php if (!empty($restaurant['image']) && file_exists('../' . $restaurant['image'])): ?>
-                                        <img src="../<?php echo $restaurant['image']; ?>" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover; vertical-align: middle;">
+                                    <?php 
+                                    $res_image_url = get_image_url($restaurant['image'], true);
+                                    if (!empty($res_image_url)): 
+                                    ?>
+                                        <img src="<?php echo $res_image_url; ?>" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover; vertical-align: middle;">
                                     <?php else: ?>
                                         <span class="d-inline-block rounded me-2 bg-light text-center" style="width: 40px; height: 40px; line-height: 40px; vertical-align: middle;">
                                             <i class="fas fa-store text-muted"></i>
