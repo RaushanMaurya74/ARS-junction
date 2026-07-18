@@ -14,13 +14,49 @@ function admin_login($email, $password) {
     $stmt->execute([$email]);
     $admin = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if ($admin && password_verify($password, $admin['password'])) {
-        // Password is correct, create admin session
-        $_SESSION['admin_id'] = $admin['user_id'];
-        $_SESSION['admin_name'] = $admin['name'];
-        $_SESSION['admin_email'] = $admin['email'];
-        
-        return $admin;
+    if ($admin) {
+        // Check if account is locked
+        if (!empty($admin['lockout_until'])) {
+            $lockout_time = strtotime($admin['lockout_until']);
+            if (time() < $lockout_time) {
+                $_SESSION['admin_login_error'] = "Account locked due to 5 failed login attempts. Please try again after 2 hours.";
+                return false;
+            } else {
+                // Lockout period has passed, reset attempts
+                $stmt_reset = $conn->prepare("UPDATE users SET login_attempts = 0, lockout_until = NULL WHERE user_id = ?");
+                $stmt_reset->execute([$admin['user_id']]);
+                $admin['login_attempts'] = 0;
+                $admin['lockout_until'] = null;
+            }
+        }
+
+        if (password_verify($password, $admin['password'])) {
+            // Reset attempts on successful login
+            $stmt_reset = $conn->prepare("UPDATE users SET login_attempts = 0, lockout_until = NULL WHERE user_id = ?");
+            $stmt_reset->execute([$admin['user_id']]);
+
+            // Password is correct, create admin session
+            $_SESSION['admin_id'] = $admin['user_id'];
+            $_SESSION['admin_name'] = $admin['name'];
+            $_SESSION['admin_email'] = $admin['email'];
+            
+            return $admin;
+        } else {
+            // Increment failed attempts
+            $attempts = (int)$admin['login_attempts'] + 1;
+            if ($attempts >= 5) {
+                $lockout_until = date('Y-m-d H:i:s', time() + 7200); // 2 hours
+                $stmt_lock = $conn->prepare("UPDATE users SET login_attempts = ?, lockout_until = ? WHERE user_id = ?");
+                $stmt_lock->execute([$attempts, $lockout_until, $admin['user_id']]);
+                $_SESSION['admin_login_error'] = "Account locked due to 5 failed login attempts. Please try again after 2 hours.";
+            } else {
+                $stmt_inc = $conn->prepare("UPDATE users SET login_attempts = ? WHERE user_id = ?");
+                $stmt_inc->execute([$attempts, $admin['user_id']]);
+                $remaining_attempts = 5 - $attempts;
+                $_SESSION['admin_login_error'] = "Invalid credentials. You have {$remaining_attempts} login attempts remaining.";
+            }
+            return false;
+        }
     }
     
     return false;

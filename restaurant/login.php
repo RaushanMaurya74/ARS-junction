@@ -30,33 +30,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($user && password_verify($password, $user['password'])) {
-            if (empty($user['restaurant_id'])) {
-                $error_msg = 'Your account is not assigned to any restaurant. Please contact administration.';
-            } else {
-                // Fetch the restaurant status first
-                $stmt_res = $conn->prepare("SELECT name, is_active FROM restaurants WHERE restaurant_id = ?");
-                $stmt_res->execute([$user['restaurant_id']]);
-                $restaurant = $stmt_res->fetch(PDO::FETCH_ASSOC);
-
-                if (!$restaurant) {
-                    $error_msg = 'Restaurant details not found.';
-                } elseif (isset($restaurant['is_active']) && $restaurant['is_active'] == 0) {
-                    $error_msg = 'Your restaurant account is pending approval. Please wait for administration to activate it.';
+        if ($user) {
+            // Check if account is locked
+            if (!empty($user['lockout_until'])) {
+                $lockout_time = strtotime($user['lockout_until']);
+                if (time() < $lockout_time) {
+                    $error_msg = "Account locked due to 5 failed login attempts. Please try again after 2 hours.";
                 } else {
-                    $_SESSION['restaurant_owner_id']    = $user['user_id'];
-                    $_SESSION['restaurant_id']          = $user['restaurant_id'];
-                    $_SESSION['restaurant_owner_name']  = $user['name'];
-                    $_SESSION['restaurant_owner_email'] = $user['email'];
-                    $_SESSION['restaurant_name']        = $restaurant['name'] ?: 'Restaurant';
+                    // Lockout period has passed, reset attempts
+                    $stmt_reset = $conn->prepare("UPDATE users SET login_attempts = 0, lockout_until = NULL WHERE user_id = ?");
+                    $stmt_reset->execute([$user['user_id']]);
+                    $user['login_attempts'] = 0;
+                    $user['lockout_until'] = null;
+                }
+            }
 
-                    $redirect = 'dashboard.php';
-                    if (isset($_SESSION['redirect_after_restaurant_login'])) {
-                        $redirect = $_SESSION['redirect_after_restaurant_login'];
-                        unset($_SESSION['redirect_after_restaurant_login']);
+            if (empty($error_msg)) {
+                if (password_verify($password, $user['password'])) {
+                    // Reset attempts on successful login
+                    $stmt_reset = $conn->prepare("UPDATE users SET login_attempts = 0, lockout_until = NULL WHERE user_id = ?");
+                    $stmt_reset->execute([$user['user_id']]);
+
+                    if (empty($user['restaurant_id'])) {
+                        $error_msg = 'Your account is not assigned to any restaurant. Please contact administration.';
+                    } else {
+                        // Fetch the restaurant status first
+                        $stmt_res = $conn->prepare("SELECT name, is_active FROM restaurants WHERE restaurant_id = ?");
+                        $stmt_res->execute([$user['restaurant_id']]);
+                        $restaurant = $stmt_res->fetch(PDO::FETCH_ASSOC);
+
+                        if (!$restaurant) {
+                            $error_msg = 'Restaurant details not found.';
+                        } elseif (isset($restaurant['is_active']) && $restaurant['is_active'] == 0) {
+                            $error_msg = 'Your restaurant account is pending approval. Please wait for administration to activate it.';
+                        } else {
+                            $_SESSION['restaurant_owner_id']    = $user['user_id'];
+                            $_SESSION['restaurant_id']          = $user['restaurant_id'];
+                            $_SESSION['restaurant_owner_name']  = $user['name'];
+                            $_SESSION['restaurant_owner_email'] = $user['email'];
+                            $_SESSION['restaurant_name']        = $restaurant['name'] ?: 'Restaurant';
+
+                            $redirect = 'dashboard.php';
+                            if (isset($_SESSION['redirect_after_restaurant_login'])) {
+                                $redirect = $_SESSION['redirect_after_restaurant_login'];
+                                unset($_SESSION['redirect_after_restaurant_login']);
+                            }
+                            header("Location: " . $redirect);
+                            exit;
+                        }
                     }
-                    header("Location: " . $redirect);
-                    exit;
+                } else {
+                    // Increment failed attempts
+                    $attempts = (int)$user['login_attempts'] + 1;
+                    if ($attempts >= 5) {
+                        $lockout_until = date('Y-m-d H:i:s', time() + 7200); // 2 hours
+                        $stmt_lock = $conn->prepare("UPDATE users SET login_attempts = ?, lockout_until = ? WHERE user_id = ?");
+                        $stmt_lock->execute([$attempts, $lockout_until, $user['user_id']]);
+                        $error_msg = "Account locked due to 5 failed login attempts. Please try again after 2 hours.";
+                    } else {
+                        $stmt_inc = $conn->prepare("UPDATE users SET login_attempts = ? WHERE user_id = ?");
+                        $stmt_inc->execute([$attempts, $user['user_id']]);
+                        $remaining_attempts = 5 - $attempts;
+                        $error_msg = "Invalid credentials. You have {$remaining_attempts} login attempts remaining.";
+                    }
                 }
             }
         } else {

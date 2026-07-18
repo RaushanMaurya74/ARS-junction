@@ -19,6 +19,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = $_POST['password'];
     
     // Authenticate user
+    unset($_SESSION['login_error']);
     $user = authenticate_user($email, $password);
     
     if ($user) {
@@ -29,7 +30,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         header("Location: $redirect");
         exit;
     } else {
-        $error = 'Invalid email or password. Please try again.';
+        $error = isset($_SESSION['login_error']) ? $_SESSION['login_error'] : 'Invalid email or password. Please try again.';
+        unset($_SESSION['login_error']);
     }
 }
 ?>

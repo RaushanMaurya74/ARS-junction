@@ -18,6 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = $_POST['password'];
     
     // Authenticate admin
+    unset($_SESSION['admin_login_error']);
     $admin = admin_login($email, $password);
     
     if ($admin) {
@@ -25,7 +26,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         header("Location: dashboard.php");
         exit;
     } else {
-        $error = 'Invalid email or password. Please try again.';
+        $error = isset($_SESSION['admin_login_error']) ? $_SESSION['admin_login_error'] : 'Invalid email or password. Please try again.';
+        unset($_SESSION['admin_login_error']);
     }
 }
 ?>
