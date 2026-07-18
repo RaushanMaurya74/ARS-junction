@@ -164,14 +164,16 @@ $active_tab = isset($_GET['tab']) && $_GET['tab'] === 'history' ? 'history' : 'a
         }
 
         body {
-            background-color: var(--body-bg);
+            background: linear-gradient(rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.94)), url('../images/restaurant_3.jpg') center/cover no-repeat fixed;
             font-family: 'Inter', sans-serif;
-            color: var(--text-dark);
+            color: #ffffff;
         }
 
         .navbar-custom {
-            background-color: var(--slate-dark);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            background-color: rgba(15, 23, 42, 0.80);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             border-bottom: 3px solid var(--brand);
             padding: 0.85rem 1rem;
         }
@@ -184,16 +186,19 @@ $active_tab = isset($_GET['tab']) && $_GET['tab'] === 'history' ? 'history' : 'a
         }
 
         .card {
-            border: 1px solid var(--border);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
-            background-color: var(--card-bg);
+            background: rgba(255, 255, 255, 0.94) !important;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            color: var(--text-dark) !important;
         }
 
         .card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
         }
 
         .order-card {
@@ -201,13 +206,13 @@ $active_tab = isset($_GET['tab']) && $_GET['tab'] === 'history' ? 'history' : 'a
         }
 
         .nav-tabs {
-            border-bottom: 2px solid var(--border);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.15);
             gap: 0.5rem;
         }
 
         .nav-tabs .nav-link {
             border: none;
-            color: var(--text-mid);
+            color: rgba(255, 255, 255, 0.7) !important;
             font-weight: 600;
             padding: 0.85rem 1.25rem;
             border-radius: 8px;
@@ -215,8 +220,8 @@ $active_tab = isset($_GET['tab']) && $_GET['tab'] === 'history' ? 'history' : 'a
         }
 
         .nav-tabs .nav-link:hover {
-            background-color: #f1f5f9;
-            color: var(--brand);
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ffffff !important;
         }
 
         .nav-tabs .nav-link.active {
@@ -315,7 +320,7 @@ $active_tab = isset($_GET['tab']) && $_GET['tab'] === 'history' ? 'history' : 'a
     <!-- Welcome message for mobile -->
     <div class="row d-sm-none mb-3">
         <div class="col-12 text-center">
-            <p class="text-muted">Logged in as: <strong><?php echo htmlspecialchars($db_user['name']); ?></strong></p>
+            <p class="text-white-50">Logged in as: <strong class="text-white"><?php echo htmlspecialchars($db_user['name']); ?></strong></p>
         </div>
     </div>
 
