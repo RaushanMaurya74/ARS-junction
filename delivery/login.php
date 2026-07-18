@@ -127,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .panel-left {
             flex: 1;
             position: relative;
-            background: url('../images/restaurant_3.jpg') center/cover no-repeat;
+            background: url('../images/delivery_hero.jpg') center/cover no-repeat;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
