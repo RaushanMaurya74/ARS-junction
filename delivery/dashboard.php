@@ -140,30 +140,151 @@ $active_tab = isset($_GET['tab']) && $_GET['tab'] === 'history' ? 'history' : 'a
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delivery Portal - Dashboard</title>
+    <title>Delivery Portal — Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- FontAwesome for icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --brand:      #d97706; /* Amber for Courier/Delivery */
+            --brand-dark: #b45309;
+            --brand-glow: rgba(217, 119, 6, 0.2);
+            --text-dark:  #0f172a;
+            --text-mid:   #475569;
+            --text-light: #94a3b8;
+            --border:     #e2e8f0;
+            --card-bg:    #ffffff;
+            --body-bg:    #f8fafc;
+            --slate-dark: #0f172a;
+        }
+
         body {
-            background-color: #f8f9fa;
+            background-color: var(--body-bg);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-dark);
         }
+
         .navbar-custom {
-            background-color: #212529;
+            background-color: var(--slate-dark);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-bottom: 3px solid var(--brand);
+            padding: 0.85rem 1rem;
         }
-        .order-card {
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
+
+        .navbar-custom .navbar-brand {
+            font-weight: 800;
+            font-size: 1.25rem;
+            letter-spacing: -0.5px;
+            color: var(--brand) !important;
         }
-        .order-card:hover {
+
+        .card {
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background-color: var(--card-bg);
+        }
+
+        .card:hover {
             transform: translateY(-2px);
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.05);
         }
+
+        .order-card {
+            border-left: 5px solid var(--brand) !important;
+        }
+
+        .nav-tabs {
+            border-bottom: 2px solid var(--border);
+            gap: 0.5rem;
+        }
+
+        .nav-tabs .nav-link {
+            border: none;
+            color: var(--text-mid);
+            font-weight: 600;
+            padding: 0.85rem 1.25rem;
+            border-radius: 8px;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .nav-tabs .nav-link:hover {
+            background-color: #f1f5f9;
+            color: var(--brand);
+        }
+
+        .nav-tabs .nav-link.active {
+            color: #ffffff !important;
+            background-color: var(--brand) !important;
+            box-shadow: 0 4px 12px var(--brand-glow);
+        }
+
         .qr-container img {
             max-width: 180px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+        }
+
+        .btn-brand-primary {
+            background-color: var(--brand) !important;
+            border-color: var(--brand) !important;
+            color: #ffffff !important;
+            font-weight: 700;
+            border-radius: 8px;
+            padding: 0.65rem 1.25rem;
+            transition: background 0.2s, transform 0.15s;
+        }
+
+        .btn-brand-primary:hover {
+            background-color: var(--brand-dark) !important;
+            border-color: var(--brand-dark) !important;
+            transform: translateY(-1px);
+        }
+
+        .btn-brand-success {
+            background-color: #10b981 !important;
+            border-color: #10b981 !important;
+            color: #ffffff !important;
+            font-weight: 700;
+            border-radius: 8px;
+            padding: 0.65rem 1.25rem;
+            transition: background 0.2s, transform 0.15s;
+        }
+
+        .btn-brand-success:hover {
+            background-color: #059669 !important;
+            border-color: #059669 !important;
+            transform: translateY(-1px);
+        }
+
+        .btn-outline-brand {
+            border: 2.5px solid var(--brand) !important;
+            color: var(--brand) !important;
+            font-weight: 700;
+            border-radius: 8px;
+            background: transparent;
+            transition: all 0.2s;
+        }
+
+        .btn-outline-brand:hover {
+            background-color: var(--brand) !important;
+            color: #ffffff !important;
+        }
+
+        .animate-pulse-online {
+            animation: pulse-animation 1.5s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
         }
     </style>
 </head>
@@ -173,7 +294,7 @@ $active_tab = isset($_GET['tab']) && $_GET['tab'] === 'history' ? 'history' : 'a
 <nav class="navbar navbar-dark navbar-custom navbar-expand-lg mb-4">
     <div class="container">
         <!-- Logo click navigates back to dashboard and reloads data -->
-        <a class="navbar-brand fw-bold text-warning" href="dashboard.php"><i class="fas fa-truck-moving me-2"></i> Delivery Panel</a>
+        <a class="navbar-brand fw-bold" href="dashboard.php"><i class="fas fa-truck-moving me-2"></i> Delivery Panel</a>
         <div class="d-flex align-items-center">
             <span class="navbar-text text-white me-3 d-none d-sm-inline">
                 <?php if (has_image($db_user['profile_image'], true)): ?>
@@ -378,7 +499,7 @@ $active_tab = isset($_GET['tab']) && $_GET['tab'] === 'history' ? 'history' : 'a
                                                 <form method="post" action="dashboard.php?tab=active">
                                                     <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
                                                     <input type="hidden" name="action" value="start_delivery">
-                                                    <button type="submit" class="btn btn-primary w-100 fw-bold">
+                                                    <button type="submit" class="btn btn-brand-primary w-100 fw-bold">
                                                         <i class="fas fa-play me-1"></i> Start Delivery (On the Way)
                                                     </button>
                                                 </form>
@@ -387,7 +508,7 @@ $active_tab = isset($_GET['tab']) && $_GET['tab'] === 'history' ? 'history' : 'a
                                                 <form method="post" action="dashboard.php?tab=active">
                                                     <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
                                                     <input type="hidden" name="action" value="complete_delivery">
-                                                    <button type="submit" class="btn btn-success w-100 mb-2 fw-bold">
+                                                    <button type="submit" class="btn btn-brand-success w-100 mb-2 fw-bold">
                                                         <i class="fas fa-check-circle me-1"></i> Mark as Delivered
                                                     </button>
                                                 </form>
@@ -398,7 +519,7 @@ $active_tab = isset($_GET['tab']) && $_GET['tab'] === 'history' ? 'history' : 'a
                                                 <form method="post" action="dashboard.php?tab=active">
                                                     <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
                                                     <input type="hidden" name="action" value="confirm_payment">
-                                                    <button type="submit" class="btn btn-outline-success w-100 fw-bold" onclick="return confirm('Confirm that payment of <?php echo format_price($order['total_amount']); ?> is collected?');">
+                                                    <button type="submit" class="btn btn-outline-brand w-100 fw-bold" onclick="return confirm('Confirm that payment of <?php echo format_price($order['total_amount']); ?> is collected?');">
                                                         <i class="fas fa-money-bill-wave me-1"></i> Confirm Payment Received
                                                     </button>
                                                 </form>
