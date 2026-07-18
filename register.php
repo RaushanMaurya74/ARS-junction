@@ -473,7 +473,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             id="name"
                             name="name"
                             class="form-input"
-                            placeholder="John Doe"
+                            placeholder="ARS Junction"
                             value="<?php echo htmlspecialchars($name); ?>"
                             required
                         >
