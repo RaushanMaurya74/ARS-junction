@@ -64,7 +64,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         html, body {
             height: 100%;
             font-family: 'Inter', sans-serif;
-            background: #f3f4f6;
+            background: linear-gradient(rgba(15, 23, 42, 0.70), rgba(15, 23, 42, 0.85)), url('images/hero-bg.jpg') center/cover no-repeat fixed;
         }
 
         .login-wrap {
