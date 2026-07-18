@@ -164,7 +164,7 @@ $active_tab = isset($_GET['tab']) && $_GET['tab'] === 'history' ? 'history' : 'a
         }
 
         body {
-            background: linear-gradient(rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.94)), url('https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1600') center/cover no-repeat fixed;
+            background: linear-gradient(rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.94)), url('../images/delivery_hero.jpg') center/cover no-repeat fixed;
             font-family: 'Inter', sans-serif;
             color: #ffffff;
         }
