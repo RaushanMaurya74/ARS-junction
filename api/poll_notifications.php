@@ -115,6 +115,52 @@ elseif ($role === 'customer') {
         echo json_encode(['success' => false, 'message' => 'Internal server error.']);
     }
 }
+elseif ($role === 'customer_notif') {
+    // In-app notification bell for customers
+    if (!isset($_SESSION['user_id'])) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+        exit;
+    }
+    $user_id = intval($_SESSION['user_id']);
+
+    try {
+        // Unread count
+        $stmt = $conn->prepare("SELECT COUNT(*) as cnt FROM notifications WHERE user_id = ? AND is_read = 0");
+        $stmt->execute([$user_id]);
+        $unread = intval($stmt->fetch(PDO::FETCH_ASSOC)['cnt'] ?? 0);
+
+        // Latest 10 notifications
+        $stmt2 = $conn->prepare(
+            "SELECT notif_id, type, title, message, is_read, link,
+                    DATE_FORMAT(created_at, '%d %b %H:%i') AS time_fmt
+             FROM notifications WHERE user_id = ?
+             ORDER BY created_at DESC LIMIT 10"
+        );
+        $stmt2->execute([$user_id]);
+        $items = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode(['success' => true, 'unread' => $unread, 'notifications' => $items]);
+    } catch (PDOException $e) {
+        // Table may not exist yet
+        error_log("Poll customer_notif error: " . $e->getMessage());
+        echo json_encode(['success' => true, 'unread' => 0, 'notifications' => []]);
+    }
+}
+elseif ($role === 'mark_read') {
+    // Mark all notifications as read for user
+    if (!isset($_SESSION['user_id'])) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+        exit;
+    }
+    $user_id = intval($_SESSION['user_id']);
+    try {
+        $stmt = $conn->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+        echo json_encode(['success' => true]);
+    } catch (PDOException $e) {
+        echo json_encode(['success' => true]); // Silent fail if table not yet created
+    }
+}
 else {
     echo json_encode(['success' => false, 'message' => 'Invalid role']);
 }

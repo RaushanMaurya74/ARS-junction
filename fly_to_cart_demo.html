@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fly to Cart - ARS Junction Demo</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; min-height: 100vh; }
+
+    /* Navbar */
+    .navbar { position: sticky; top: 0; z-index: 1000; background: #FF5722; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 12px rgba(0,0,0,0.18); }
+    .navbar-brand { font-size: 1.5rem; font-weight: 800; color: #fff; letter-spacing: 1px; }
+    .navbar-brand span { color: #FFC107; }
+    .cart-link { position: relative; color: #fff; text-decoration: none; font-size: 1.4rem; transition: transform 0.2s; padding: 6px 14px; border-radius: 50px; }
+    .cart-link:hover { transform: scale(1.1); background: rgba(255,255,255,0.15); }
+    #cart-count { position: absolute; top: -4px; right: -4px; background: #dc3545; color: #fff; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 50px; min-width: 20px; text-align: center; border: 2px solid #FF5722; transition: all 0.3s; }
+    @keyframes badgeBounce { 0%{transform:scale(1)} 40%{transform:scale(1.8);background:#28a745;box-shadow:0 0 18px #28a745} 70%{transform:scale(0.85)} 100%{transform:scale(1)} }
+    .bounce { animation: badgeBounce 0.55s cubic-bezier(0.34,1.56,0.64,1); }
+
+    /* Section */
+    .section-title { text-align: center; padding: 40px 20px 24px; }
+    .section-title h1 { font-size: 2rem; font-weight: 800; color: #333; }
+    .section-title h1 span { color: #FF5722; }
+    .section-title p { color: #777; margin-top: 6px; }
+
+    /* Search */
+    .search-wrap { max-width: 560px; margin: 0 auto 32px; padding: 0 24px; }
+    .animated-gradient-search-bar { border-radius: 50px; padding: 3px; background: linear-gradient(120deg,#FF5722,#a855f7,#ec4899,#3b82f6,#FF5722); background-size: 300% 300%; animation: gradientMove 5s ease infinite; box-shadow: 0 4px 16px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s; }
+    .animated-gradient-search-bar:hover, .animated-gradient-search-bar:focus-within { transform: scale(1.018); box-shadow: 0 8px 26px rgba(168,85,247,0.35); }
+    .search-inner { display: flex; align-items: center; background: #fff; border-radius: 46px; padding: 6px 8px 6px 18px; gap: 8px; }
+    .search-inner input { flex: 1; border: none; outline: none; font-size: 0.95rem; background: transparent; font-weight: 500; color: #333; }
+    .search-inner button { background: linear-gradient(135deg,#FF5722,#e64a19); border: none; color: #fff; font-weight: 700; padding: 8px 20px; border-radius: 50px; cursor: pointer; font-size: 0.85rem; transition: transform 0.2s; }
+    .search-inner button:hover { transform: scale(1.05); }
+    @keyframes gradientMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+    /* Cards */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px; max-width: 1100px; margin: 0 auto; padding: 0 24px 60px; }
+    .food-card { background: #fff; border-radius: 18px; overflow: hidden; box-shadow: 0 4px 18px rgba(0,0,0,0.09); transition: transform 0.3s, box-shadow 0.3s; position: relative; }
+    .food-card:hover { transform: translateY(-6px); box-shadow: 0 12px 32px rgba(255,87,34,0.18); }
+    .food-card img { width: 100%; height: 170px; object-fit: cover; display: block; cursor: grab; }
+    .food-card img:active { cursor: grabbing; }
+    .food-badge { position: absolute; top: 10px; left: 10px; background: rgba(40,167,69,0.9); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+    .food-badge.nonveg { background: rgba(220,53,69,0.9); }
+    .drag-hint { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff; font-size: 0.65rem; padding: 3px 8px; border-radius: 20px; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .food-card:hover .drag-hint { opacity: 1; }
+    .card-body { padding: 14px 16px 16px; }
+    .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .card-title { font-size: 1rem; font-weight: 700; color: #222; }
+    .card-price { font-size: 1rem; font-weight: 800; color: #FF5722; }
+    .card-desc { font-size: 0.8rem; color: #888; margin-bottom: 14px; line-height: 1.4; }
+    .add-to-cart-btn { width: 100%; padding: 10px 0; border: none; border-radius: 50px; background: linear-gradient(135deg,#FF5722,#e64a19); color: #fff; font-size: 0.92rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(255,87,34,0.3); transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1); position: relative; overflow: hidden; }
+    .add-to-cart-btn:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 8px 22px rgba(255,87,34,0.45); }
+    .add-to-cart-btn:active { transform: scale(0.93); }
+    .add-to-cart-btn:hover i { transform: rotate(-15deg) scale(1.2); }
+    .add-to-cart-btn i { transition: transform 0.3s ease; }
+
+    /* Flying Clone */
+    .img-clone { position: fixed !important; z-index: 999999 !important; pointer-events: none !important; object-fit: cover !important; will-change: top,left,width,height,opacity; transition: top 0.85s cubic-bezier(0.42,0,0.58,1), left 0.85s cubic-bezier(0.42,0,0.58,1), width 0.85s cubic-bezier(0.42,0,0.58,1), height 0.85s cubic-bezier(0.42,0,0.58,1), opacity 0.85s cubic-bezier(0.42,0,0.58,1), border-radius 0.85s ease, transform 0.85s cubic-bezier(0.42,0,0.58,1); }
+
+    /* Toast */
+    .toast-container { position: fixed; top: 70px; right: 20px; z-index: 99998; display: flex; flex-direction: column; gap: 10px; }
+    .toast-msg { background: #222; color: #fff; padding: 12px 20px; border-radius: 12px; font-size: 0.88rem; font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,0.3); transform: translateX(120%); transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1); display: flex; align-items: center; gap: 10px; max-width: 300px; }
+    .toast-msg.show { transform: translateX(0); }
+    .toast-msg.success { border-left: 4px solid #28a745; }
+
+    /* Drag glow */
+    @keyframes cartGlow { from{box-shadow:0 0 8px rgba(40,167,69,0.5)} to{box-shadow:0 0 25px rgba(40,167,69,1)} }
+    .cart-link.drop-active { animation: cartGlow 0.7s infinite alternate; }
+
+    /* Demo info */
+    .demo-info { background: linear-gradient(135deg,#fff3e0,#fff8f0); border: 2px dashed #FF5722; border-radius: 16px; padding: 18px 24px; margin: 0 24px 28px; font-size: 0.88rem; color: #555; line-height: 1.8; }
+    .demo-info strong { color: #FF5722; }
+    .demo-info code { background: #eee; padding: 1px 6px; border-radius: 4px; font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="navbar-brand"><span>ARS</span> JUNCTION</div>
+    <a class="cart-link" href="#" id="cart-link" title="Go to Cart">
+      <i class="fas fa-shopping-cart"></i>
+      <span id="cart-count">0</span>
+    </a>
+  </nav>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <div class="section-title">
+    <h1>Fly to Cart <span>Animation Demo</span></h1>
+    <p>Click <strong>Add to Cart</strong> or <strong>drag a food image</strong> to the cart icon above</p>
+  </div>
+
+  <div class="demo-info">
+    <strong>How it works (JeetSaru Method):</strong>
+    When you click "Add to Cart", the code calls <code>img.cloneNode(true)</code> to clone the product image,
+    positions it exactly over the original using <code>getBoundingClientRect()</code>,
+    then animates <code>top / left / width / height</code> to the cart badge position
+    with a <code>cubic-bezier(0.42, 0, 0.58, 1)</code> easing curve over 0.85 seconds.
+    You can also <strong>drag any food image</strong> to the cart icon — it glows green when ready to receive!
+  </div>
+
+  <div class="search-wrap">
+    <div class="animated-gradient-search-bar">
+      <div class="search-inner">
+        <input type="text" id="food-search" placeholder="Search foods..." />
+        <button type="button"><i class="fas fa-search"></i> Search</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cards-grid">
+
+    <div class="food-card" data-item-id="1">
+      <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=300&fit=crop&auto=format" alt="Classic Pizza" draggable="true" crossorigin="anonymous" />
+      <span class="food-badge">Veg</span>
+      <span class="drag-hint"><i class="fas fa-hand-pointer"></i> Drag to Cart</span>
+      <div class="card-body">
+        <div class="card-top"><div class="card-title">Classic Pizza</div><div class="card-price">&#8377;299</div></div>
+        <div class="card-desc">Crispy base with rich tomato sauce, melted cheese and fresh toppings.</div>
+        <button class="add-to-cart-btn" data-item-id="1"><i class="fas fa-cart-plus"></i> Add to Cart</button>
+      </div>
+    </div>
+
+    <div class="food-card" data-item-id="2">
+      <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop&auto=format" alt="Crispy Burger" draggable="true" crossorigin="anonymous" />
+      <span class="food-badge nonveg">Non-Veg</span>
+      <span class="drag-hint"><i class="fas fa-hand-pointer"></i> Drag to Cart</span>
+      <div class="card-body">
+        <div class="card-top"><div class="card-title">Crispy Burger</div><div class="card-price">&#8377;199</div></div>
+        <div class="card-desc">Juicy patty with crispy lettuce, cheese and our signature sauce.</div>
+        <button class="add-to-cart-btn" data-item-id="2"><i class="fas fa-cart-plus"></i> Add to Cart</button>
+      </div>
+    </div>
+
+    <div class="food-card" data-item-id="3">
+      <img src="https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=400&h=300&fit=crop&auto=format" alt="Chicken Biryani" draggable="true" crossorigin="anonymous" />
+      <span class="food-badge nonveg">Non-Veg</span>
+      <span class="drag-hint"><i class="fas fa-hand-pointer"></i> Drag to Cart</span>
+      <div class="card-body">
+        <div class="card-top"><div class="card-title">Chicken Biryani</div><div class="card-price">&#8377;349</div></div>
+        <div class="card-desc">Aromatic basmati rice with tender chicken, saffron and spices.</div>
+        <button class="add-to-cart-btn" data-item-id="3"><i class="fas fa-cart-plus"></i> Add to Cart</button>
+      </div>
+    </div>
+
+    <div class="food-card" data-item-id="4">
+      <img src="https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=400&h=300&fit=crop&auto=format" alt="Hakka Noodles" draggable="true" crossorigin="anonymous" />
+      <span class="food-badge">Veg</span>
+      <span class="drag-hint"><i class="fas fa-hand-pointer"></i> Drag to Cart</span>
+      <div class="card-body">
+        <div class="card-top"><div class="card-title">Hakka Noodles</div><div class="card-price">&#8377;179</div></div>
+        <div class="card-desc">Wok-tossed noodles with fresh veggies in savory soy-based sauce.</div>
+        <button class="add-to-cart-btn" data-item-id="4"><i class="fas fa-cart-plus"></i> Add to Cart</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    var cartCount = 0;
+
+    function showToast(msg) {
+      var t = document.createElement('div');
+      t.className = 'toast-msg success';
+      t.innerHTML = '<i class="fas fa-check-circle"></i> ' + msg;
+      document.getElementById('toast-container').appendChild(t);
+      requestAnimationFrame(function() { t.classList.add('show'); });
+      setTimeout(function() { t.classList.remove('show'); setTimeout(function() { t.remove(); }, 400); }, 2800);
+    }
+
+    function updateCartCount(count) {
+      var badge = document.getElementById('cart-count');
+      if (!badge) return;
+      badge.textContent = count;
+      badge.classList.remove('bounce');
+      void badge.offsetWidth;
+      badge.classList.add('bounce');
+      setTimeout(function() { badge.classList.remove('bounce'); }, 600);
+    }
+
+    /* ── JeetSaru fly-to-cart core ── */
+    function triggerFlyToCart(buttonElement) {
+      var cartIcon = document.getElementById('cart-count');
+      if (!cartIcon) return;
+
+      var card = buttonElement.closest('.food-card') || buttonElement.parentElement;
+      var sourceImg = card ? card.querySelector('img') : null;
+      if (!sourceImg) return;
+
+      var imgClone = sourceImg.cloneNode(true);
+      imgClone.classList.add('img-clone');
+      imgClone.removeAttribute('draggable');
+
+      var srcRect  = sourceImg.getBoundingClientRect();
+      var cartRect = cartIcon.getBoundingClientRect();
+
+      Object.assign(imgClone.style, {
+        top:          srcRect.top    + 'px',
+        left:         srcRect.left   + 'px',
+        width:        srcRect.width  + 'px',
+        height:       srcRect.height + 'px',
+        opacity:      '1',
+        borderRadius: '14px',
+        border:       '3px solid #FF5722',
+        boxShadow:    '0 8px 30px rgba(255,87,34,0.6)',
+        transform:    'rotate(0deg)'
+      });
+
+      document.body.appendChild(imgClone);
+      void imgClone.offsetWidth; /* force reflow */
+
+      requestAnimationFrame(function() {
+        Object.assign(imgClone.style, {
+          top:          cartRect.top  + 'px',
+          left:         cartRect.left + 'px',
+          width:        '40px',
+          height:       '40px',
+          opacity:      '0.1',
+          borderRadius: '50%',
+          transform:    'rotate(360deg)'
+        });
+      });
+
+      setTimeout(function() {
+        imgClone.remove();
+        cartCount++;
+        updateCartCount(cartCount);
+        showToast('Item added to cart!');
+      }, 870);
+    }
+
+    /* ── Click delegation ── */
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('.add-to-cart-btn');
+      if (!btn) return;
+      e.preventDefault();
+      triggerFlyToCart(btn);
+    });
+
+    /* ── Drag to Cart ── */
+    var cartLink = document.getElementById('cart-link');
+
+    document.querySelectorAll('.food-card').forEach(function(card) {
+      var img = card.querySelector('img');
+      if (!img) return;
+      img.addEventListener('dragstart', function(e) {
+        e.dataTransfer.setData('text/plain', card.dataset.itemId || '1');
+        cartLink.classList.add('drop-active');
+      });
+      img.addEventListener('dragend', function() {
+        cartLink.classList.remove('drop-active');
+      });
+    });
+
+    cartLink.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      cartLink.classList.add('drop-active');
+    });
+    cartLink.addEventListener('dragleave', function() {
+      cartLink.classList.remove('drop-active');
+    });
+    cartLink.addEventListener('drop', function(e) {
+      e.preventDefault();
+      cartLink.classList.remove('drop-active');
+      var itemId = e.dataTransfer.getData('text/plain');
+      var btn = document.querySelector('.add-to-cart-btn[data-item-id="' + itemId + '"]');
+      if (btn) triggerFlyToCart(btn);
+    });
+
+    /* ── Typewriter search placeholder ── */
+    var input = document.getElementById('food-search');
+    var phrases = ["Search 'Classic Pizza'", "Search 'Biryani'", "Search 'Burger'", "Search 'Noodles'"];
+    var pIdx = 0, cIdx = 0, deleting = false;
+    function typeEffect() {
+      if (document.activeElement === input || input.value !== '') return;
+      var txt = phrases[pIdx];
+      input.placeholder = deleting ? txt.substring(0, --cIdx) : txt.substring(0, ++cIdx);
+      var speed = deleting ? 40 : 80;
+      if (!deleting && cIdx === txt.length)   { speed = 2000; deleting = true; }
+      else if (deleting && cIdx === 0) { deleting = false; pIdx = (pIdx + 1) % phrases.length; speed = 400; }
+      setTimeout(typeEffect, speed);
+    }
+    setTimeout(typeEffect, 1000);
+  </script>
+
+</body>
+</html>
