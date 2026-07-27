@@ -91,97 +91,123 @@ if (isset($_GET['action']) && $_GET['action'] === 'cancel') {
 
 // Handle Form Submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // STEP 1: Enter Email & Request OTP
-    if (isset($_POST['action']) && $_POST['action'] === 'request_otp') {
-        $email = clean_input($_POST['email']);
-        
-        if (empty($email)) {
-            $error = "Please enter your registered email address.";
-        } else {
-            // Find user by email
-            $stmt = $conn->prepare("SELECT user_id, name FROM users WHERE email = ?");
-            $stmt->execute([$email]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($user) {
-                // Generate OTP
-                $otp = mt_rand(100000, 999999);
-                $_SESSION['reset_otp_email'] = $email;
-                $_SESSION['reset_otp_code'] = $otp;
-                $_SESSION['reset_otp_expiry'] = time() + 900; // 15 mins
-                $_SESSION['reset_user_id'] = $user['user_id'];
-                $_SESSION['reset_user_name'] = $user['name'];
-                $_SESSION['reset_step'] = 2;
-                $step = 2;
+    try {
+        $actionSchema = [
+            'action' => ['type' => 'string', 'required' => true, 'enum' => ['request_otp', 'verify_otp', 'reset_password']]
+        ];
+        $actionValidated = Validator::validate($_POST, $actionSchema, false);
+        $action = $actionValidated['action'];
 
-                // Send Email
-                send_otp_email($email, $user['name'], $otp);
-                $success = 'A verification OTP has been sent to your email address.';
-            } else {
-                $error = "No customer account found with that email address.";
-            }
-        }
-    }
-    
-    // STEP 2: Verify OTP
-    elseif (isset($_POST['action']) && $_POST['action'] === 'verify_otp') {
-        $entered_otp = trim($_POST['otp'] ?? '');
-        
-        if (empty($entered_otp)) {
-            $error = 'Please enter the verification OTP.';
-        } elseif (!isset($_SESSION['reset_otp_code']) || time() > $_SESSION['reset_otp_expiry']) {
-            $error = 'OTP has expired. Please request a new one.';
-            $_SESSION['reset_step'] = 1;
-            $step = 1;
-        } elseif ($entered_otp != $_SESSION['reset_otp_code']) {
-            $error = 'Invalid OTP. Please try again.';
-        } else {
-            $_SESSION['reset_otp_verified'] = true;
-            $_SESSION['reset_step'] = 3;
-            $step = 3;
-            $success = 'OTP verified successfully. You can now set your new password.';
-        }
-    }
-    
-    // STEP 3: Reset Password
-    elseif (isset($_POST['action']) && $_POST['action'] === 'reset_password') {
-        if (!isset($_SESSION['reset_otp_verified']) || !$_SESSION['reset_otp_verified']) {
-            $error = 'Session expired. Please start over.';
-            $_SESSION['reset_step'] = 1;
-            $step = 1;
-        } else {
-            $new_password = $_POST['new_password'];
-            $confirm_password = $_POST['confirm_password'];
+        // STEP 1: Enter Email & Request OTP
+        if ($action === 'request_otp') {
+            $schema = [
+                'action' => ['type' => 'string', 'required' => true],
+                'email' => ['type' => 'email', 'required' => true, 'max_len' => 255]
+            ];
+            $validated = Validator::validate($_POST, $schema, false);
+            $email = $validated['email'];
             
-            if (empty($new_password) || empty($confirm_password)) {
-                $error = "Please fill in all fields.";
-            } elseif (strlen($new_password) < 6) {
-                $error = "Password must be at least 6 characters long.";
-            } elseif ($new_password !== $confirm_password) {
-                $error = "Passwords do not match.";
+            $rateLimit = RateLimiter::checkAuth($email, 'forgot_password');
+            if (!$rateLimit['allowed']) {
+                $error = $rateLimit['reason'];
             } else {
-                $user_id = $_SESSION['reset_user_id'];
-                $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+                // Find user by email
+                $stmt = $conn->prepare("SELECT user_id, name FROM users WHERE email = ?");
+                $stmt->execute([$email]);
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
                 
-                // Update password in DB
-                $stmt = $conn->prepare("UPDATE users SET password = ? WHERE user_id = ?");
-                if ($stmt->execute([$hashed_password, $user_id])) {
-                    // Clear reset session variables
-                    unset($_SESSION['reset_otp_email']);
-                    unset($_SESSION['reset_otp_code']);
-                    unset($_SESSION['reset_otp_expiry']);
-                    unset($_SESSION['reset_otp_verified']);
-                    unset($_SESSION['reset_user_id']);
-                    unset($_SESSION['reset_user_name']);
-                    unset($_SESSION['reset_step']);
+                if ($user) {
+                    // Generate OTP
+                    $otp = mt_rand(100000, 999999);
+                    $_SESSION['reset_otp_email'] = $email;
+                    $_SESSION['reset_otp_code'] = $otp;
+                    $_SESSION['reset_otp_expiry'] = time() + 900; // 15 mins
+                    $_SESSION['reset_user_id'] = $user['user_id'];
+                    $_SESSION['reset_user_name'] = $user['name'];
                     
-                    $success = "Your password has been reset successfully! You can now log in.";
-                    $step = 4;
+                    // Attempt to send email
+                    if (send_otp_email($email, $user['name'], $otp)) {
+                        $_SESSION['reset_step'] = 2;
+                        $step = 2;
+                        $success = "Verification code sent to your email. Please check your inbox.";
+                    } else {
+                        $error = "Failed to send verification email. Please verify SMTP server settings.";
+                    }
                 } else {
-                    $error = "Failed to reset password. Please try again.";
+                    RateLimiter::recordAuthFailure($email, 'forgot_password');
+                    $error = "No account found with that email address.";
                 }
             }
         }
+        
+        // STEP 2: Verify OTP
+        elseif ($action === 'verify_otp') {
+            $schema = [
+                'action' => ['type' => 'string', 'required' => true],
+                'otp' => ['type' => 'string', 'required' => true, 'regex' => '/^\d{6}$/']
+            ];
+            $validated = Validator::validate($_POST, $schema, false);
+            $entered_otp = $validated['otp'];
+            
+            if (!isset($_SESSION['reset_otp_code']) || time() > $_SESSION['reset_otp_expiry']) {
+                $error = 'OTP has expired. Please request a new one.';
+                $_SESSION['reset_step'] = 1;
+                $step = 1;
+            } elseif ($entered_otp != $_SESSION['reset_otp_code']) {
+                $error = 'Invalid OTP. Please try again.';
+            } else {
+                $_SESSION['reset_otp_verified'] = true;
+                $_SESSION['reset_step'] = 3;
+                $step = 3;
+                $success = 'OTP verified successfully. You can now set your new password.';
+            }
+        }
+        
+        // STEP 3: Reset Password
+        elseif ($action === 'reset_password') {
+            if (!isset($_SESSION['reset_otp_verified']) || !$_SESSION['reset_otp_verified']) {
+                $error = 'Session expired. Please start over.';
+                $_SESSION['reset_step'] = 1;
+                $step = 1;
+            } else {
+                $schema = [
+                    'action' => ['type' => 'string', 'required' => true],
+                    'new_password' => ['type' => 'string', 'required' => true, 'min_len' => 6, 'max_len' => 100],
+                    'confirm_password' => ['type' => 'string', 'required' => true, 'min_len' => 6, 'max_len' => 100]
+                ];
+                $validated = Validator::validate($_POST, $schema, false);
+                $new_password = $validated['new_password'];
+                $confirm_password = $validated['confirm_password'];
+                
+                if ($new_password !== $confirm_password) {
+                    $error = "Passwords do not match.";
+                } else {
+                    $user_id = $_SESSION['reset_user_id'];
+                    $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+                    
+                    // Update password in DB
+                    $stmt = $conn->prepare("UPDATE users SET password = ? WHERE user_id = ?");
+                    if ($stmt->execute([$hashed_password, $user_id])) {
+                        // Clear reset session variables
+                        unset($_SESSION['reset_otp_email']);
+                        unset($_SESSION['reset_otp_code']);
+                        unset($_SESSION['reset_otp_expiry']);
+                        unset($_SESSION['reset_otp_verified']);
+                        unset($_SESSION['reset_user_id']);
+                        unset($_SESSION['reset_user_name']);
+                        unset($_SESSION['reset_step']);
+                        
+                        $success = "Your password has been reset successfully! You can now log in.";
+                        $step = 4;
+                    } else {
+                        $error = "Failed to reset password. Please try again.";
+                    }
+                }
+            }
+        }
+    } catch (ValidationException $e) {
+        $errors = $e->getErrors();
+        $error = reset($errors);
     }
 }
 ?>
@@ -195,7 +221,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -550,16 +576,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <i class="fa-solid fa-circle-check"></i>
                     <?php echo htmlspecialchars($success); ?>
                 </div>
-                <?php 
-                $smtp_pw = get_site_setting('smtp_password', '');
-                if (empty($smtp_pw) && isset($_SESSION['reset_otp_code']) && $step === 2): 
-                ?>
-                <div style="background: #fffbeb; border: 1px solid #fef3c7; color: #b45309; border-radius: 10px; padding: 0.75rem 1rem; font-size: 0.82rem; margin-bottom: 1.25rem; line-height: 1.4;">
-                    <i class="fa-solid fa-bug" style="margin-right: 6px; color: #d97706;"></i> 
-                    <strong>Sandbox Mode:</strong> Since your SMTP password is not set in the Admin Panel, you can verify using this OTP: 
-                    <strong style="font-size: 1.15rem; color: #d97706; display: block; margin-top: 6px; letter-spacing: 2px; text-align: center; background: #fff; padding: 6px; border-radius: 6px; border: 1px dashed #d97706;"><?php echo $_SESSION['reset_otp_code']; ?></strong>
-                </div>
-                <?php endif; ?>
             <?php endif; ?>
 
             <?php if ($step === 1): ?>

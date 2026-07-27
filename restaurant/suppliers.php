@@ -15,17 +15,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Add / Update Supplier
     if (isset($_POST['save_supplier'])) {
-        $supplier_id = isset($_POST['supplier_id']) ? intval($_POST['supplier_id']) : 0;
-        $company_name = clean_input($_POST['company_name']);
-        $owner_name = clean_input($_POST['owner_name']);
-        $phone = clean_input($_POST['phone']);
-        $email = clean_input($_POST['email']);
-        $address = clean_input($_POST['address']);
-        $gst_number = clean_input($_POST['gst_number']);
-        
-        if (empty($company_name)) {
-            $error_msg = "Company name is required.";
-        } else {
+        try {
+            $schema = [
+                'supplier_id' => ['type' => 'int', 'default' => 0, 'min' => 0],
+                'company_name' => ['type' => 'string', 'required' => true, 'min_len' => 2, 'max_len' => 100],
+                'owner_name' => ['type' => 'string', 'required' => false, 'max_len' => 100],
+                'phone' => ['type' => 'phone', 'required' => false],
+                'email' => ['type' => 'email', 'required' => false, 'max_len' => 255],
+                'address' => ['type' => 'string', 'required' => false, 'max_len' => 255],
+                'gst_number' => ['type' => 'string', 'required' => false, 'max_len' => 15, 'regex' => '/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i']
+            ];
+
+            $validated = Validator::validate($_POST, $schema, false);
+            
+            $supplier_id = $validated['supplier_id'];
+            $company_name = $validated['company_name'];
+            $owner_name = $validated['owner_name'];
+            $phone = $validated['phone'];
+            $email = $validated['email'];
+            $address = $validated['address'];
+            $gst_number = $validated['gst_number'];
+
             try {
                 if ($supplier_id > 0) {
                     // Update
@@ -45,24 +55,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
             } catch (PDOException $e) {
-                $error_msg = "Database error: " . $e->getMessage();
+                error_log("Supplier save error: " . $e->getMessage());
+                $error_msg = "A database error occurred. Please try again later.";
             }
+        } catch (ValidationException $e) {
+            $errors = $e->getErrors();
+            $error_msg = reset($errors);
         }
     }
     
     // Delete Supplier
     if (isset($_POST['delete_supplier'])) {
-        $supplier_id = intval($_POST['supplier_id']);
         try {
-            $stmt = $conn->prepare("DELETE FROM suppliers WHERE supplier_id = ? AND restaurant_id = ?");
-            if ($stmt->execute([$supplier_id, $restaurant_id])) {
-                $success_msg = "Supplier deleted successfully.";
-            } else {
-                $error_msg = "Failed to delete supplier.";
+            $schema = [
+                'supplier_id' => ['type' => 'int', 'required' => true, 'min' => 1]
+            ];
+            $validated = Validator::validate($_POST, $schema, false);
+            $supplier_id = $validated['supplier_id'];
+            
+            try {
+                $stmt = $conn->prepare("DELETE FROM suppliers WHERE supplier_id = ? AND restaurant_id = ?");
+                if ($stmt->execute([$supplier_id, $restaurant_id])) {
+                    $success_msg = "Supplier deleted successfully.";
+                } else {
+                    $error_msg = "Failed to delete supplier.";
+                }
+            } catch (PDOException $e) {
+                error_log("Supplier delete error: " . $e->getMessage());
+                $error_msg = "A database error occurred. Please try again later.";
             }
-        } catch (PDOException $e) {
-            $error_msg = "Database error: " . $e->getMessage();
+        } catch (ValidationException $e) {
+            $errors = $e->getErrors();
+            $error_msg = reset($errors);
         }
+    }
     }
 }
 
@@ -74,7 +100,8 @@ try {
     $suppliers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     $suppliers = [];
-    $error_msg = "Failed to fetch suppliers: " . $e->getMessage();
+    error_log("Failed to fetch suppliers: " . $e->getMessage());
+    $error_msg = "Failed to fetch suppliers.";
 }
 
 // Check if editing

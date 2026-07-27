@@ -16,18 +16,24 @@ $email = '';
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = clean_input($_POST['email']);
     $password = $_POST['password'];
+    $captcha_input = $_POST['captcha'] ?? '';
     
-    // Authenticate admin
-    unset($_SESSION['admin_login_error']);
-    $admin = admin_login($email, $password);
-    
-    if ($admin) {
-        // Redirect to dashboard
-        header("Location: dashboard.php");
-        exit;
+    require_once dirname(__DIR__) . '/includes/captcha.php';
+    if (!verify_captcha_code($captcha_input)) {
+        $error = 'Invalid security verification code. Please try again.';
     } else {
-        $error = isset($_SESSION['admin_login_error']) ? $_SESSION['admin_login_error'] : 'Invalid email or password. Please try again.';
+        // Authenticate admin
         unset($_SESSION['admin_login_error']);
+        $admin = admin_login($email, $password);
+        
+        if ($admin) {
+            // Redirect to dashboard
+            header("Location: dashboard.php");
+            exit;
+        } else {
+            $error = isset($_SESSION['admin_login_error']) ? $_SESSION['admin_login_error'] : 'Invalid email or password. Please try again.';
+            unset($_SESSION['admin_login_error']);
+        }
     }
 }
 ?>
@@ -41,7 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -418,6 +424,41 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </div>
                 </div>
 
+                <!-- Security CAPTCHA Check -->
+                <div>
+                    <div class="field-label">
+                        <span>Security Verification</span>
+                        <button type="button" id="refreshCaptcha" style="background: none; border: none; color: var(--brand-accent); cursor: pointer; font-size: 0.78rem; display: flex; align-items: center; gap: 0.25rem; font-weight: 600; text-transform: none;">
+                            <i class="fa-solid fa-arrows-rotate"></i> Refresh
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1.1rem;">
+                        <div id="captchaContainer" style="background: var(--input-bg); border: 1.5px solid var(--border); border-radius: 10px; height: 48px; display: flex; align-items: center; justify-content: center; overflow: hidden; width: 140px; flex-shrink: 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                            <?php 
+                            require_once dirname(__DIR__) . '/includes/captcha.php';
+                            $captcha = generate_captcha_data();
+                            if ($captcha['type'] === 'image'):
+                            ?>
+                                <img src="<?php echo $captcha['html']; ?>" id="captchaImg" alt="CAPTCHA" style="width: 100%; height: 100%; object-fit: contain;">
+                            <?php else: ?>
+                                <span id="captchaMath" style="font-weight: 700; color: var(--text-dark); font-size: 1.05rem; letter-spacing: 2px;"><?php echo $captcha['html']; ?></span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="input-wrap" style="flex: 1; margin-bottom: 0;">
+                            <i class="fa-solid fa-shield-halved input-icon"></i>
+                            <input
+                                type="text"
+                                id="captcha"
+                                name="captcha"
+                                class="form-input"
+                                placeholder="Security Code"
+                                required
+                                autocomplete="off"
+                            >
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Submit -->
                 <button type="submit" class="btn-login" id="loginBtn">
                     Authenticate Session <i class="fa-solid fa-shield"></i>
@@ -444,6 +485,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         pwInput.type = show ? 'text' : 'password';
         pwIcon.className = show ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
     });
+
+    // CAPTCHA Refresh
+    const refreshBtn = document.getElementById('refreshCaptcha');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            const icon = refreshBtn.querySelector('i');
+            if (icon) icon.classList.add('fa-spin');
+            
+            const isSubdir = window.location.pathname.includes('/admin/') || 
+                             window.location.pathname.includes('/restaurant/') || 
+                             window.location.pathname.includes('/delivery/');
+            const apiUrl = isSubdir ? '../api/get_captcha.php' : 'api/get_captcha.php';
+
+            fetch(apiUrl)
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('captchaContainer');
+                    if (data.type === 'image') {
+                        container.innerHTML = `<img src="${data.html}" id="captchaImg" alt="CAPTCHA" style="width: 100%; height: 100%; object-fit: contain;">`;
+                    } else {
+                        container.innerHTML = `<span id="captchaMath" style="font-weight: 700; color: var(--text-dark); font-size: 1.05rem; letter-spacing: 2px;">${data.html}</span>`;
+                    }
+                    document.getElementById('captcha').value = '';
+                })
+                .catch(err => console.error('Error refreshing captcha:', err))
+                .finally(() => {
+                    if (icon) icon.classList.remove('fa-spin');
+                });
+        });
+    }
 
     // Loading state on submit
     document.querySelector('form').addEventListener('submit', function () {

@@ -446,3 +446,264 @@ body {
         height: 60px;
     }
 }
+
+/* ==========================================
+   MODERN UI ANIMATIONS (codeXr Style)
+   ========================================== */
+
+/* 1. Animated Search Bar with Gradient Border */
+.animated-gradient-search-bar {
+    position: relative;
+    border-radius: 50px;
+    padding: 3px;
+    background: linear-gradient(120deg, #ff5722, #a855f7, #ec4899, #3b82f6, #ff5722);
+    background-size: 300% 300%;
+    animation: gradientBorderMove 5s ease infinite;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.animated-gradient-search-bar:hover,
+.animated-gradient-search-bar:focus-within {
+    transform: scale(1.018);
+    box-shadow: 0 8px 25px rgba(168, 85, 247, 0.35);
+}
+
+.animated-gradient-search-bar .search-inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background-color: #ffffff;
+    border-radius: 46px;
+    padding: 4px 8px 4px 18px;
+    overflow: hidden;
+}
+
+.animated-gradient-search-bar input.form-control {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding-left: 0;
+    font-weight: 500;
+}
+
+.animated-gradient-search-bar .search-icon-btn {
+    border-radius: 50px;
+    padding: 8px 20px;
+    background: linear-gradient(135deg, #ff5722, #e64a19);
+    border: none;
+    color: #ffffff;
+    font-weight: 600;
+    transition: transform 0.2s ease, background 0.3s ease;
+}
+
+.animated-gradient-search-bar .search-icon-btn:hover {
+    transform: scale(1.05);
+    background: linear-gradient(135deg, #f4511e, #d84315);
+}
+
+@keyframes gradientBorderMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* 2. Animated Add to Cart Button */
+.animated-add-to-cart-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 600;
+    border-radius: 50px;
+    padding: 9px 20px;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    overflow: hidden;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 4px 12px rgba(255, 87, 34, 0.25);
+}
+
+.animated-add-to-cart-btn:hover {
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 8px 20px rgba(255, 87, 34, 0.4);
+}
+
+.animated-add-to-cart-btn:active {
+    transform: translateY(0) scale(0.94);
+    box-shadow: 0 2px 8px rgba(255, 87, 34, 0.3);
+}
+
+.animated-add-to-cart-btn i.fa-shopping-cart,
+.animated-add-to-cart-btn i.fa-plus {
+    transition: transform 0.3s ease;
+}
+
+.animated-add-to-cart-btn:hover i.fa-shopping-cart {
+    transform: rotate(-12deg) scale(1.18);
+}
+
+/* Ripple effect overlay */
+.animated-add-to-cart-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: width 0.4s ease, height 0.4s ease, opacity 0.4s ease;
+}
+
+.animated-add-to-cart-btn:active::after {
+    width: 200px;
+    height: 200px;
+    opacity: 1;
+    transition: 0s;
+}
+
+/* 3. Fly to Cart Animation (JeetSaru Vanilla JS Style) */
+.img-clone,
+.flying-cart-item {
+    position: fixed !important;
+    z-index: 99999 !important;
+    border-radius: 50% !important;
+    border: 3px solid #ff5722 !important;
+    transition: all 0.85s cubic-bezier(0.42, 0, 0.58, 1) !important;
+    pointer-events: none !important;
+    box-shadow: 0 10px 30px rgba(255, 87, 34, 0.55), 0 0 18px rgba(255, 193, 7, 0.7) !important;
+    object-fit: cover !important;
+    will-change: top, left, width, height, opacity, transform;
+}
+
+/* Drag to Cart Styles */
+.food-card img,
+.card-img-top,
+.menu-item-img {
+    cursor: grab;
+    user-select: none;
+    -webkit-user-drag: element;
+}
+
+.food-card img:active,
+.card-img-top:active,
+.menu-item-img:active {
+    cursor: grabbing;
+}
+
+.drag-cart-hint {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.65);
+    color: #ffffff;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.food-card:hover .drag-cart-hint {
+    opacity: 1;
+}
+
+/* Cart Header Drop Zone Active Glow */
+.cart-drop-target-active {
+    animation: cartDropPulse 0.8s infinite alternate ease-in-out !important;
+    border-radius: 50px;
+}
+
+@keyframes cartDropPulse {
+    0% {
+        transform: scale(1.05);
+        box-shadow: 0 0 10px rgba(40, 167, 69, 0.6);
+        background-color: rgba(40, 167, 69, 0.15);
+    }
+    100% {
+        transform: scale(1.25);
+        box-shadow: 0 0 25px rgba(40, 167, 69, 1);
+        background-color: rgba(40, 167, 69, 0.35);
+    }
+}
+
+.cart-badge-bounce {
+    animation: cartBadgeBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+@keyframes cartBadgeBounce {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.75); background-color: #28a745 !important; box-shadow: 0 0 20px #28a745; }
+    70% { transform: scale(0.85); }
+    100% { transform: scale(1); }
+}
+
+
+/* 4. OTP Verification V2 UI */
+.otp-card-v2 {
+    background: rgba(20, 20, 20, 0.88);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 32px 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    color: #ffffff;
+    max-width: 440px;
+    margin: 0 auto;
+}
+
+.otp-inputs-wrapper {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 24px 0;
+}
+
+.otp-digit-input {
+    width: 48px;
+    height: 56px;
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    outline: none;
+    transition: all 0.25s ease;
+}
+
+.otp-digit-input:focus,
+.otp-digit-input.active {
+    border-color: #ff5722;
+    background: rgba(255, 87, 34, 0.1);
+    box-shadow: 0 0 16px rgba(255, 87, 34, 0.45);
+    transform: translateY(-2px);
+}
+
+.otp-shake-anim {
+    animation: otpShake 0.5s ease-in-out;
+}
+
+@keyframes otpShake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-10px); }
+    40%, 80% { transform: translateX(10px); }
+}
+
+.otp-success-card {
+    animation: otpSuccessPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes otpSuccessPop {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+

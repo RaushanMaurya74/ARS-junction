@@ -5,6 +5,12 @@ require_once '../includes/functions.php';
 
 header('Content-Type: application/json');
 
+// Enforce rate limits on public chatbot queries
+$rlRes = RateLimiter::checkPublic();
+if (!$rlRes['allowed']) {
+    RateLimiter::enforceOrBlock($rlRes, true);
+}
+
 // Graceful fallback if database connection is offline
 if (!isset($conn) || $conn === null) {
     echo json_encode([
@@ -14,12 +20,11 @@ if (!isset($conn) || $conn === null) {
     exit;
 }
 
-$message = isset($_POST['message']) ? trim(clean_input($_POST['message'])) : '';
+$validated = Validator::validate($_POST, [
+    'message' => ['type' => 'string', 'required' => true, 'max_len' => 1000]
+]);
 
-if (empty($message)) {
-    echo json_encode(['reply' => 'Hi! I didn\'t catch that. Could you please type something? 🤖']);
-    exit;
-}
+$message = trim($validated['message']);
 
 $lower_message = strtolower($message);
 $reply = '';

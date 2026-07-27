@@ -32,7 +32,8 @@ if ($role === 'admin') {
             'latest_order_id' => intval($data['latest_id'] ?? 0)
         ]);
     } catch (PDOException $e) {
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        error_log("Poll notifications admin error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Internal server error.']);
     }
 } 
 elseif ($role === 'delivery') {
@@ -61,7 +62,8 @@ elseif ($role === 'delivery') {
             'latest_order_id' => intval($data['latest_id'] ?? 0)
         ]);
     } catch (PDOException $e) {
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        error_log("Poll notifications delivery error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Internal server error.']);
     }
 } 
 elseif ($role === 'restaurant') {
@@ -85,7 +87,8 @@ elseif ($role === 'restaurant') {
             'latest_order_id' => intval($data['latest_id'] ?? 0)
         ]);
     } catch (PDOException $e) {
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        error_log("Poll notifications restaurant error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Internal server error.']);
     }
 }
 elseif ($role === 'customer') {
@@ -108,7 +111,8 @@ elseif ($role === 'customer') {
             'orders' => $orders
         ]);
     } catch (PDOException $e) {
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        error_log("Poll notifications customer error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Internal server error.']);
     }
 }
 else {

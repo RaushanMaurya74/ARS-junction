@@ -82,6 +82,7 @@ try {
         'restaurant' => $restaurant_coords
     ]);
 } catch (PDOException $e) {
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    error_log("Get delivery location database error: " . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'An internal server error occurred.']);
 }
 ?>

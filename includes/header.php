@@ -2,6 +2,14 @@
 require_once 'db_connect.php';
 require_once 'functions.php';
 require_once 'auth.php';
+
+// Enforce appropriate rate limits: looser limits for logged-in users, moderate for public visitors
+if (is_logged_in()) {
+    $rlRes = RateLimiter::checkAuthenticated($_SESSION['user_id'] ?? null);
+} else {
+    $rlRes = RateLimiter::checkPublic();
+}
+RateLimiter::enforceOrBlock($rlRes);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -10,11 +18,11 @@ require_once 'auth.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo isset($page_title) ? $page_title . ' - ARS JUNCTION' : 'ARS JUNCTION - Online Food Ordering Platform'; ?></title>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome for icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <!-- Custom CSS -->
-    <link href="css/style.css?v=1.2" rel="stylesheet">
+    <link href="css/style.css?v=2.1" rel="stylesheet">
     <?php if (isset($extra_css)): echo $extra_css; endif; ?>
 </head>
 <body>
@@ -48,24 +56,28 @@ require_once 'auth.php';
                 </li>
             </ul>
             <ul class="navbar-nav ms-auto">
-                <?php if (is_logged_in()): ?>
-                    <li class="nav-item">
-                        <a class="nav-link position-relative <?php echo (basename($_SERVER['PHP_SELF']) == 'cart.php') ? 'active' : ''; ?>" href="cart.php">
-                            <i class="fas fa-shopping-cart"></i> Cart
-                            <span class="cart-count position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cart-count">
-                                <?php
-                                $cart_count = 0;
-                                if (isset($_SESSION['user_id'])) {
-                                    $stmt = $conn->prepare("SELECT SUM(quantity) as count FROM cart WHERE user_id = ?");
-                                    $stmt->execute([$_SESSION['user_id']]);
-                                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-                                    $cart_count = $row && isset($row['count']) ? $row['count'] : 0;
+                <li class="nav-item">
+                    <a class="nav-link position-relative <?php echo (basename($_SERVER['PHP_SELF']) == 'cart.php') ? 'active' : ''; ?>" href="cart.php">
+                        <i class="fas fa-shopping-cart"></i> Cart
+                        <span class="cart-count position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cart-count">
+                            <?php
+                            $cart_count = 0;
+                            if (isset($_SESSION['user_id'])) {
+                                $stmt = $conn->prepare("SELECT SUM(quantity) as count FROM cart WHERE user_id = ?");
+                                $stmt->execute([$_SESSION['user_id']]);
+                                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                                $cart_count = $row && isset($row['count']) ? $row['count'] : 0;
+                            } else if (isset($_SESSION['cart'])) {
+                                foreach($_SESSION['cart'] as $qty) {
+                                    $cart_count += intval($qty);
                                 }
-                                echo $cart_count;
-                                ?>
-                            </span>
-                        </a>
-                    </li>
+                            }
+                            echo $cart_count;
+                            ?>
+                        </span>
+                    </a>
+                </li>
+                <?php if (is_logged_in()): ?>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-user"></i> <?php echo $_SESSION['user_name']; ?>

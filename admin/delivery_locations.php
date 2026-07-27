@@ -25,7 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($e->getCode() == 23000) {
                     $error_msg = "Pincode '{$pincode}' already exists.";
                 } else {
-                    $error_msg = "Error adding delivery location: " . $e->getMessage();
+                    error_log("Error adding delivery location: " . $e->getMessage());
+                    $error_msg = "Error adding delivery location.";
                 }
             }
         }
@@ -50,7 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($e->getCode() == 23000) {
                     $error_msg = "Pincode '{$pincode}' already exists on another location.";
                 } else {
-                    $error_msg = "Error updating location: " . $e->getMessage();
+                    error_log("Error updating location: " . $e->getMessage());
+                    $error_msg = "Error updating location.";
                 }
             }
         }
@@ -64,7 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$pincode_id]);
             $success_msg = "Delivery location deleted successfully.";
         } catch (PDOException $e) {
-            $error_msg = "Error deleting location: " . $e->getMessage();
+            error_log("Error deleting location: " . $e->getMessage());
+            $error_msg = "Error deleting location.";
         }
     }
 
@@ -78,7 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$new_status, $pincode_id]);
             $success_msg = "Location status toggled successfully.";
         } catch (PDOException $e) {
-            $error_msg = "Error toggling status: " . $e->getMessage();
+            error_log("Error toggling status: " . $e->getMessage());
+            $error_msg = "Error toggling status.";
         }
     }
 }

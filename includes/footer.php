@@ -58,11 +58,12 @@
 </footer>
 
 <!-- Bootstrap JS Bundle with Popper -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <!-- Custom JS -->
-<script src="js/main.js"></script>
+<script src="js/main.js?v=2.1"></script>
+<script src="js/cart.js?v=2.1"></script>
 <?php if (isset($extra_js)): echo $extra_js; endif; ?>
 
 <?php include_once 'includes/chatbot.php'; ?>

@@ -41,38 +41,63 @@ function is_real_email($email) {
 
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $name = clean_input($_POST['name']);
-    $email = clean_input($_POST['email']);
-    $password = $_POST['password'];
-    $confirm_password = $_POST['confirm_password'];
-    $phone = clean_input($_POST['phone']);
-    
-    // Validate inputs
-    if (empty($name) || empty($email) || empty($password) || empty($phone)) {
-        $error = 'Please fill in all required fields.';
-    } elseif (!preg_match('/^[6-9]\d{9}$/', $phone)) {
-        $error = 'Please enter a valid 10-digit Indian mobile number (starting with 6, 7, 8, or 9).';
-    } elseif (!is_real_email($email)) {
-        $error = 'Please enter a real, active email address. Disposable emails are not allowed.';
-    } elseif ($password !== $confirm_password) {
-        $error = 'Passwords do not match.';
-    } elseif (strlen($password) < 6) {
-        $error = 'Password must be at least 6 characters long.';
-    } elseif (email_exists($email)) {
-        $error = 'Email already exists. Please login or use a different email.';
-    } else {
-        // Register user
-        $result = register_user($name, $email, $password, $phone);
+    try {
+        $schema = [
+            'name' => ['type' => 'string', 'required' => true, 'min_len' => 2, 'max_len' => 100],
+            'email' => ['type' => 'email', 'required' => true, 'max_len' => 255],
+            'phone' => ['type' => 'phone', 'required' => true],
+            'password' => ['type' => 'string', 'required' => true, 'min_len' => 6, 'max_len' => 100],
+            'confirm_password' => ['type' => 'string', 'required' => true, 'min_len' => 6, 'max_len' => 100],
+            'captcha' => ['type' => 'string', 'required' => true]
+        ];
+
+        $validated = Validator::validate($_POST, $schema, false);
         
-        if ($result['success']) {
-            send_welcome_email($result['user_id']);
-            $redirect = isset($_SESSION['redirect_after_login']) ? $_SESSION['redirect_after_login'] : 'index.php';
-            unset($_SESSION['redirect_after_login']);
-            header("Location: $redirect");
-            exit;
+        $name = $validated['name'];
+        $email = $validated['email'];
+        $password = $validated['password'];
+        $confirm_password = $validated['confirm_password'];
+        $phone = $validated['phone'];
+        $captcha = $validated['captcha'];
+        
+        require_once __DIR__ . '/includes/captcha.php';
+        if (!verify_captcha_code($captcha)) {
+            $error = 'Invalid security verification code. Please try again.';
         } else {
-            $error = $result['message'];
+            // Check rate limits for registration
+            $rateLimit = RateLimiter::checkAuth($email, 'register');
+            if (!$rateLimit['allowed']) {
+                $error = $rateLimit['reason'];
+            } elseif ($password !== $confirm_password) {
+                $error = 'Passwords do not match.';
+            } elseif (email_exists($email)) {
+                RateLimiter::recordAuthFailure($email, 'register');
+                $error = 'Email already exists. Please login or use a different email.';
+            } else {
+                // Register user
+                $result = register_user($name, $email, $password, $phone);
+                
+                if ($result['success']) {
+                    RateLimiter::clearAuthSuccess($email, 'register');
+                    send_welcome_email($result['user_id']);
+                    $redirect = isset($_SESSION['redirect_after_login']) ? $_SESSION['redirect_after_login'] : 'index.php';
+                    unset($_SESSION['redirect_after_login']);
+                    header("Location: $redirect");
+                    exit;
+                } else {
+                    RateLimiter::recordAuthFailure($email, 'register');
+                    $error = $result['message'];
+                }
+            }
         }
+    } catch (ValidationException $e) {
+        $errors = $e->getErrors();
+        $error = reset($errors);
+        
+        // Populate inputs so they stay in form
+        $name = clean_input($_POST['name'] ?? '');
+        $email = clean_input($_POST['email'] ?? '');
+        $phone = clean_input($_POST['phone'] ?? '');
     }
 }
 ?>
@@ -86,7 +111,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -552,6 +577,41 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </div>
                 </div>
 
+                <!-- Security CAPTCHA Check -->
+                <div>
+                    <div class="field-label">
+                        <span>Security Verification</span>
+                        <button type="button" id="refreshCaptcha" style="background: none; border: none; color: var(--brand); cursor: pointer; font-size: 0.78rem; display: flex; align-items: center; gap: 0.25rem; font-weight: 600; text-transform: none;">
+                            <i class="fa-solid fa-arrows-rotate"></i> Refresh
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1.1rem;">
+                        <div id="captchaContainer" style="background: var(--input-bg); border: 1.5px solid var(--border); border-radius: 10px; height: 48px; display: flex; align-items: center; justify-content: center; overflow: hidden; width: 140px; flex-shrink: 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                            <?php 
+                            require_once __DIR__ . '/includes/captcha.php';
+                            $captcha = generate_captcha_data();
+                            if ($captcha['type'] === 'image'):
+                            ?>
+                                <img src="<?php echo $captcha['html']; ?>" id="captchaImg" alt="CAPTCHA" style="width: 100%; height: 100%; object-fit: contain;">
+                            <?php else: ?>
+                                <span id="captchaMath" style="font-weight: 700; color: var(--text-dark); font-size: 1.05rem; letter-spacing: 2px;"><?php echo $captcha['html']; ?></span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="input-wrap" style="flex: 1; margin-bottom: 0;">
+                            <i class="fa-solid fa-shield-halved input-icon"></i>
+                            <input
+                                type="text"
+                                id="captcha"
+                                name="captcha"
+                                class="form-input"
+                                placeholder="Security Code"
+                                required
+                                autocomplete="off"
+                            >
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Submit -->
                 <button type="submit" class="btn-login" id="registerBtn">
                     Create Account <i class="fa-solid fa-user-plus"></i>
@@ -596,8 +656,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </div>
 
 <!-- jQuery and Bootstrap JS -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Auth JS -->
 <script src="js/auth.js"></script>
 
@@ -620,6 +680,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         pwInputConfirm.type = show ? 'text' : 'password';
         pwIconConfirm.className = show ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
     });
+
+    // CAPTCHA Refresh
+    const refreshBtn = document.getElementById('refreshCaptcha');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            const icon = refreshBtn.querySelector('i');
+            if (icon) icon.classList.add('fa-spin');
+            
+            const isSubdir = window.location.pathname.includes('/admin/') || 
+                             window.location.pathname.includes('/restaurant/') || 
+                             window.location.pathname.includes('/delivery/');
+            const apiUrl = isSubdir ? '../api/get_captcha.php' : 'api/get_captcha.php';
+
+            fetch(apiUrl)
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('captchaContainer');
+                    if (data.type === 'image') {
+                        container.innerHTML = `<img src="${data.html}" id="captchaImg" alt="CAPTCHA" style="width: 100%; height: 100%; object-fit: contain;">`;
+                    } else {
+                        container.innerHTML = `<span id="captchaMath" style="font-weight: 700; color: var(--text-dark); font-size: 1.05rem; letter-spacing: 2px;">${data.html}</span>`;
+                    }
+                    document.getElementById('captcha').value = '';
+                })
+                .catch(err => console.error('Error refreshing captcha:', err))
+                .finally(() => {
+                    if (icon) icon.classList.remove('fa-spin');
+                });
+        });
+    }
 
     // Loading state on submit (ignore if social login triggered)
     document.querySelector('form').addEventListener('submit', function () {

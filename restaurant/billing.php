@@ -37,7 +37,8 @@ try {
         $total_discount += floatval($o['discount_amount'] ?? 0);
     }
 } catch (PDOException $e) {
-    $error_msg = "Database error: " . $e->getMessage();
+    error_log("Billing Database error: " . $e->getMessage());
+    $error_msg = "A database error occurred. Please try again later.";
 }
 
 // Fetch single invoice details if requested
@@ -67,7 +68,8 @@ if (isset($_GET['view_invoice'])) {
             $invoice_items = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
         }
     } catch (PDOException $e) {
-        $error_msg = "Failed to fetch invoice details: " . $e->getMessage();
+        error_log("Failed to fetch invoice details: " . $e->getMessage());
+        $error_msg = "Failed to fetch invoice details.";
     }
 }
 ?>
@@ -326,7 +328,7 @@ function printInvoiceSection() {
     var originalContents = document.body.innerHTML;
     
     // Simple custom print layout wrapper
-    document.body.innerHTML = "<html><head><title>Invoice</title><link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'></head><body class='p-5'>" + printContents + "</body></html>";
+    document.body.innerHTML = "<html><head><title>Invoice</title><link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css' rel='stylesheet'></head><body class='p-5'>" + printContents + "</body></html>";
     
     window.print();
     

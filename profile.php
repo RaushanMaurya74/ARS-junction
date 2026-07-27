@@ -54,50 +54,70 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['remove_photo'])) {
 
 // Handle profile update
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_profile'])) {
-    $name = clean_input($_POST['name']);
-    $phone = clean_input($_POST['phone']);
-    $address = clean_input($_POST['address']);
-    $city = clean_input($_POST['city']);
-    $state = clean_input($_POST['state']);
-    $zip_code = clean_input($_POST['zip_code']);
-    
-    $update_data = array(
-        'name' => $name,
-        'phone' => $phone,
-        'address' => $address,
-        'city' => $city,
-        'state' => $state,
-        'zip_code' => $zip_code
-    );
-    
-    $result = update_user_profile($user_id, $update_data);
-    
-    if ($result['success']) {
-        $success_msg = 'Profile updated successfully!';
-        $user = get_user_by_id($user_id); // Refresh user data
-    } else {
-        $error_msg = $result['message'];
+    try {
+        $schema = [
+            'name' => ['type' => 'string', 'required' => true, 'min_len' => 2, 'max_len' => 100],
+            'phone' => ['type' => 'phone', 'required' => true],
+            'address' => ['type' => 'string', 'required' => true, 'max_len' => 255],
+            'city' => ['type' => 'string', 'required' => true, 'max_len' => 100],
+            'state' => ['type' => 'string', 'required' => true, 'max_len' => 100],
+            'zip_code' => ['type' => 'pincode', 'required' => true]
+        ];
+
+        $validated = Validator::validate($_POST, $schema, false);
+        
+        $update_data = array(
+            'name' => $validated['name'],
+            'phone' => $validated['phone'],
+            'address' => $validated['address'],
+            'city' => $validated['city'],
+            'state' => $validated['state'],
+            'zip_code' => $validated['zip_code']
+        );
+        
+        $result = update_user_profile($user_id, $update_data);
+        
+        if ($result['success']) {
+            $success_msg = 'Profile updated successfully!';
+            $user = get_user_by_id($user_id); // Refresh user data
+        } else {
+            $error_msg = $result['message'];
+        }
+    } catch (ValidationException $e) {
+        $errors = $e->getErrors();
+        $error_msg = reset($errors);
     }
 }
 
 // Handle password change
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['change_password'])) {
-    $current_password = $_POST['current_password'];
-    $new_password = $_POST['new_password'];
-    $confirm_password = $_POST['confirm_password'];
-    
-    if ($new_password !== $confirm_password) {
-        $error_msg = 'New passwords do not match.';
-    } elseif (strlen($new_password) < 6) {
-        $error_msg = 'New password must be at least 6 characters long.';
-    } else {
-        $result = change_password($user_id, $current_password, $new_password);
+    try {
+        $schema = [
+            'current_password' => ['type' => 'string', 'required' => true, 'min_len' => 1],
+            'new_password' => ['type' => 'string', 'required' => true, 'min_len' => 6, 'max_len' => 100],
+            'confirm_password' => ['type' => 'string', 'required' => true, 'min_len' => 6, 'max_len' => 100]
+        ];
+
+        $validated = Validator::validate($_POST, $schema, false);
         
-        if ($result['success']) {
-            $success_msg = 'Password changed successfully!';
+        $current_password = $validated['current_password'];
+        $new_password = $validated['new_password'];
+        $confirm_password = $validated['confirm_password'];
+        
+        if ($new_password !== $confirm_password) {
+            $error_msg = 'New passwords do not match.';
         } else {
-            $error_msg = $result['message'];
+            $result = change_password($user_id, $current_password, $new_password);
+            
+            if ($result['success']) {
+                $success_msg = 'Password changed successfully!';
+            } else {
+                $error_msg = $result['message'];
+            }
         }
+    } catch (ValidationException $e) {
+        $errors = $e->getErrors();
+        $error_msg = reset($errors);
     }
 }
 

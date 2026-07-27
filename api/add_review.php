@@ -15,15 +15,23 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$user_id = $_SESSION['user_id'];
-$restaurant_id = isset($_POST['restaurant_id']) ? intval($_POST['restaurant_id']) : 0;
-$rating = isset($_POST['rating']) ? intval($_POST['rating']) : 0;
-$comment = isset($_POST['comment']) ? clean_input($_POST['comment']) : '';
-
-if ($restaurant_id <= 0 || $rating < 1 || $rating > 5 || empty($comment)) {
+try {
+    $validated = Validator::validate($_POST, [
+        'restaurant_id' => ['type' => 'int', 'required' => true, 'min' => 1],
+        'rating' => ['type' => 'int', 'required' => true, 'min' => 1, 'max' => 5],
+        'comment' => ['type' => 'string', 'required' => true, 'max_len' => 1000]
+    ], false);
+    
+    $restaurant_id = $validated['restaurant_id'];
+    $rating = $validated['rating'];
+    $comment = $validated['comment'];
+} catch (ValidationException $e) {
+    $restaurant_id = isset($_POST['restaurant_id']) ? intval($_POST['restaurant_id']) : 0;
     header('Location: ../restaurant_details.php?id=' . $restaurant_id . '#reviews');
     exit;
 }
+
+$user_id = $_SESSION['user_id'];
 
 if (!has_user_reviewed($user_id, $restaurant_id)) {
     $stmt = $conn->prepare("INSERT INTO reviews (user_id, restaurant_id, rating, comment) VALUES (?, ?, ?, ?)");

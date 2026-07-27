@@ -17,13 +17,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $user_id = $_SESSION['user_id'];
-$item_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
-$quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
 
-if ($item_id <= 0 || $quantity <= 0) {
-    echo json_encode(['success' => false, 'message' => 'Invalid item or quantity']);
-    exit;
-}
+$validated = Validator::validate($_POST, [
+    'item_id' => ['type' => 'int', 'required' => true, 'min' => 1],
+    'quantity' => ['type' => 'int', 'default' => 1, 'min' => 1]
+]);
+
+$item_id = $validated['item_id'];
+$quantity = $validated['quantity'];
 
 try {
     // Check if item already exists in cart

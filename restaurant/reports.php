@@ -49,7 +49,8 @@ try {
     $stmt->execute([$restaurant_id, $start_date, $end_date]);
     $sales_summary = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    $error_msg = "Failed to fetch sales summary: " . $e->getMessage();
+    error_log("Failed to fetch sales summary: " . $e->getMessage());
+    $error_msg = "Failed to fetch sales summary.";
 }
 
 // 2. Fetch Product Performance (Top Selling Dishes)

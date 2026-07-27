@@ -2,29 +2,22 @@
 function authenticate_user($email, $password) {
     global $conn;
 
+    // Check rate limits with exponential backoff (per-IP & per-account)
+    $rateLimit = RateLimiter::checkAuth($email, 'login');
+    if (!$rateLimit['allowed']) {
+        $_SESSION['login_error'] = $rateLimit['reason'];
+        return false;
+    }
+
     // Get the user
     $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user) {
-        // Check if account is locked
-        if (!empty($user['lockout_until'])) {
-            $lockout_time = strtotime($user['lockout_until']);
-            if (time() < $lockout_time) {
-                $_SESSION['login_error'] = "Account locked due to 5 failed login attempts. Please try again after 2 hours.";
-                return false;
-            } else {
-                // Lockout period has passed, reset attempts
-                $stmt_reset = $conn->prepare("UPDATE users SET login_attempts = 0, lockout_until = NULL WHERE user_id = ?");
-                $stmt_reset->execute([$user['user_id']]);
-                $user['login_attempts'] = 0;
-                $user['lockout_until'] = null;
-            }
-        }
-
         if (password_verify($password, $user['password'])) {
-            // Reset attempts on successful login
+            // Reset attempt counters on success
+            RateLimiter::clearAuthSuccess($email, 'login');
             $stmt_reset = $conn->prepare("UPDATE users SET login_attempts = 0, lockout_until = NULL WHERE user_id = ?");
             $stmt_reset->execute([$user['user_id']]);
 
@@ -35,23 +28,23 @@ function authenticate_user($email, $password) {
             $_SESSION['is_delivery_boy'] = $user['is_delivery_boy'];
             return true;
         } else {
-            // Increment failed attempts
-            $attempts = (int)$user['login_attempts'] + 1;
-            if ($attempts >= 5) {
-                $lockout_until = date('Y-m-d H:i:s', time() + 7200); // 2 hours
-                $stmt_lock = $conn->prepare("UPDATE users SET login_attempts = ?, lockout_until = ? WHERE user_id = ?");
-                $stmt_lock->execute([$attempts, $lockout_until, $user['user_id']]);
-                $_SESSION['login_error'] = "Account locked due to 5 failed login attempts. Please try again after 2 hours.";
+            // Record failed attempt in RateLimiter for exponential backoff
+            RateLimiter::recordAuthFailure($email, 'login');
+            $postCheck = RateLimiter::checkAuth($email, 'login');
+
+            if (!$postCheck['allowed']) {
+                $_SESSION['login_error'] = $postCheck['reason'];
             } else {
-                $stmt_inc = $conn->prepare("UPDATE users SET login_attempts = ? WHERE user_id = ?");
-                $stmt_inc->execute([$attempts, $user['user_id']]);
-                $remaining_attempts = 5 - $attempts;
-                $_SESSION['login_error'] = "Invalid credentials. You have {$remaining_attempts} login attempts remaining.";
+                $_SESSION['login_error'] = "Invalid credentials. Please check your email and password.";
             }
             return false;
         }
+    } else {
+        // Record failed attempt for non-existent account per-IP to prevent user enumeration attacks
+        RateLimiter::recordAuthFailure($email, 'login');
+        $_SESSION['login_error'] = "Invalid credentials. Please check your email and password.";
+        return false;
     }
-    return false;
 }
 
 function is_logged_in() {

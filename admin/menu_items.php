@@ -10,9 +10,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
         if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
-            // Read file content and encode to base64
-            $file_data = file_get_contents($_FILES['image']['tmp_name']);
-            $uploaded_image = 'data:image/' . $ext . ';base64,' . base64_encode($file_data);
+            require_once '../includes/functions.php';
+            // Compress and encode to base64 (400x300 dimensions)
+            $uploaded_image = get_compressed_base64_image($_FILES['image']['tmp_name'], $ext, 400, 300);
         }
     }
 
@@ -153,8 +153,8 @@ if (isset($_GET['edit'])) {
                         <?php foreach ($items as $item): ?>
                             <tr>
                                 <td>
-                                    <?php if (!empty($item['image']) && file_exists('../' . $item['image'])): ?>
-                                        <img src="../<?php echo $item['image']; ?>" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover; vertical-align: middle;">
+                                    <?php if (has_image($item['image'], true)): ?>
+                                        <img src="<?php echo get_image_url($item['image'], true); ?>" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover; vertical-align: middle;">
                                     <?php else: ?>
                                         <span class="d-inline-block rounded me-2 bg-light text-center" style="width: 40px; height: 40px; line-height: 40px; vertical-align: middle;">
                                             <i class="fas fa-utensils text-muted"></i>

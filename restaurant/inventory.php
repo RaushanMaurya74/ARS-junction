@@ -15,20 +15,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Add / Update Inventory Item
     if (isset($_POST['save_item'])) {
-        $item_id = isset($_POST['item_id']) ? intval($_POST['item_id']) : 0;
-        $name = clean_input($_POST['name']);
-        $sku = clean_input($_POST['sku']);
-        $barcode = clean_input($_POST['barcode']);
-        $purchase_price = floatval($_POST['purchase_price']);
-        $selling_price = floatval($_POST['selling_price']);
-        $unit = clean_input($_POST['unit']);
-        $opening_stock = floatval($_POST['opening_stock']);
-        $minimum_stock = floatval($_POST['minimum_stock']);
-        $supplier_id = isset($_POST['supplier_id']) && intval($_POST['supplier_id']) > 0 ? intval($_POST['supplier_id']) : null;
+        try {
+            $schema = [
+                'item_id' => ['type' => 'int', 'default' => 0, 'min' => 0],
+                'name' => ['type' => 'string', 'required' => true, 'min_len' => 2, 'max_len' => 100],
+                'sku' => ['type' => 'string', 'default' => '', 'max_len' => 50],
+                'barcode' => ['type' => 'string', 'default' => '', 'max_len' => 50],
+                'purchase_price' => ['type' => 'float', 'required' => true, 'min' => 0],
+                'selling_price' => ['type' => 'float', 'required' => true, 'min' => 0],
+                'unit' => ['type' => 'string', 'required' => true, 'max_len' => 20],
+                'opening_stock' => ['type' => 'float', 'required' => true, 'min' => 0],
+                'minimum_stock' => ['type' => 'float', 'required' => true, 'min' => 0],
+                'supplier_id' => ['type' => 'int', 'required' => false, 'min' => 1]
+            ];
 
-        if (empty($name) || empty($unit)) {
-            $error_msg = "Item name and unit are required.";
-        } else {
+            $validated = Validator::validate($_POST, $schema, false);
+            
+            $item_id = $validated['item_id'];
+            $name = $validated['name'];
+            $sku = $validated['sku'];
+            $barcode = $validated['barcode'];
+            $purchase_price = $validated['purchase_price'];
+            $selling_price = $validated['selling_price'];
+            $unit = $validated['unit'];
+            $opening_stock = $validated['opening_stock'];
+            $minimum_stock = $validated['minimum_stock'];
+            $supplier_id = !empty($validated['supplier_id']) ? $validated['supplier_id'] : null;
+
             try {
                 if ($item_id > 0) {
                     // Update
@@ -55,21 +68,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
             } catch (PDOException $e) {
-                $error_msg = "Database error: " . $e->getMessage();
+                error_log("Inventory save error: " . $e->getMessage());
+                $error_msg = "A database error occurred. Please try again later.";
             }
+        } catch (ValidationException $e) {
+            $errors = $e->getErrors();
+            $error_msg = reset($errors);
         }
     }
 
     // Record Stock Adjustment
     if (isset($_POST['record_adjustment'])) {
-        $item_id = intval($_POST['item_id']);
-        $type = clean_input($_POST['adjustment_type']); // 'stock_in', 'stock_out', 'waste', 'adjustment'
-        $quantity = floatval($_POST['quantity']);
-        $remarks = clean_input($_POST['remarks']);
+        try {
+            $schema = [
+                'item_id' => ['type' => 'int', 'required' => true, 'min' => 1],
+                'adjustment_type' => ['type' => 'string', 'required' => true, 'enum' => ['stock_in', 'stock_out', 'waste', 'adjustment']],
+                'quantity' => ['type' => 'float', 'required' => true, 'min' => 0.001],
+                'remarks' => ['type' => 'string', 'default' => '', 'max_len' => 255],
+                'adj_direction' => ['type' => 'string', 'default' => 'add', 'enum' => ['add', 'remove']]
+            ];
 
-        if ($item_id <= 0 || $quantity <= 0 || !in_array($type, ['stock_in', 'stock_out', 'waste', 'adjustment'])) {
-            $error_msg = "Invalid adjustment request params.";
-        } else {
+            $validated = Validator::validate($_POST, $schema, false);
+            
+            $item_id = $validated['item_id'];
+            $type = $validated['adjustment_type'];
+            $quantity = $validated['quantity'];
+            $remarks = $validated['remarks'];
+            $dir = $validated['adj_direction'];
+
             try {
                 $conn->beginTransaction();
 
@@ -88,7 +114,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $new_stock -= $quantity;
                     } elseif ($type === 'adjustment') {
                         // For generic manual correction, specify if adding or removing
-                        $dir = clean_input($_POST['adj_direction'] ?? 'add');
                         if ($dir === 'add') {
                             $new_stock += $quantity;
                         } else {
@@ -120,24 +145,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             } catch (PDOException $e) {
                 $conn->rollBack();
-                $error_msg = "Transaction failed: " . $e->getMessage();
+                error_log("Inventory adjustment transaction failed: " . $e->getMessage());
+                $error_msg = "Transaction failed. Please try again.";
             }
+        } catch (ValidationException $e) {
+            $errors = $e->getErrors();
+            $error_msg = reset($errors);
         }
     }
     
     // Delete Item
     if (isset($_POST['delete_item'])) {
-        $item_id = intval($_POST['item_id']);
         try {
-            $stmt = $conn->prepare("DELETE FROM inventory_items WHERE item_id = ? AND restaurant_id = ?");
-            if ($stmt->execute([$item_id, $restaurant_id])) {
-                $success_msg = "Item deleted from inventory.";
-            } else {
-                $error_msg = "Failed to delete item.";
+            $schema = [
+                'item_id' => ['type' => 'int', 'required' => true, 'min' => 1]
+            ];
+            $validated = Validator::validate($_POST, $schema, false);
+            $item_id = $validated['item_id'];
+            
+            try {
+                $stmt = $conn->prepare("DELETE FROM inventory_items WHERE item_id = ? AND restaurant_id = ?");
+                if ($stmt->execute([$item_id, $restaurant_id])) {
+                    $success_msg = "Item deleted from inventory.";
+                } else {
+                    $error_msg = "Failed to delete item.";
+                }
+            } catch (PDOException $e) {
+                error_log("Inventory delete error: " . $e->getMessage());
+                $error_msg = "A database error occurred. Please try again later.";
             }
-        } catch (PDOException $e) {
-            $error_msg = "Database error: " . $e->getMessage();
+        } catch (ValidationException $e) {
+            $errors = $e->getErrors();
+            $error_msg = reset($errors);
         }
+    }
     }
 }
 
@@ -174,7 +215,8 @@ try {
         }
     }
 } catch (PDOException $e) {
-    $error_msg = "Failed to fetch inventory: " . $e->getMessage();
+    error_log("Failed to fetch inventory: " . $e->getMessage());
+    $error_msg = "Failed to fetch inventory.";
 }
 
 // Fetch recent stock ledger transactions (limit 15)

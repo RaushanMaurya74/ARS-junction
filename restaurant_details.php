@@ -72,8 +72,8 @@ $img_index = $restaurant_id % 4;
 <!-- Restaurant Header -->
 <div class="container mb-4">
     <div class="restaurant-header">
-        <?php if (!empty($restaurant['image']) && file_exists($restaurant['image'])): ?>
-            <img src="<?php echo $restaurant['image']; ?>" alt="<?php echo $restaurant['name']; ?>" class="restaurant-cover" style="height: 300px; width: 100%; object-fit: cover;">
+        <?php if (has_image($restaurant['image'], false)): ?>
+            <img src="<?php echo get_image_url($restaurant['image'], false); ?>" alt="<?php echo $restaurant['name']; ?>" class="restaurant-cover" style="height: 300px; width: 100%; object-fit: cover;">
         <?php else: ?>
             <img src="<?php echo $restaurant_images[$img_index]; ?>" alt="<?php echo $restaurant['name']; ?>" class="restaurant-cover" style="height: 300px; width: 100%; object-fit: cover;">
         <?php endif; ?>
@@ -184,8 +184,8 @@ $img_index = $restaurant_id % 4;
                 <div class="menu-item row align-items-center">
                     <div class="col-md-8">
                         <div class="d-flex align-items-center">
-                            <?php if (!empty($item['image']) && file_exists($item['image'])): ?>
-                                <img src="<?php echo $item['image']; ?>" alt="<?php echo $item['name']; ?>" class="menu-item-img me-3" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                            <?php if (has_image($item['image'], false)): ?>
+                                <img src="<?php echo get_image_url($item['image'], false); ?>" alt="<?php echo $item['name']; ?>" class="menu-item-img me-3" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
                             <?php else: ?>
                                 <img src="<?php echo $food_images[$food_img_index]; ?>" alt="<?php echo $item['name']; ?>" class="menu-item-img me-3" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
                             <?php endif; ?>
@@ -213,7 +213,7 @@ $img_index = $restaurant_id % 4;
                                 <input type="number" class="form-control text-center quantity-input" data-item-id="<?php echo $item['item_id']; ?>" value="1" min="1" max="10">
                                 <button class="btn btn-outline-secondary increase-qty" type="button">+</button>
                             </div>
-                            <button class="btn btn-primary btn-sm add-to-cart-btn" data-item-id="<?php echo $item['item_id']; ?>">
+                            <button class="btn btn-primary btn-sm add-to-cart-btn animated-add-to-cart-btn" data-item-id="<?php echo $item['item_id']; ?>">
                                 <i class="fas fa-cart-plus"></i> Add
                             </button>
                         </div>

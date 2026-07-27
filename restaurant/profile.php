@@ -14,34 +14,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Form 1: Update Restaurant Information
     if (isset($_POST['update_restaurant'])) {
-        $name = clean_input($_POST['name']);
-        $description = clean_input($_POST['description']);
-        $address = clean_input($_POST['address']);
-        $city = clean_input($_POST['city']);
-        $state = clean_input($_POST['state']);
-        $zip_code = clean_input($_POST['zip_code']);
-        $phone = clean_input($_POST['phone']);
-        $email = clean_input($_POST['email']);
-        $delivery_time = intval($_POST['delivery_time']);
-        $delivery_fee = floatval($_POST['delivery_fee']);
-        $minimum_order = floatval($_POST['minimum_order']);
-        
-        $uploaded_banner = '';
-        if (isset($_FILES['banner_image']) && $_FILES['banner_image']['error'] === UPLOAD_ERR_OK) {
-            $ext = strtolower(pathinfo($_FILES['banner_image']['name'], PATHINFO_EXTENSION));
-            if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
-                // Compress and encode to base64
-                require_once '../includes/functions.php';
-                $uploaded_banner = get_compressed_base64_image($_FILES['banner_image']['tmp_name'], $ext, 800, 400);
-            } else {
-                $error_msg = 'Invalid image format. Only JPG, JPEG, PNG, and GIF allowed.';
-            }
-        }
+        try {
+            $schema = [
+                'name' => ['type' => 'string', 'required' => true, 'min_len' => 2, 'max_len' => 100],
+                'description' => ['type' => 'string', 'default' => '', 'max_len' => 500],
+                'address' => ['type' => 'string', 'required' => true, 'max_len' => 255],
+                'city' => ['type' => 'string', 'required' => true, 'max_len' => 100],
+                'state' => ['type' => 'string', 'required' => true, 'max_len' => 100],
+                'zip_code' => ['type' => 'pincode', 'required' => true],
+                'phone' => ['type' => 'phone', 'required' => true],
+                'email' => ['type' => 'email', 'required' => true, 'max_len' => 255],
+                'delivery_time' => ['type' => 'int', 'required' => true, 'min' => 0],
+                'delivery_fee' => ['type' => 'float', 'required' => true, 'min' => 0],
+                'minimum_order' => ['type' => 'float', 'required' => true, 'min' => 0]
+            ];
 
-        if (empty($error_msg)) {
-            if (empty($name) || empty($address) || empty($phone)) {
-                $error_msg = 'Please fill in the required restaurant fields (Name, Address, Phone).';
-            } else {
+            $validated = Validator::validate($_POST, $schema, false);
+            
+            $name = $validated['name'];
+            $description = $validated['description'];
+            $address = $validated['address'];
+            $city = $validated['city'];
+            $state = $validated['state'];
+            $zip_code = $validated['zip_code'];
+            $phone = $validated['phone'];
+            $email = $validated['email'];
+            $delivery_time = $validated['delivery_time'];
+            $delivery_fee = $validated['delivery_fee'];
+            $minimum_order = $validated['minimum_order'];
+            
+            $uploaded_banner = '';
+            if (isset($_FILES['banner_image']) && $_FILES['banner_image']['error'] === UPLOAD_ERR_OK) {
+                $ext = strtolower(pathinfo($_FILES['banner_image']['name'], PATHINFO_EXTENSION));
+                if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
+                    // Compress and encode to base64
+                    require_once '../includes/functions.php';
+                    $uploaded_banner = get_compressed_base64_image($_FILES['banner_image']['tmp_name'], $ext, 800, 400);
+                } else {
+                    $error_msg = 'Invalid image format. Only JPG, JPEG, PNG, and GIF allowed.';
+                }
+            }
+
+            if (empty($error_msg)) {
                 $banner_to_save = !empty($uploaded_banner) ? $uploaded_banner : $restaurant['image'];
                 
                 $stmt = $conn->prepare("
@@ -58,6 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error_msg = 'Failed to update restaurant details.';
                 }
             }
+        } catch (ValidationException $e) {
+            $errors = $e->getErrors();
+            $error_msg = reset($errors);
         }
     }
 
@@ -74,12 +91,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Form 2: Update Manager Login Settings
     if (isset($_POST['update_manager'])) {
-        $manager_name = clean_input($_POST['manager_name']);
-        $manager_email = clean_input($_POST['manager_email']);
-        
-        if (empty($manager_name) || empty($manager_email)) {
-            $error_msg = 'Manager Name and Email are required.';
-        } else {
+        try {
+            $schema = [
+                'manager_name' => ['type' => 'string', 'required' => true, 'min_len' => 2, 'max_len' => 100],
+                'manager_email' => ['type' => 'email', 'required' => true, 'max_len' => 255],
+                'new_password' => ['type' => 'string', 'required' => false, 'min_len' => 6, 'max_len' => 100]
+            ];
+
+            $validated = Validator::validate($_POST, $schema, false);
+            
+            $manager_name = $validated['manager_name'];
+            $manager_email = $validated['manager_email'];
+            
             // Check unique email
             $stmt_check = $conn->prepare("SELECT user_id FROM users WHERE email = ? AND user_id != ?");
             $stmt_check->execute([$manager_email, $manager_id]);
@@ -87,8 +110,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt_check->fetch()) {
                 $error_msg = 'Email address is already taken by another user.';
             } else {
-                if (!empty($_POST['new_password'])) {
-                    $hashed_password = password_hash($_POST['new_password'], PASSWORD_DEFAULT);
+                if (!empty($validated['new_password'])) {
+                    $hashed_password = password_hash($validated['new_password'], PASSWORD_DEFAULT);
                     $stmt = $conn->prepare("UPDATE users SET name = ?, email = ?, password = ? WHERE user_id = ?");
                     $success = $stmt->execute([$manager_name, $manager_email, $hashed_password, $manager_id]);
                 } else {
@@ -106,6 +129,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error_msg = 'Failed to update manager account.';
                 }
             }
+        } catch (ValidationException $e) {
+            $errors = $e->getErrors();
+            $error_msg = reset($errors);
         }
     }
 }

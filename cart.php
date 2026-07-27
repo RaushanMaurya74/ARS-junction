@@ -99,8 +99,8 @@ $extra_js = '<script src="js/cart.js"></script>';
                 <?php endif; ?>
                 
                 <div class="cart-item d-flex align-items-center mb-3" data-cart-id="<?php echo $item['cart_id']; ?>">
-                    <?php if (!empty($item['image']) && file_exists($item['image'])): ?>
-                        <img src="<?php echo $item['image']; ?>" alt="<?php echo $item['name']; ?>" class="cart-item-img me-3" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                    <?php if (has_image($item['image'], false)): ?>
+                        <img src="<?php echo get_image_url($item['image'], false); ?>" alt="<?php echo $item['name']; ?>" class="cart-item-img me-3" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
                     <?php else: ?>
                         <img src="images/food_placeholder.jpg" alt="<?php echo $item['name']; ?>" class="cart-item-img me-3" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
                     <?php endif; ?>

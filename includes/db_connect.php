@@ -1,5 +1,131 @@
 <?php
 ob_start();
+
+// Configure error displaying and reporting
+error_reporting(E_ALL);
+ini_set('display_errors', '0'); // Do not display raw PHP errors to users
+ini_set('log_errors', '1');     // Log errors server-side
+
+// Custom Exception Handler
+set_exception_handler(function ($exception) {
+    // Log the full exception server-side
+    error_log("Uncaught Exception: " . $exception->getMessage() . " in " . $exception->getFile() . " on line " . $exception->getLine() . "\n" . $exception->getTraceAsString());
+
+    // Clean any buffers
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
+    // Determine response type (JSON or HTML)
+    $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+    $isApi = (strpos($requestUri, 'api/') !== false)
+          && (strpos($requestUri, 'restaurant_router') === false)
+          && (strpos($requestUri, 'admin_router') === false)
+          && (strpos($requestUri, 'delivery_router') === false);
+
+    if ($isApi) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => false,
+            'message' => 'An internal server error occurred. Please try again later.'
+        ]);
+    } else {
+        http_response_code(500);
+        // Display a clean, generic user-friendly HTML error page
+        ?>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Error - ARS Junction</title>
+            <style>
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; color: #1f2937; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+                .container { text-align: center; background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 450px; }
+                h1 { color: #dc2626; font-size: 2rem; margin-top: 0; }
+                p { color: #4b5563; font-size: 1rem; line-height: 1.5; margin-bottom: 1.5rem; }
+                .btn { display: inline-block; background-color: #e64a19; color: white; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 6px; font-weight: 500; transition: background 0.2s; }
+                .btn:hover { background-color: #d84315; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Something Went Wrong</h1>
+                <p>An unexpected internal error occurred on our server. We have logged the details and are working to resolve the issue. Please try again later.</p>
+                <a href="/index.php" class="btn">Go to Homepage</a>
+            </div>
+        </body>
+        </html>
+        <?php
+    }
+    exit;
+});
+
+// Custom Error Handler (converts PHP errors to ErrorExceptions so they are caught by the exception handler)
+set_error_handler(function ($severity, $message, $file, $line) {
+    if (!(error_reporting() & $severity)) {
+        // This error code is not included in error_reporting
+        return;
+    }
+    throw new ErrorException($message, 0, $severity, $file, $line);
+});
+
+// Shutdown function to handle fatal errors nicely
+register_shutdown_function(function () {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        // Log the fatal error
+        error_log("Fatal Error: " . $error['message'] . " in " . $error['file'] . " on line " . $error['line']);
+
+        // Clean buffers
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+        $isApi = (strpos($requestUri, 'api/') !== false)
+              && (strpos($requestUri, 'restaurant_router') === false)
+              && (strpos($requestUri, 'admin_router') === false)
+              && (strpos($requestUri, 'delivery_router') === false);
+
+        if ($isApi) {
+            http_response_code(500);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'success' => false,
+                'message' => 'A fatal internal server error occurred. Please try again later.'
+            ]);
+        } else {
+            http_response_code(500);
+            ?>
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Error - ARS Junction</title>
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; color: #1f2937; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+                    .container { text-align: center; background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 450px; }
+                    h1 { color: #dc2626; font-size: 2rem; margin-top: 0; }
+                    p { color: #4b5563; font-size: 1rem; line-height: 1.5; margin-bottom: 1.5rem; }
+                    .btn { display: inline-block; background-color: #e64a19; color: white; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 6px; font-weight: 500; transition: background 0.2s; }
+                    .btn:hover { background-color: #d84315; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>Something Went Wrong</h1>
+                    <p>An unexpected internal error occurred on our server. We have logged the details and are working to resolve the issue. Please try again later.</p>
+                    <a href="/index.php" class="btn">Go to Homepage</a>
+                </div>
+            </body>
+            </html>
+            <?php
+        }
+    }
+});
 date_default_timezone_set('Asia/Kolkata');
 // Load .env file if it exists
 if (file_exists(__DIR__ . '/../.env')) {
@@ -140,10 +266,7 @@ if ($driver === 'pgsql' && !empty($host) && preg_match('/^db\.([a-z0-9]+)\.supab
     if (!empty($username) && strpos($username, '.') === false) {
         $username = $username . '.' . $ref;
     }
-    // Update password if it is set to the Vercel placeholder/incorrect value
-    if ($password === 'Maurya1055@') {
-        $password = 'Maurya1055@#!';
-    }
+
 }
 
 // 2. If environment variables are not set, fall back to old detection logic
@@ -175,13 +298,13 @@ if (empty($host)) {
         $password = '';
         $driver = 'mysql';
     } else {
-        // Ezyro Production Database
-        $host = 'sql109.ezyro.com';
-        $port = '3306';
-        $dbname = 'ezyro_38647338_ars_junction';
-        $username = 'ezyro_38647338';
-        $password = 'Maurya1055@';
-        $driver = 'mysql';
+        // Ezyro Production Database (loaded from environment variables)
+        $host = getenv('DB_HOST') ?: 'sql109.ezyro.com';
+        $port = getenv('DB_PORT') ?: '3306';
+        $dbname = getenv('DB_NAME') ?: 'ezyro_38647338_ars_junction';
+        $username = getenv('DB_USER') ?: 'ezyro_38647338';
+        $password = getenv('DB_PASSWORD') ?: '';
+        $driver = getenv('DB_DRIVER') ?: 'mysql';
     }
 }
 
@@ -204,8 +327,10 @@ try {
     // Set custom statement class
     $conn->setAttribute(PDO::ATTR_STATEMENT_CLASS, ['CompatiblePDOStatement', [$conn]]);
 } catch (PDOException $e) {
+    // Log the actual connection error details
+    error_log("Database connection failed: " . $e->getMessage());
+
     // If it is a direct API JSON request, do not die; let the API return a clean JSON error response
-    // Note: routed pages (restaurant_router, admin_router, delivery_router) pass through api/ but are full HTML pages, so they should die properly.
     $requestUri = $_SERVER['REQUEST_URI'] ?? '';
     $isDirectApi = (strpos($requestUri, 'api/') !== false)
                 && (strpos($requestUri, 'restaurant_router') === false)
@@ -214,7 +339,8 @@ try {
     if ($isDirectApi) {
         $conn = null;
     } else {
-        die("Database connection failed: " . $e->getMessage());
+        http_response_code(500);
+        die("Database connection failed. Please try again later.");
     }
 }
 
@@ -223,7 +349,8 @@ class CookieSessionHandler implements SessionHandlerInterface {
     private $cookie_name = 'ARS_SESSION';
 
     public function __construct() {
-        $this->key = hash('sha256', 'Maurya1055@#!', true);
+        $secret = getenv('SESSION_SECRET') ?: 'default_safe_session_secret_1055';
+        $this->key = hash('sha256', $secret, true);
     }
 
     public function open($savePath, $sessionName): bool {
@@ -292,4 +419,11 @@ if (session_status() === PHP_SESSION_NONE) {
     session_set_save_handler($handler, true);
     session_start();
 }
+
+// Load RateLimiter module
+require_once __DIR__ . '/RateLimiter.php';
+
+// Load Validator module
+require_once __DIR__ . '/Validator.php';
 ?>
+

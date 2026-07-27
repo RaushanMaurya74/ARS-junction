@@ -38,7 +38,7 @@ CREATE TABLE users (
     city varchar(50) DEFAULT NULL,
     state varchar(50) DEFAULT NULL,
     zip_code varchar(10) DEFAULT NULL,
-    profile_image varchar(255) DEFAULT NULL,
+    profile_image text DEFAULT NULL,
     social_id varchar(100) DEFAULT NULL,
     social_type varchar(20) DEFAULT 'normal' CHECK (social_type IN ('facebook', 'google', 'normal')),
     is_admin smallint DEFAULT 0,
@@ -58,7 +58,7 @@ CREATE TABLE categories (
     category_id SERIAL PRIMARY KEY,
     name varchar(50) NOT NULL,
     description text DEFAULT NULL,
-    image varchar(255) DEFAULT NULL,
+    image text DEFAULT NULL,
     created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -79,7 +79,7 @@ CREATE TABLE restaurants (
     zip_code varchar(10) NOT NULL,
     phone varchar(15) NOT NULL,
     email varchar(100) DEFAULT NULL,
-    image varchar(255) DEFAULT NULL,
+    image text DEFAULT NULL,
     opening_time time DEFAULT NULL,
     closing_time time DEFAULT NULL,
     delivery_time int DEFAULT NULL, -- Average delivery time in minutes
@@ -103,7 +103,7 @@ CREATE TABLE menu_items (
     name varchar(100) NOT NULL,
     description text DEFAULT NULL,
     price decimal(6,2) NOT NULL,
-    image varchar(255) DEFAULT NULL,
+    image text DEFAULT NULL,
     is_vegetarian smallint DEFAULT 0,
     is_spicy smallint DEFAULT 0,
     is_available smallint DEFAULT 1,

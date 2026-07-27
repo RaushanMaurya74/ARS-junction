@@ -15,61 +15,88 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Action: Add Delivery Boy
     if (isset($_POST['add_boy'])) {
-        $name = clean_input($_POST['name']);
-        $email = clean_input($_POST['email']);
-        $password = $_POST['password'];
-        $phone = clean_input($_POST['phone']);
-        $address = clean_input($_POST['address']);
-        $city = clean_input($_POST['city']);
-        $state = clean_input($_POST['state']);
-        $zip_code = clean_input($_POST['zip_code']);
+        try {
+            $schema = [
+                'name' => ['type' => 'string', 'required' => true, 'min_len' => 2, 'max_len' => 100],
+                'email' => ['type' => 'email', 'required' => true, 'max_len' => 255],
+                'password' => ['type' => 'string', 'required' => true, 'min_len' => 6, 'max_len' => 100],
+                'phone' => ['type' => 'phone', 'required' => true],
+                'address' => ['type' => 'string', 'required' => true, 'max_len' => 255],
+                'city' => ['type' => 'string', 'required' => true, 'max_len' => 100],
+                'state' => ['type' => 'string', 'required' => true, 'max_len' => 100],
+                'zip_code' => ['type' => 'pincode', 'required' => true]
+            ];
 
-        if (empty($name) || empty($email) || empty($password)) {
-            $error_msg = 'Please fill in all required fields.';
-        } elseif (email_exists($email)) {
-            $error_msg = 'Email address already exists.';
-        } else {
-            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("INSERT INTO users (name, email, password, phone, address, city, state, zip_code, is_delivery_boy, restaurant_id) 
-                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)");
+            $validated = Validator::validate($_POST, $schema, false);
             
-            if ($stmt->execute([$name, $email, $hashed_password, $phone, $address, $city, $state, $zip_code, $restaurant_id])) {
-                $success_msg = 'Delivery boy registered successfully.';
+            $name = $validated['name'];
+            $email = $validated['email'];
+            $password = $validated['password'];
+            $phone = $validated['phone'];
+            $address = $validated['address'];
+            $city = $validated['city'];
+            $state = $validated['state'];
+            $zip_code = $validated['zip_code'];
+
+            if (email_exists($email)) {
+                $error_msg = 'Email address already exists.';
             } else {
-                $error_msg = 'Failed to register delivery boy.';
+                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                $stmt = $conn->prepare("INSERT INTO users (name, email, password, phone, address, city, state, zip_code, is_delivery_boy, restaurant_id) 
+                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)");
+                
+                if ($stmt->execute([$name, $email, $hashed_password, $phone, $address, $city, $state, $zip_code, $restaurant_id])) {
+                    $success_msg = 'Delivery boy registered successfully.';
+                } else {
+                    $error_msg = 'Failed to register delivery boy.';
+                }
             }
+        } catch (ValidationException $e) {
+            $errors = $e->getErrors();
+            $error_msg = reset($errors);
         }
     }
 
     // Action: Update Delivery Boy
     if (isset($_POST['update_boy'])) {
-        $boy_id = intval($_POST['user_id']);
-        
-        // Verify ownership
-        $stmt_check = $conn->prepare("SELECT restaurant_id FROM users WHERE user_id = ? AND is_delivery_boy = 1");
-        $stmt_check->execute([$boy_id]);
-        $owner_res_id = $stmt_check->fetchColumn();
+        try {
+            $schema = [
+                'user_id' => ['type' => 'int', 'required' => true, 'min' => 1],
+                'name' => ['type' => 'string', 'required' => true, 'min_len' => 2, 'max_len' => 100],
+                'email' => ['type' => 'email', 'required' => true, 'max_len' => 255],
+                'password' => ['type' => 'string', 'required' => false, 'min_len' => 6, 'max_len' => 100],
+                'phone' => ['type' => 'phone', 'required' => true],
+                'address' => ['type' => 'string', 'required' => true, 'max_len' => 255],
+                'city' => ['type' => 'string', 'required' => true, 'max_len' => 100],
+                'state' => ['type' => 'string', 'required' => true, 'max_len' => 100],
+                'zip_code' => ['type' => 'pincode', 'required' => true]
+            ];
 
-        if ($owner_res_id == $restaurant_id) {
-            $name = clean_input($_POST['name']);
-            $email = clean_input($_POST['email']);
-            $phone = clean_input($_POST['phone']);
-            $address = clean_input($_POST['address']);
-            $city = clean_input($_POST['city']);
-            $state = clean_input($_POST['state']);
-            $zip_code = clean_input($_POST['zip_code']);
+            $validated = Validator::validate($_POST, $schema, false);
+            
+            $boy_id = $validated['user_id'];
+            $name = $validated['name'];
+            $email = $validated['email'];
+            $phone = $validated['phone'];
+            $address = $validated['address'];
+            $city = $validated['city'];
+            $state = $validated['state'];
+            $zip_code = $validated['zip_code'];
+            
+            // Verify ownership
+            $stmt_check = $conn->prepare("SELECT restaurant_id FROM users WHERE user_id = ? AND is_delivery_boy = 1");
+            $stmt_check->execute([$boy_id]);
+            $owner_res_id = $stmt_check->fetchColumn();
 
-            if (empty($name) || empty($email)) {
-                $error_msg = 'Please fill in name and email fields.';
-            } else {
+            if ($owner_res_id == $restaurant_id) {
                 // Check unique email
                 $stmt_email = $conn->prepare("SELECT user_id FROM users WHERE email = ? AND user_id != ?");
                 $stmt_email->execute([$email, $boy_id]);
                 if ($stmt_email->fetch()) {
                     $error_msg = 'Email already taken by another user.';
                 } else {
-                    if (!empty($_POST['password'])) {
-                        $hashed_password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+                    if (!empty($validated['password'])) {
+                        $hashed_password = password_hash($validated['password'], PASSWORD_DEFAULT);
                         $stmt = $conn->prepare("UPDATE users SET name = ?, email = ?, password = ?, phone = ?, address = ?, city = ?, state = ?, zip_code = ? 
                                                WHERE user_id = ? AND restaurant_id = ? AND is_delivery_boy = 1");
                         $success = $stmt->execute([$name, $email, $hashed_password, $phone, $address, $city, $state, $zip_code, $boy_id, $restaurant_id]);
@@ -85,30 +112,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $error_msg = 'Failed to update details.';
                     }
                 }
+            } else {
+                $error_msg = 'Access Denied: You do not manage this delivery boy.';
             }
-        } else {
-            $error_msg = 'Access Denied: You do not manage this delivery boy.';
+        } catch (ValidationException $e) {
+            $errors = $e->getErrors();
+            $error_msg = reset($errors);
         }
     }
 
     // Action: Delete Delivery Boy
     if (isset($_POST['delete_boy'])) {
-        $boy_id = intval($_POST['user_id']);
+        try {
+            $schema = [
+                'user_id' => ['type' => 'int', 'required' => true, 'min' => 1]
+            ];
+            $validated = Validator::validate($_POST, $schema, false);
+            $boy_id = $validated['user_id'];
 
-        // Verify ownership
-        $stmt_check = $conn->prepare("SELECT restaurant_id FROM users WHERE user_id = ? AND is_delivery_boy = 1");
-        $stmt_check->execute([$boy_id]);
-        $owner_res_id = $stmt_check->fetchColumn();
+            // Verify ownership
+            $stmt_check = $conn->prepare("SELECT restaurant_id FROM users WHERE user_id = ? AND is_delivery_boy = 1");
+            $stmt_check->execute([$boy_id]);
+            $owner_res_id = $stmt_check->fetchColumn();
 
-        if ($owner_res_id == $restaurant_id) {
-            $stmt = $conn->prepare("DELETE FROM users WHERE user_id = ? AND restaurant_id = ? AND is_delivery_boy = 1");
-            if ($stmt->execute([$boy_id, $restaurant_id])) {
-                $success_msg = 'Delivery boy removed successfully.';
+            if ($owner_res_id == $restaurant_id) {
+                $stmt = $conn->prepare("DELETE FROM users WHERE user_id = ? AND restaurant_id = ? AND is_delivery_boy = 1");
+                if ($stmt->execute([$boy_id, $restaurant_id])) {
+                    $success_msg = 'Delivery boy removed successfully.';
+                } else {
+                    $error_msg = 'Failed to delete delivery boy.';
+                }
             } else {
-                $error_msg = 'Failed to delete delivery boy.';
+                $error_msg = 'Access Denied: You do not manage this delivery boy.';
             }
-        } else {
-            $error_msg = 'Access Denied: You do not manage this delivery boy.';
+        } catch (ValidationException $e) {
+            $errors = $e->getErrors();
+            $error_msg = reset($errors);
         }
     }
 }

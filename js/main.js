@@ -448,4 +448,136 @@ document.addEventListener('DOMContentLoaded', function() {
         // Run initial check
         setTimeout(pollCustomerOrders, 1000);
     }
+
+    // Initialize Modern UI Animations
+    initOtpVerificationV2();
+    initAnimatedSearchBars();
 });
+
+/* ==========================================
+   OTP Verification V2 & Search Bar Enhancements
+   ========================================== */
+function initOtpVerificationV2() {
+    const otpContainer = document.querySelector('.otp-card-v2');
+    if (!otpContainer) return;
+
+    const inputs = otpContainer.querySelectorAll('.otp-digit-input');
+    if (inputs.length === 0) return;
+
+    inputs.forEach((input, index) => {
+        // Auto select on focus
+        input.addEventListener('focus', () => {
+            input.select();
+            input.classList.add('active');
+        });
+
+        input.addEventListener('blur', () => {
+            input.classList.remove('active');
+        });
+
+        // Keydown handling for numbers, backspace, arrows
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace') {
+                if (!input.value && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            } else if (e.key === 'ArrowLeft' && index > 0) {
+                inputs[index - 1].focus();
+            } else if (e.key === 'ArrowRight' && index < inputs.length - 1) {
+                inputs[index + 1].focus();
+            }
+        });
+
+        // Input change auto-advance
+        input.addEventListener('input', () => {
+            const val = input.value.replace(/[^0-9]/g, '');
+            input.value = val ? val[val.length - 1] : '';
+
+            if (input.value && index < inputs.length - 1) {
+                inputs[index + 1].focus();
+            }
+
+            // Check if full digits entered
+            checkOtpComplete();
+        });
+
+        // Paste support
+        input.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pasteData = (e.clipboardData || window.clipboardData).getData('text').trim();
+            const digits = pasteData.replace(/[^0-9]/g, '').split('');
+
+            if (digits.length > 0) {
+                inputs.forEach((inp, i) => {
+                    if (digits[i]) {
+                        inp.value = digits[i];
+                    }
+                });
+                const nextIndex = Math.min(digits.length, inputs.length - 1);
+                inputs[nextIndex].focus();
+                checkOtpComplete();
+            }
+        });
+    });
+
+    function checkOtpComplete() {
+        const code = Array.from(inputs).map(i => i.value).join('');
+        if (code.length === inputs.length && !code.includes('')) {
+            const verifyEvent = new CustomEvent('otpSubmit', { detail: { code } });
+            otpContainer.dispatchEvent(verifyEvent);
+        }
+    }
+}
+
+// Global Shake Error trigger for OTP V2
+window.triggerOtpShake = function() {
+    const card = document.querySelector('.otp-card-v2');
+    if (card) {
+        card.classList.remove('otp-shake-anim');
+        void card.offsetWidth;
+        card.classList.add('otp-shake-anim');
+        setTimeout(() => card.classList.remove('otp-shake-anim'), 600);
+    }
+};
+
+// Animated Search Bar Typewriter Placeholders
+function initAnimatedSearchBars() {
+    const searchInputs = document.querySelectorAll('.animated-gradient-search-bar input');
+    if (searchInputs.length === 0) return;
+
+    const placeholders = ["Search 'Classic Pizza'", "Search 'Biryani'", "Search 'Cold Coffee'", "Search 'Burger'"];
+    searchInputs.forEach(input => {
+        let currentIdx = 0;
+        let charIdx = 0;
+        let isDeleting = false;
+        
+        function typeEffect() {
+            if (document.activeElement === input || input.value !== '') return;
+
+            const currentText = placeholders[currentIdx];
+            if (isDeleting) {
+                input.placeholder = currentText.substring(0, charIdx - 1);
+                charIdx--;
+            } else {
+                input.placeholder = currentText.substring(0, charIdx + 1);
+                charIdx++;
+            }
+
+            let typeSpeed = isDeleting ? 40 : 80;
+
+            if (!isDeleting && charIdx === currentText.length) {
+                typeSpeed = 2000;
+                isDeleting = true;
+            } else if (isDeleting && charIdx === 0) {
+                isDeleting = false;
+                currentIdx = (currentIdx + 1) % placeholders.length;
+                typeSpeed = 400;
+            }
+
+            setTimeout(typeEffect, typeSpeed);
+        }
+
+        setTimeout(typeEffect, 1000);
+    });
+}
+

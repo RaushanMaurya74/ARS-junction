@@ -5,12 +5,11 @@ require_once '../includes/functions.php';
 
 header('Content-Type: application/json');
 
-$pincode = isset($_GET['pincode']) ? clean_input($_GET['pincode']) : '';
+$validated = Validator::validate($_GET, [
+    'pincode' => ['type' => 'pincode', 'required' => true]
+]);
 
-if (empty($pincode)) {
-    echo json_encode(['deliverable' => false, 'message' => 'Pincode is required.']);
-    exit;
-}
+$pincode = $validated['pincode'];
 
 try {
     $stmt = $conn->prepare("SELECT * FROM delivery_pincodes WHERE pincode = ? AND is_active = 1");
@@ -32,9 +31,10 @@ try {
         ]);
     }
 } catch (PDOException $e) {
+    error_log("Pincode verification database error: " . $e->getMessage());
     echo json_encode([
         'deliverable' => false,
-        'message' => 'Database error: ' . $e->getMessage()
+        'message' => 'An internal database error occurred. Please try again later.'
     ]);
 }
 ?>

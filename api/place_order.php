@@ -11,26 +11,30 @@ if (!is_logged_in()) {
     exit;
 }
 
+// Enforce authenticated rate limits
+$rlRes = RateLimiter::checkAuthenticated($_SESSION['user_id'] ?? null);
+if (!$rlRes['allowed']) {
+    RateLimiter::enforceOrBlock($rlRes, true);
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
     exit;
 }
 
 $user_id = $_SESSION['user_id'];
-$restaurant_id = isset($_POST['restaurant_id']) ? intval($_POST['restaurant_id']) : 0;
-$payment_method = isset($_POST['payment_method']) ? clean_input($_POST['payment_method']) : 'cash';
-$phone = isset($_POST['phone']) ? clean_input($_POST['phone']) : '';
-$notes = isset($_POST['delivery_instructions']) ? clean_input($_POST['delivery_instructions']) : '';
+$validated = Validator::validate($_POST, [
+    'restaurant_id' => ['type' => 'int', 'required' => true, 'min' => 1],
+    'payment_method' => ['type' => 'string', 'required' => true, 'enum' => ['cash', 'upi']],
+    'phone' => ['type' => 'phone', 'required' => true],
+    'delivery_instructions' => ['type' => 'string', 'default' => '', 'max_len' => 500],
+    'different_address' => ['type' => 'string']
+]);
 
-if ($restaurant_id <= 0 || empty($phone)) {
-    echo json_encode(['success' => false, 'message' => 'Please complete the delivery details.']);
-    exit;
-}
-
-if (!in_array($payment_method, ['cash', 'upi'])) {
-    echo json_encode(['success' => false, 'message' => 'Invalid payment method.']);
-    exit;
-}
+$restaurant_id = $validated['restaurant_id'];
+$payment_method = $validated['payment_method'];
+$phone = $validated['phone'];
+$notes = $validated['delivery_instructions'];
 
 $cart_items = get_cart_items($user_id);
 if (empty($cart_items)) {
@@ -55,15 +59,19 @@ if (!$restaurant) {
 
 $pincode = '';
 if (isset($_POST['different_address'])) {
-    $address = clean_input($_POST['delivery_address'] ?? '');
-    $city = clean_input($_POST['delivery_city'] ?? '');
-    $state = clean_input($_POST['delivery_state'] ?? '');
-    $zip = clean_input($_POST['delivery_zip'] ?? '');
+    $addressSchema = [
+        'delivery_address' => ['type' => 'string', 'required' => true, 'max_len' => 255],
+        'delivery_city' => ['type' => 'string', 'required' => true, 'max_len' => 100],
+        'delivery_state' => ['type' => 'string', 'required' => true, 'max_len' => 100],
+        'delivery_zip' => ['type' => 'pincode', 'required' => true]
+    ];
+    $validatedAddress = Validator::validate($_POST, $addressSchema);
     
-    if (empty($address) || empty($city) || empty($state) || empty($zip)) {
-        echo json_encode(['success' => false, 'message' => 'All delivery address fields are compulsory.']);
-        exit;
-    }
+    $address = $validatedAddress['delivery_address'];
+    $city = $validatedAddress['delivery_city'];
+    $state = $validatedAddress['delivery_state'];
+    $zip = $validatedAddress['delivery_zip'];
+    
     $delivery_address = trim($address . ', ' . $city . ', ' . $state . ' - ' . $zip, " ,-");
     $pincode = $zip;
 } else {

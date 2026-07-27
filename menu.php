@@ -58,9 +58,11 @@ $food_images = [
         <div class="row mb-4">
             <div class="col-md-8">
                 <form action="menu.php" method="get" class="food-search-form">
-                    <div class="input-group">
-                        <input type="text" name="search" id="food-search" class="form-control" placeholder="Search for food..." value="<?php echo $search_query; ?>">
-                        <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i> Search</button>
+                    <div class="animated-gradient-search-bar">
+                        <div class="search-inner">
+                            <input type="text" name="search" id="food-search" class="form-control" placeholder="Search for food..." value="<?php echo $search_query; ?>">
+                            <button class="search-icon-btn" type="submit"><i class="fas fa-search"></i> Search</button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -139,8 +141,8 @@ $food_images = [
                         <span class="badge bg-info text-dark">Featured</span>
                         <?php endif; ?>
                     </div>
-                    <?php if (!empty($item['image']) && file_exists($item['image'])): ?>
-                        <img src="<?php echo $item['image']; ?>" class="card-img-top" alt="<?php echo $item['name']; ?>" style="height: 180px; object-fit: cover;">
+                    <?php if (has_image($item['image'], false)): ?>
+                        <img src="<?php echo get_image_url($item['image'], false); ?>" class="card-img-top" alt="<?php echo $item['name']; ?>" style="height: 180px; object-fit: cover;">
                     <?php else: ?>
                         <img src="<?php echo $food_images[$img_index]; ?>" class="card-img-top" alt="<?php echo $item['name']; ?>" style="height: 180px; object-fit: cover;">
                     <?php endif; ?>
@@ -160,7 +162,7 @@ $food_images = [
                                 <input type="number" class="form-control text-center quantity-input" data-item-id="<?php echo $item['item_id']; ?>" value="1" min="1" max="10">
                                 <button class="btn btn-outline-secondary increase-qty" type="button">+</button>
                             </div>
-                            <button class="btn btn-primary btn-sm add-to-cart-btn" data-item-id="<?php echo $item['item_id']; ?>">
+                            <button class="btn btn-primary btn-sm add-to-cart-btn animated-add-to-cart-btn" data-item-id="<?php echo $item['item_id']; ?>">
                                 <i class="fas fa-cart-plus"></i> Add
                             </button>
                         </div>

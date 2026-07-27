@@ -36,6 +36,12 @@ if (!$provider || !$social_id || !$name || !$email) {
     exit;
 }
 
+// Rate limiting check for social login
+$rateLimit = RateLimiter::checkAuth($email, 'social_login');
+if (!$rateLimit['allowed']) {
+    RateLimiter::enforceOrBlock($rateLimit, true);
+}
+
 // Validate email format
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     echo json_encode([

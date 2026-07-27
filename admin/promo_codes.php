@@ -27,7 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($e->getCode() == 23000) {
                     $error_msg = "Promo code '{$code}' already exists.";
                 } else {
-                    $error_msg = "Error adding promo code: " . $e->getMessage();
+                    error_log("Error adding promo code: " . $e->getMessage());
+                    $error_msg = "Error adding promo code. Please try again.";
                 }
             }
         }
@@ -54,7 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($e->getCode() == 23000) {
                     $error_msg = "Promo code '{$code}' already exists on another record.";
                 } else {
-                    $error_msg = "Error updating promo code: " . $e->getMessage();
+                    error_log("Error updating promo code: " . $e->getMessage());
+                    $error_msg = "Error updating promo code. Please try again.";
                 }
             }
         }
@@ -68,7 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$promo_id]);
             $success_msg = "Promo code deleted successfully.";
         } catch (PDOException $e) {
-            $error_msg = "Error deleting promo code: " . $e->getMessage();
+            error_log("Error deleting promo code: " . $e->getMessage());
+            $error_msg = "Error deleting promo code.";
         }
     }
 
@@ -82,7 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$new_status, $promo_id]);
             $success_msg = "Promo code status updated successfully.";
         } catch (PDOException $e) {
-            $error_msg = "Error updating status: " . $e->getMessage();
+            error_log("Error updating status: " . $e->getMessage());
+            $error_msg = "Error updating status.";
         }
     }
 }

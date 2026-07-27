@@ -177,8 +177,8 @@ document.addEventListener('DOMContentLoaded', function() {
             <?php foreach($featured_restaurants as $restaurant): ?>
             <div class="col-md-6 col-lg-3 mb-4">
                 <div class="card restaurant-card">
-                    <?php if (!empty($restaurant['image']) && file_exists($restaurant['image'])): ?>
-                        <img src="<?php echo $restaurant['image']; ?>" class="card-img-top" alt="<?php echo $restaurant['name']; ?>" style="height: 180px; object-fit: cover;">
+                    <?php if (has_image($restaurant['image'], false)): ?>
+                        <img src="<?php echo get_image_url($restaurant['image'], false); ?>" class="card-img-top" alt="<?php echo $restaurant['name']; ?>" style="height: 180px; object-fit: cover;">
                     <?php else: ?>
                         <img src="<?php echo $restaurant_images[$restaurant['restaurant_id'] % 4]; ?>" class="card-img-top" alt="<?php echo $restaurant['name']; ?>" style="height: 180px; object-fit: cover;">
                     <?php endif; ?>
@@ -247,8 +247,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <?php 
                     $img_index = $item['item_id'] % 4;
                     ?>
-                    <?php if (!empty($item['image']) && file_exists($item['image'])): ?>
-                        <img src="<?php echo $item['image']; ?>" class="card-img-top" alt="<?php echo $item['name']; ?>" style="height: 180px; object-fit: cover;">
+                    <?php if (has_image($item['image'], false)): ?>
+                        <img src="<?php echo get_image_url($item['image'], false); ?>" class="card-img-top" alt="<?php echo $item['name']; ?>" style="height: 180px; object-fit: cover;">
                     <?php else: ?>
                         <img src="<?php echo $stock_images[$img_index]; ?>" class="card-img-top" alt="<?php echo $item['name']; ?>" style="height: 180px; object-fit: cover;">
                     <?php endif; ?>
@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <p class="card-text small text-muted"><?php echo substr($item['description'], 0, 60); echo (strlen($item['description']) > 60) ? '...' : ''; ?></p>
                         <p class="card-text small mb-3"><i class="fas fa-utensils me-1"></i> <?php echo $item['restaurant_name']; ?></p>
-                        <button class="btn btn-primary btn-sm add-to-cart-btn" data-item-id="<?php echo $item['item_id']; ?>">
+                        <button class="btn btn-primary btn-sm add-to-cart-btn animated-add-to-cart-btn" data-item-id="<?php echo $item['item_id']; ?>">
                             <i class="fas fa-cart-plus"></i> Add to Cart
                         </button>
                     </div>

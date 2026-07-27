@@ -20,10 +20,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $delivery_boy_id = $_SESSION['delivery_boy_id'];
-$latitude = isset($_POST['latitude']) ? floatval($_POST['latitude']) : 0.0;
-$longitude = isset($_POST['longitude']) ? floatval($_POST['longitude']) : 0.0;
+$validated = Validator::validate($_POST, [
+    'latitude' => ['type' => 'float', 'required' => true, 'min' => -90, 'max' => 90],
+    'longitude' => ['type' => 'float', 'required' => true, 'min' => -180, 'max' => 180]
+]);
 
-if ($latitude === 0.0 || $longitude === 0.0) {
+$latitude = $validated['latitude'];
+$longitude = $validated['longitude'];
+
+if ($latitude == 0.0 || $longitude == 0.0) {
     echo json_encode(['success' => false, 'message' => 'Invalid coordinates']);
     exit;
 }
@@ -34,6 +39,7 @@ try {
     
     echo json_encode(['success' => true]);
 } catch (PDOException $e) {
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    error_log("Update location database error: " . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'An internal server error occurred.']);
 }
 ?>

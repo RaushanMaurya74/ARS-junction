@@ -99,8 +99,8 @@ $restaurant_images = [
             ?>
             <div class="col-md-6 col-lg-4 mb-4 restaurant-item" data-category="<?php echo $category_attr; ?>">
                 <div class="card restaurant-card h-100">
-                    <?php if (!empty($restaurant['image']) && file_exists($restaurant['image'])): ?>
-                        <img src="<?php echo $restaurant['image']; ?>" class="card-img-top" alt="<?php echo $restaurant['name']; ?>" style="height: 200px; object-fit: cover;">
+                    <?php if (has_image($restaurant['image'], false)): ?>
+                        <img src="<?php echo get_image_url($restaurant['image'], false); ?>" class="card-img-top" alt="<?php echo $restaurant['name']; ?>" style="height: 200px; object-fit: cover;">
                     <?php else: ?>
                         <img src="<?php echo $restaurant_images[$img_index]; ?>" class="card-img-top" alt="<?php echo $restaurant['name']; ?>" style="height: 200px; object-fit: cover;">
                     <?php endif; ?>

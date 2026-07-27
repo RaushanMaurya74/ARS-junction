@@ -20,34 +20,29 @@ if (isset($_GET['reason']) && $_GET['reason'] === 'pending') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email    = trim($_POST['email'] ?? '');
     $password = trim($_POST['password'] ?? '');
+    $captcha_input = trim($_POST['captcha'] ?? '');
 
-    if (empty($email) || empty($password)) {
+    require_once dirname(__DIR__) . '/includes/captcha.php';
+    if (empty($email) || empty($password) || empty($captcha_input)) {
         $error_msg = 'Please fill in all fields.';
+    } elseif (!verify_captcha_code($captcha_input)) {
+        $error_msg = 'Invalid security verification code. Please try again.';
     } elseif (!$conn) {
         $error_msg = 'Database connection unavailable. Please try again later.';
     } else {
-        $stmt = $conn->prepare("SELECT * FROM users WHERE email = ? AND is_restaurant_owner = 1");
-        $stmt->execute([$email]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        // Check rate limits with exponential backoff
+        $rateLimit = RateLimiter::checkAuth($email, 'restaurant_login');
+        if (!$rateLimit['allowed']) {
+            $error_msg = $rateLimit['reason'];
+        } else {
+            $stmt = $conn->prepare("SELECT * FROM users WHERE email = ? AND is_restaurant_owner = 1");
+            $stmt->execute([$email]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($user) {
-            // Check if account is locked
-            if (!empty($user['lockout_until'])) {
-                $lockout_time = strtotime($user['lockout_until']);
-                if (time() < $lockout_time) {
-                    $error_msg = "Account locked due to 5 failed login attempts. Please try again after 2 hours.";
-                } else {
-                    // Lockout period has passed, reset attempts
-                    $stmt_reset = $conn->prepare("UPDATE users SET login_attempts = 0, lockout_until = NULL WHERE user_id = ?");
-                    $stmt_reset->execute([$user['user_id']]);
-                    $user['login_attempts'] = 0;
-                    $user['lockout_until'] = null;
-                }
-            }
-
-            if (empty($error_msg)) {
+            if ($user) {
                 if (password_verify($password, $user['password'])) {
-                    // Reset attempts on successful login
+                    // Reset attempt counters on success
+                    RateLimiter::clearAuthSuccess($email, 'restaurant_login');
                     $stmt_reset = $conn->prepare("UPDATE users SET login_attempts = 0, lockout_until = NULL WHERE user_id = ?");
                     $stmt_reset->execute([$user['user_id']]);
 
@@ -80,23 +75,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
                 } else {
-                    // Increment failed attempts
-                    $attempts = (int)$user['login_attempts'] + 1;
-                    if ($attempts >= 5) {
-                        $lockout_until = date('Y-m-d H:i:s', time() + 7200); // 2 hours
-                        $stmt_lock = $conn->prepare("UPDATE users SET login_attempts = ?, lockout_until = ? WHERE user_id = ?");
-                        $stmt_lock->execute([$attempts, $lockout_until, $user['user_id']]);
-                        $error_msg = "Account locked due to 5 failed login attempts. Please try again after 2 hours.";
+                    // Record failed attempt for exponential backoff
+                    RateLimiter::recordAuthFailure($email, 'restaurant_login');
+                    $postCheck = RateLimiter::checkAuth($email, 'restaurant_login');
+                    if (!$postCheck['allowed']) {
+                        $error_msg = $postCheck['reason'];
                     } else {
-                        $stmt_inc = $conn->prepare("UPDATE users SET login_attempts = ? WHERE user_id = ?");
-                        $stmt_inc->execute([$attempts, $user['user_id']]);
-                        $remaining_attempts = 5 - $attempts;
-                        $error_msg = "Invalid credentials. You have {$remaining_attempts} login attempts remaining.";
+                        $error_msg = "Invalid email or password.";
                     }
                 }
+            } else {
+                RateLimiter::recordAuthFailure($email, 'restaurant_login');
+                $error_msg = 'Invalid email or password, or account is not registered as a restaurant partner.';
             }
-        } else {
-            $error_msg = 'Invalid email or password, or account is not registered as a restaurant partner.';
         }
     }
 }
@@ -111,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -613,6 +604,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
 
+                <!-- Security CAPTCHA Check -->
+                <div>
+                    <div class="field-label">
+                        <span>Security Verification</span>
+                        <button type="button" id="refreshCaptcha" style="background: none; border: none; color: var(--brand); cursor: pointer; font-size: 0.78rem; display: flex; align-items: center; gap: 0.25rem; font-weight: 600; text-transform: none;">
+                            <i class="fa-solid fa-arrows-rotate"></i> Refresh
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1.1rem;">
+                        <div id="captchaContainer" style="background: var(--input-bg); border: 1.5px solid var(--border); border-radius: 10px; height: 48px; display: flex; align-items: center; justify-content: center; overflow: hidden; width: 140px; flex-shrink: 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                            <?php 
+                            require_once dirname(__DIR__) . '/includes/captcha.php';
+                            $captcha = generate_captcha_data();
+                            if ($captcha['type'] === 'image'):
+                            ?>
+                                <img src="<?php echo $captcha['html']; ?>" id="captchaImg" alt="CAPTCHA" style="width: 100%; height: 100%; object-fit: contain;">
+                            <?php else: ?>
+                                <span id="captchaMath" style="font-weight: 700; color: var(--text-dark); font-size: 1.05rem; letter-spacing: 2px;"><?php echo $captcha['html']; ?></span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="input-wrap" style="flex: 1; margin-bottom: 0;">
+                            <i class="fa-solid fa-shield-halved input-icon"></i>
+                            <input
+                                type="text"
+                                id="captcha"
+                                name="captcha"
+                                class="form-input"
+                                placeholder="Security Code"
+                                required
+                                autocomplete="off"
+                            >
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Remember me -->
                 <div class="remember-row">
                     <input type="checkbox" id="remember" name="remember">
@@ -657,6 +683,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         pwInput.type = show ? 'text' : 'password';
         pwIcon.className = show ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
     });
+
+    // CAPTCHA Refresh
+    const refreshBtn = document.getElementById('refreshCaptcha');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            const icon = refreshBtn.querySelector('i');
+            if (icon) icon.classList.add('fa-spin');
+            
+            const isSubdir = window.location.pathname.includes('/admin/') || 
+                             window.location.pathname.includes('/restaurant/') || 
+                             window.location.pathname.includes('/delivery/');
+            const apiUrl = isSubdir ? '../api/get_captcha.php' : 'api/get_captcha.php';
+
+            fetch(apiUrl)
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('captchaContainer');
+                    if (data.type === 'image') {
+                        container.innerHTML = `<img src="${data.html}" id="captchaImg" alt="CAPTCHA" style="width: 100%; height: 100%; object-fit: contain;">`;
+                    } else {
+                        container.innerHTML = `<span id="captchaMath" style="font-weight: 700; color: var(--text-dark); font-size: 1.05rem; letter-spacing: 2px;">${data.html}</span>`;
+                    }
+                    document.getElementById('captcha').value = '';
+                })
+                .catch(err => console.error('Error refreshing captcha:', err))
+                .finally(() => {
+                    if (icon) icon.classList.remove('fa-spin');
+                });
+        });
+    }
 
     // Loading state on submit
     document.querySelector('form').addEventListener('submit', function () {

@@ -16,13 +16,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$cart_id = isset($_POST['cart_id']) ? intval($_POST['cart_id']) : 0;
-$quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 0;
+$validated = Validator::validate($_POST, [
+    'cart_id' => ['type' => 'int', 'required' => true, 'min' => 1],
+    'quantity' => ['type' => 'int', 'required' => true, 'min' => 1]
+]);
 
-if ($cart_id <= 0 || $quantity <= 0) {
-    echo json_encode(['success' => false, 'message' => 'Invalid cart item or quantity']);
-    exit;
-}
+$cart_id = $validated['cart_id'];
+$quantity = $validated['quantity'];
 
 try {
     $stmt = $conn->prepare("UPDATE cart SET quantity = ? WHERE cart_id = ? AND user_id = ?");

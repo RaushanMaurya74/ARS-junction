@@ -30,18 +30,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Action: Add Menu Item
         if (isset($_POST['add_item'])) {
-            $name = clean_input($_POST['name']);
-            $description = clean_input($_POST['description']);
-            $price = floatval($_POST['price']);
-            $category_id = intval($_POST['category_id']);
-            $is_vegetarian = isset($_POST['is_vegetarian']) ? 1 : 0;
-            $is_spicy = isset($_POST['is_spicy']) ? 1 : 0;
-            $is_available = isset($_POST['is_available']) ? 1 : 0;
-            $is_featured = isset($_POST['is_featured']) ? 1 : 0;
+            try {
+                $schema = [
+                    'name' => ['type' => 'string', 'required' => true, 'min_len' => 2, 'max_len' => 100],
+                    'description' => ['type' => 'string', 'default' => '', 'max_len' => 500],
+                    'price' => ['type' => 'float', 'required' => true, 'min' => 0.01],
+                    'category_id' => ['type' => 'int', 'required' => true, 'min' => 1],
+                    'is_vegetarian' => ['type' => 'bool', 'default' => false],
+                    'is_spicy' => ['type' => 'bool', 'default' => false],
+                    'is_available' => ['type' => 'bool', 'default' => false],
+                    'is_featured' => ['type' => 'bool', 'default' => false]
+                ];
 
-            if (empty($name) || $price <= 0 || $category_id <= 0) {
-                $error_msg = 'Please fill in all required fields and ensure price is positive.';
-            } else {
+                $validated = Validator::validate($_POST, $schema, false);
+                
+                $name = $validated['name'];
+                $description = $validated['description'];
+                $price = $validated['price'];
+                $category_id = $validated['category_id'];
+                $is_vegetarian = $validated['is_vegetarian'] ? 1 : 0;
+                $is_spicy = $validated['is_spicy'] ? 1 : 0;
+                $is_available = $validated['is_available'] ? 1 : 0;
+                $is_featured = $validated['is_featured'] ? 1 : 0;
+
                 $stmt = $conn->prepare("INSERT INTO menu_items (restaurant_id, category_id, name, description, price, is_vegetarian, is_spicy, is_available, is_featured, image) 
                                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 
@@ -50,33 +61,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $error_msg = 'Failed to add menu item.';
                 }
+            } catch (ValidationException $e) {
+                $errors = $e->getErrors();
+                $error_msg = reset($errors);
             }
         }
 
         // Action: Update Menu Item
         if (isset($_POST['update_item'])) {
-            $item_id = intval($_POST['item_id']);
-            
-            // Check ownership first
-            $stmt_check = $conn->prepare("SELECT restaurant_id, image FROM menu_items WHERE item_id = ?");
-            $stmt_check->execute([$item_id]);
-            $existing_item = $stmt_check->fetch(PDO::FETCH_ASSOC);
+            try {
+                $schema = [
+                    'item_id' => ['type' => 'int', 'required' => true, 'min' => 1],
+                    'name' => ['type' => 'string', 'required' => true, 'min_len' => 2, 'max_len' => 100],
+                    'description' => ['type' => 'string', 'default' => '', 'max_len' => 500],
+                    'price' => ['type' => 'float', 'required' => true, 'min' => 0.01],
+                    'category_id' => ['type' => 'int', 'required' => true, 'min' => 1],
+                    'is_vegetarian' => ['type' => 'bool', 'default' => false],
+                    'is_spicy' => ['type' => 'bool', 'default' => false],
+                    'is_available' => ['type' => 'bool', 'default' => false],
+                    'is_featured' => ['type' => 'bool', 'default' => false]
+                ];
 
-            if ($existing_item && $existing_item['restaurant_id'] == $restaurant_id) {
-                $name = clean_input($_POST['name']);
-                $description = clean_input($_POST['description']);
-                $price = floatval($_POST['price']);
-                $category_id = intval($_POST['category_id']);
-                $is_vegetarian = isset($_POST['is_vegetarian']) ? 1 : 0;
-                $is_spicy = isset($_POST['is_spicy']) ? 1 : 0;
-                $is_available = isset($_POST['is_available']) ? 1 : 0;
-                $is_featured = isset($_POST['is_featured']) ? 1 : 0;
+                $validated = Validator::validate($_POST, $schema, false);
                 
-                $image_to_save = !empty($uploaded_image) ? $uploaded_image : $existing_item['image'];
+                $item_id = $validated['item_id'];
+                $name = $validated['name'];
+                $description = $validated['description'];
+                $price = $validated['price'];
+                $category_id = $validated['category_id'];
+                $is_vegetarian = $validated['is_vegetarian'] ? 1 : 0;
+                $is_spicy = $validated['is_spicy'] ? 1 : 0;
+                $is_available = $validated['is_available'] ? 1 : 0;
+                $is_featured = $validated['is_featured'] ? 1 : 0;
+                
+                // Check ownership first
+                $stmt_check = $conn->prepare("SELECT restaurant_id, image FROM menu_items WHERE item_id = ?");
+                $stmt_check->execute([$item_id]);
+                $existing_item = $stmt_check->fetch(PDO::FETCH_ASSOC);
 
-                if (empty($name) || $price <= 0 || $category_id <= 0) {
-                    $error_msg = 'Please fill in all required fields.';
-                } else {
+                if ($existing_item && $existing_item['restaurant_id'] == $restaurant_id) {
+                    $image_to_save = !empty($uploaded_image) ? $uploaded_image : $existing_item['image'];
+
                     $stmt = $conn->prepare("UPDATE menu_items 
                                            SET category_id = ?, name = ?, description = ?, price = ?, is_vegetarian = ?, is_spicy = ?, is_available = ?, is_featured = ?, image = ? 
                                            WHERE item_id = ? AND restaurant_id = ?");
@@ -86,30 +111,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } else {
                         $error_msg = 'Failed to update menu item.';
                     }
+                } else {
+                    $error_msg = 'Access Denied: You do not own this menu item.';
                 }
-            } else {
-                $error_msg = 'Access Denied: You do not own this menu item.';
+            } catch (ValidationException $e) {
+                $errors = $e->getErrors();
+                $error_msg = reset($errors);
             }
         }
 
         // Action: Delete Menu Item
         if (isset($_POST['delete_item'])) {
-            $item_id = intval($_POST['item_id']);
+            try {
+                $schema = [
+                    'item_id' => ['type' => 'int', 'required' => true, 'min' => 1]
+                ];
+                $validated = Validator::validate($_POST, $schema, false);
+                $item_id = $validated['item_id'];
 
-            // Check ownership
-            $stmt_check = $conn->prepare("SELECT restaurant_id FROM menu_items WHERE item_id = ?");
-            $stmt_check->execute([$item_id]);
-            $owner_id = $stmt_check->fetchColumn();
+                // Check ownership
+                $stmt_check = $conn->prepare("SELECT restaurant_id FROM menu_items WHERE item_id = ?");
+                $stmt_check->execute([$item_id]);
+                $owner_id = $stmt_check->fetchColumn();
 
-            if ($owner_id == $restaurant_id) {
-                $stmt = $conn->prepare("DELETE FROM menu_items WHERE item_id = ? AND restaurant_id = ?");
-                if ($stmt->execute([$item_id, $restaurant_id])) {
-                    $success_msg = 'Menu item deleted successfully.';
+                if ($owner_id == $restaurant_id) {
+                    $stmt = $conn->prepare("DELETE FROM menu_items WHERE item_id = ? AND restaurant_id = ?");
+                    if ($stmt->execute([$item_id, $restaurant_id])) {
+                        $success_msg = 'Menu item deleted successfully.';
+                    } else {
+                        $error_msg = 'Failed to delete menu item.';
+                    }
                 } else {
-                    $error_msg = 'Failed to delete menu item.';
+                    $error_msg = 'Access Denied: You do not own this menu item.';
                 }
-            } else {
-                $error_msg = 'Access Denied: You do not own this menu item.';
+            } catch (ValidationException $e) {
+                $errors = $e->getErrors();
+                $error_msg = reset($errors);
             }
         }
     }
