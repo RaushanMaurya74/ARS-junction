@@ -59,8 +59,8 @@ $food_images = [
             <div class="col-md-8">
                 <form action="menu.php" method="get" class="food-search-form">
                     <div class="animated-gradient-search-bar">
-                        <div class="search-inner">
-                            <input type="text" name="search" id="food-search" class="form-control" placeholder="Search for food..." value="<?php echo $search_query; ?>">
+                        <div class="search-inner search-wrapper">
+                            <input type="text" name="search" id="food-search" class="form-control smart-search-input" placeholder="Search for food..." value="<?php echo $search_query; ?>" autocomplete="off">
                             <button class="search-icon-btn" type="submit"><i class="fas fa-search"></i> Search</button>
                         </div>
                     </div>
@@ -127,7 +127,13 @@ $food_images = [
                 if ($item['is_featured']) $filter_classes .= ' featured';
             ?>
             <div class="col-md-6 col-lg-3 mb-4 <?php echo $filter_classes; ?>">
-                <div class="card food-card h-100">
+                <div class="card food-card h-100" style="position:relative;">
+                    <!-- Wishlist Heart Button -->
+                    <?php if (is_logged_in()): ?>
+                    <button class="wishlist-btn" data-item-id="<?php echo $item['item_id']; ?>" title="Add to Wishlist">
+                        <i class="far fa-heart"></i>
+                    </button>
+                    <?php endif; ?>
                     <div class="food-badges">
                         <?php if($item['is_vegetarian']): ?>
                         <span class="badge bg-success">Veg</span>
@@ -175,8 +181,7 @@ $food_images = [
     </div>
 </section>
 
-<!-- Add JS for cart functionality -->
-<script src="js/cart.js"></script>
+
 
 <?php
 require_once 'includes/footer.php';

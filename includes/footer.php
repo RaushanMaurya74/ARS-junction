@@ -61,8 +61,8 @@
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <!-- Custom JS -->
-<script src="js/main.js?v=2.1"></script>
-<script src="js/cart.js?v=2.1"></script>
+<script src="js/main.js?v=3.0"></script>
+<script src="js/cart.js?v=3.0"></script>
 <?php if (isset($extra_js)): echo $extra_js; endif; ?>
 
 <?php include_once 'includes/chatbot.php'; ?>

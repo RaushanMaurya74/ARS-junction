@@ -246,13 +246,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </div>
                         
                         <div class="mb-3">
-                            <form id="promo-code-form">
-                                <div class="input-group">
-                                    <input type="text" id="promo-code" class="form-control" placeholder="Promo Code" value="<?php echo htmlspecialchars($promo_code_value); ?>">
-                                    <button class="btn btn-outline-secondary" type="submit">Apply</button>
+                            <label class="form-label fw-bold small"><i class="fas fa-tag me-1 text-success"></i> Promo Code</label>
+                            <div id="promo-form">
+                                <input type="hidden" id="applied-promo-code" name="promo_code" value="<?php echo htmlspecialchars($promo_code_value); ?>">
+                                <div class="promo-wrap <?php echo !empty($promo_code_value) ? 'valid' : ''; ?>">
+                                    <input type="text" class="promo-input" id="promo-code" placeholder="ENTER CODE"
+                                           value="<?php echo htmlspecialchars($promo_code_value); ?>">
+                                    <button type="button" class="promo-apply-btn">Apply</button>
                                 </div>
-                            </form>
+                                <div class="promo-status <?php echo !empty($promo_code_value) ? 'success' : ''; ?>">
+                                    <?php if (!empty($promo_code_value)): ?>
+                                    <i class="fas fa-check-circle"></i> Code applied: <?php echo htmlspecialchars($promo_code_value); ?>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                         </div>
+
                         
                         <button type="submit" class="btn btn-primary w-100" form="checkout-form">
                             Place Order

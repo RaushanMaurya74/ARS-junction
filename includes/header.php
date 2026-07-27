@@ -22,7 +22,9 @@ RateLimiter::enforceOrBlock($rlRes);
     <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <!-- Custom CSS -->
-    <link href="css/style.css?v=2.1" rel="stylesheet">
+    <link href="css/style.css?v=3.0" rel="stylesheet">
+    <!-- Dark mode flash prevention -->
+    <script>(function(){var t=localStorage.getItem('ars_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
     <?php if (isset($extra_css)): echo $extra_css; endif; ?>
 </head>
 <body>
@@ -55,7 +57,26 @@ RateLimiter::enforceOrBlock($rlRes);
                     <a class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'contact.php') ? 'active' : ''; ?>" href="contact.php">Contact</a>
                 </li>
             </ul>
-            <ul class="navbar-nav ms-auto">
+            <ul class="navbar-nav ms-auto align-items-center">
+                <?php if (is_logged_in()): ?>
+                <!-- Notification Bell -->
+                <li class="nav-item notif-bell-wrap">
+                    <button class="notif-bell-btn" id="notif-bell-btn" title="Notifications" aria-label="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <span id="notif-count">0</span>
+                    </button>
+                    <div class="notif-dropdown" id="notif-dropdown">
+                        <div class="notif-dropdown-header">
+                            <span><i class="fas fa-bell me-1"></i> Notifications</span>
+                            <button class="notif-mark-read" id="notif-mark-read">Mark all read</button>
+                        </div>
+                        <div class="notif-dropdown-body" id="notif-body">
+                            <div class="notif-empty"><i class="fas fa-bell-slash" style="font-size:2rem;color:#eee;display:block;margin-bottom:10px;"></i>No notifications yet</div>
+                        </div>
+                    </div>
+                </li>
+                <?php endif; ?>
+                <!-- Cart -->
                 <li class="nav-item">
                     <a class="nav-link position-relative <?php echo (basename($_SERVER['PHP_SELF']) == 'cart.php') ? 'active' : ''; ?>" href="cart.php">
                         <i class="fas fa-shopping-cart"></i> Cart
@@ -77,14 +98,21 @@ RateLimiter::enforceOrBlock($rlRes);
                         </span>
                     </a>
                 </li>
+                <!-- Dark Mode Toggle -->
+                <li class="nav-item d-flex align-items-center">
+                    <button class="dark-mode-toggle" id="dark-mode-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </li>
                 <?php if (is_logged_in()): ?>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-user"></i> <?php echo $_SESSION['user_name']; ?>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="profile.php">My Profile</a></li>
-                            <li><a class="dropdown-item" href="order_tracking.php">My Orders</a></li>
+                            <li><a class="dropdown-item" href="profile.php"><i class="fas fa-user me-2"></i>My Profile</a></li>
+                            <li><a class="dropdown-item" href="order_tracking.php"><i class="fas fa-box me-2"></i>My Orders</a></li>
+                            <li><a class="dropdown-item" href="wishlist.php"><i class="fas fa-heart me-2 text-danger"></i>My Wishlist</a></li>
                             <?php if (is_admin()): ?>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="admin/dashboard.php">Admin Dashboard</a></li>

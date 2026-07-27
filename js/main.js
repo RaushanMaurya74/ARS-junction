@@ -581,3 +581,351 @@ function initAnimatedSearchBars() {
     });
 }
 
+
+/* ═══════════════════════════════════════════════════════════════
+   FEATURE 9: DARK MODE
+   ═══════════════════════════════════════════════════════════════ */
+function initDarkMode() {
+    const toggleBtn = document.getElementById('dark-mode-toggle');
+    if (!toggleBtn) return;
+    const html = document.documentElement;
+    const saved = localStorage.getItem('ars_theme') || 'light';
+    html.setAttribute('data-theme', saved);
+    toggleBtn.innerHTML = saved === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    toggleBtn.addEventListener('click', function() {
+        const current = html.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('ars_theme', next);
+        this.innerHTML = next === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+        this.style.transform = 'rotate(360deg)';
+        setTimeout(() => { this.style.transform = ''; }, 400);
+    });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FEATURE 5: SMART SEARCH DROPDOWN
+   ═══════════════════════════════════════════════════════════════ */
+function initSmartSearch() {
+    const searchInputs = document.querySelectorAll('.smart-search-input');
+    searchInputs.forEach(function(input) {
+        const wrapper = input.closest('.search-wrapper');
+        if (!wrapper) return;
+
+        let dropdown = wrapper.querySelector('.search-dropdown');
+        if (!dropdown) {
+            dropdown = document.createElement('div');
+            dropdown.className = 'search-dropdown';
+            wrapper.appendChild(dropdown);
+        }
+
+        let debounceTimer;
+        let highlighted = -1;
+
+        input.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            const q = this.value.trim();
+            if (q.length < 2) { dropdown.classList.remove('visible'); return; }
+            debounceTimer = setTimeout(function() { fetchSuggestions(q, dropdown, input); }, 280);
+        });
+
+        input.addEventListener('keydown', function(e) {
+            const items = dropdown.querySelectorAll('.search-dropdown-item');
+            if (e.key === 'ArrowDown') { highlighted = Math.min(highlighted + 1, items.length - 1); highlightItem(items, highlighted); e.preventDefault(); }
+            else if (e.key === 'ArrowUp') { highlighted = Math.max(highlighted - 1, 0); highlightItem(items, highlighted); e.preventDefault(); }
+            else if (e.key === 'Enter' && highlighted >= 0) { items[highlighted] && items[highlighted].click(); e.preventDefault(); }
+            else if (e.key === 'Escape') { dropdown.classList.remove('visible'); highlighted = -1; }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!wrapper.contains(e.target)) { dropdown.classList.remove('visible'); highlighted = -1; }
+        });
+    });
+}
+
+function highlightItem(items, idx) {
+    items.forEach((el, i) => el.classList.toggle('highlighted', i === idx));
+}
+
+function fetchSuggestions(q, dropdown, input) {
+    fetch('api/search_suggestions.php?q=' + encodeURIComponent(q))
+        .then(r => r.json())
+        .then(function(data) {
+            dropdown.innerHTML = '';
+            if (!data || data.length === 0) {
+                dropdown.innerHTML = '<div class="search-dropdown-empty"><i class="fas fa-search"></i> No results for "' + q + '"</div>';
+                dropdown.classList.add('visible');
+                return;
+            }
+            data.forEach(function(item) {
+                const dot = item.is_vegetarian ? 'veg' : 'nonveg';
+                const el = document.createElement('div');
+                el.className = 'search-dropdown-item';
+                el.innerHTML = '<img src="' + item.image + '" alt="' + item.name + '" onerror="this.src=\'images/food_placeholder.jpg\'">' +
+                    '<div class="search-item-info">' +
+                    '<div class="search-item-name"><span class="search-veg-dot ' + dot + '"></span>' + item.name + '</div>' +
+                    '<div class="search-item-meta">' + item.restaurant_name + ' &bull; ' + item.category_name + '</div>' +
+                    '</div>' +
+                    '<div class="search-item-price">&#8377;' + item.price.toFixed(0) + '</div>';
+                el.addEventListener('click', function() {
+                    input.value = item.name;
+                    dropdown.classList.remove('visible');
+                    // Trigger food filter if on menu page
+                    const filterFn = window.filterFood || null;
+                    if (filterFn) filterFn();
+                    else { const ev = new Event('input', { bubbles: true }); input.dispatchEvent(ev); }
+                });
+                dropdown.appendChild(el);
+            });
+            dropdown.classList.add('visible');
+        })
+        .catch(function() { dropdown.classList.remove('visible'); });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FEATURE 4: WISHLIST HEARTS
+   ═══════════════════════════════════════════════════════════════ */
+function initWishlistButtons() {
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.wishlist-btn');
+        if (!btn) return;
+        e.preventDefault();
+        const itemId = btn.getAttribute('data-item-id');
+        const formData = new FormData();
+        formData.append('item_id', itemId);
+
+        fetch('api/toggle_wishlist.php', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(function(res) {
+                if (!res.success) {
+                    if (typeof showToast === 'function') showToast(res.message || 'Login to use wishlist', 'info');
+                    return;
+                }
+                btn.classList.toggle('active', res.added);
+                const icon = btn.querySelector('i');
+                if (icon) icon.className = res.added ? 'fas fa-heart' : 'far fa-heart';
+                btn.classList.add('pop');
+                setTimeout(() => btn.classList.remove('pop'), 450);
+                // Update wishlist count badge if present
+                const badge = document.getElementById('wishlist-count');
+                if (badge) badge.textContent = res.wishlist_count;
+                if (typeof showToast === 'function') showToast(res.added ? '❤️ Added to wishlist!' : 'Removed from wishlist', res.added ? 'success' : 'info');
+            })
+            .catch(function() {
+                if (typeof showToast === 'function') showToast('Please login to use wishlist', 'info');
+            });
+    });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FEATURE 8: NOTIFICATION BELL
+   ═══════════════════════════════════════════════════════════════ */
+function initNotificationBell() {
+    const bellBtn = document.getElementById('notif-bell-btn');
+    const dropdown = document.getElementById('notif-dropdown');
+    const badge = document.getElementById('notif-count');
+    if (!bellBtn || !dropdown) return;
+
+    let lastUnread = 0;
+
+    function pollNotifs() {
+        fetch('api/poll_notifications.php?role=customer_notif')
+            .then(r => r.json())
+            .then(function(res) {
+                if (!res.success) return;
+                const unread = res.unread || 0;
+                badge.textContent = unread;
+                badge.classList.toggle('visible', unread > 0);
+                if (unread > lastUnread) {
+                    bellBtn.classList.add('ringing');
+                    setTimeout(() => bellBtn.classList.remove('ringing'), 600);
+                }
+                lastUnread = unread;
+                renderNotifDropdown(res.notifications || []);
+            })
+            .catch(function() {});
+    }
+
+    function renderNotifDropdown(items) {
+        const body = document.getElementById('notif-body');
+        if (!body) return;
+        if (items.length === 0) {
+            body.innerHTML = '<div class="notif-empty"><i class="fas fa-bell-slash" style="font-size:2rem;color:#eee;display:block;margin-bottom:10px;"></i>No notifications yet</div>';
+            return;
+        }
+        const typeIcons = { order: 'fas fa-receipt', promo: 'fas fa-tag', system: 'fas fa-info-circle' };
+        body.innerHTML = items.map(function(n) {
+            const cls = n.is_read === '1' || n.is_read === 1 ? '' : 'unread';
+            const dot = cls ? '<div class="notif-unread-dot"></div>' : '';
+            const href = n.link || '#';
+            return '<a href="' + href + '" class="notif-item ' + cls + '">' +
+                '<div class="notif-icon-wrap ' + n.type + '"><i class="' + (typeIcons[n.type] || typeIcons.system) + '"></i></div>' +
+                '<div style="flex:1;min-width:0">' +
+                '<div class="notif-item-title">' + n.title + '</div>' +
+                '<div class="notif-item-msg">' + n.message + '</div>' +
+                '<div class="notif-item-time">' + n.time_fmt + '</div>' +
+                '</div>' + dot + '</a>';
+        }).join('');
+    }
+
+    bellBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('open');
+        if (dropdown.classList.contains('open')) {
+            // Mark read
+            fetch('api/poll_notifications.php?role=mark_read').catch(function(){});
+            badge.classList.remove('visible');
+            lastUnread = 0;
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!dropdown.contains(e.target) && e.target !== bellBtn) dropdown.classList.remove('open');
+    });
+
+    const markReadBtn = document.getElementById('notif-mark-read');
+    if (markReadBtn) {
+        markReadBtn.addEventListener('click', function() {
+            fetch('api/poll_notifications.php?role=mark_read').catch(function(){});
+            badge.classList.remove('visible');
+            lastUnread = 0;
+            document.querySelectorAll('.notif-item.unread').forEach(el => { el.classList.remove('unread'); });
+            document.querySelectorAll('.notif-unread-dot').forEach(el => el.remove());
+        });
+    }
+
+    pollNotifs();
+    setInterval(pollNotifs, 30000);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FEATURE 2: INTERACTIVE STAR RATING
+   ═══════════════════════════════════════════════════════════════ */
+function initStarRating() {
+    document.querySelectorAll('.star-rating-widget').forEach(function(widget) {
+        const stars = widget.querySelectorAll('.star');
+        const hiddenInput = widget.querySelector('input[type="hidden"]');
+        let currentRating = parseInt(hiddenInput ? hiddenInput.value : 0) || 0;
+
+        stars.forEach(function(star, idx) {
+            star.addEventListener('mouseenter', function() {
+                stars.forEach((s, i) => s.classList.toggle('hovered', i <= idx));
+            });
+            star.addEventListener('mouseleave', function() {
+                stars.forEach(s => s.classList.remove('hovered'));
+                stars.forEach((s, i) => s.classList.toggle('selected', i < currentRating));
+            });
+            star.addEventListener('click', function() {
+                currentRating = idx + 1;
+                if (hiddenInput) hiddenInput.value = currentRating;
+                stars.forEach((s, i) => s.classList.toggle('selected', i < currentRating));
+                widget.dispatchEvent(new CustomEvent('ratingChange', { detail: currentRating }));
+            });
+        });
+        // Initialise display
+        stars.forEach((s, i) => s.classList.toggle('selected', i < currentRating));
+    });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FEATURE 3: PROMO CODE ANIMATED VALIDATION
+   ═══════════════════════════════════════════════════════════════ */
+function initPromoCode() {
+    const promoForm = document.getElementById('promo-form');
+    if (!promoForm) return;
+    const wrap   = promoForm.querySelector('.promo-wrap');
+    const input  = promoForm.querySelector('.promo-input');
+    const status = promoForm.querySelector('.promo-status');
+    const btn    = promoForm.querySelector('.promo-apply-btn');
+    const discountRow = document.getElementById('discount-row');
+    const discountAmt  = document.getElementById('discount-amount');
+    const totalEl      = document.getElementById('order-total-display');
+
+    if (!wrap || !input || !btn) return;
+
+    btn.addEventListener('click', function() {
+        const code = input.value.trim().toUpperCase();
+        if (!code) { wrap.classList.add('invalid'); setTimeout(() => wrap.classList.remove('invalid'), 500); return; }
+
+        btn.textContent = 'Checking...';
+        btn.disabled = true;
+
+        fetch('api/apply_promo.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'promo_code=' + encodeURIComponent(code)
+        })
+        .then(r => r.json())
+        .then(function(res) {
+            btn.textContent = 'Apply';
+            btn.disabled = false;
+            wrap.classList.remove('valid', 'invalid');
+            status.classList.remove('success', 'error');
+            if (res.success) {
+                wrap.classList.add('valid');
+                status.classList.add('success');
+                status.innerHTML = '<i class="fas fa-check-circle"></i> ' + res.message;
+                if (discountRow) discountRow.style.display = 'flex';
+                if (discountAmt) discountAmt.textContent = '-\u20B9' + parseFloat(res.discount || 0).toFixed(0);
+                // Store for form submission
+                const hiddenCode = document.getElementById('applied-promo-code');
+                if (hiddenCode) hiddenCode.value = code;
+            } else {
+                wrap.classList.add('invalid');
+                status.classList.add('error');
+                status.innerHTML = '<i class="fas fa-times-circle"></i> ' + (res.message || 'Invalid promo code');
+            }
+        })
+        .catch(function() {
+            btn.textContent = 'Apply';
+            btn.disabled = false;
+            status.classList.add('error');
+            status.innerHTML = '<i class="fas fa-times-circle"></i> Could not verify code. Try again.';
+        });
+    });
+
+    // Remove error styling on new input
+    input.addEventListener('input', function() {
+        wrap.classList.remove('valid', 'invalid');
+        status.innerHTML = '';
+        status.classList.remove('success', 'error');
+    });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FEATURE 6: ORDER TIMELINE HELPER (used by order_tracking.php)
+   ═══════════════════════════════════════════════════════════════ */
+window.buildOrderTimeline = function(status) {
+    const steps = ['pending', 'confirmed', 'preparing', 'on the way', 'delivered'];
+    const icons = ['fas fa-clock', 'fas fa-check', 'fas fa-utensils', 'fas fa-motorcycle', 'fas fa-flag-checkered'];
+    const labels = ['Placed', 'Confirmed', 'Preparing', 'On the Way', 'Delivered'];
+    const cancelledHTML = '<div class="timeline-steps"><div class="timeline-step active"><div class="timeline-step-icon" style="background:#dc3545;color:#fff"><i class="fas fa-times"></i></div><div class="timeline-step-label">Cancelled</div></div></div>';
+    if (status === 'cancelled') return cancelledHTML;
+
+    const activeIdx = steps.indexOf(status);
+    const progressPct = activeIdx >= 0 ? (activeIdx / (steps.length - 1)) * 100 : 0;
+
+    let stepsHTML = steps.map(function(s, i) {
+        const done   = i < activeIdx;
+        const active = i === activeIdx;
+        const cls    = done ? 'done' : (active ? 'active' : '');
+        return '<div class="timeline-step ' + cls + '">' +
+            '<div class="timeline-step-icon"><i class="' + icons[i] + '"></i></div>' +
+            '<div class="timeline-step-label">' + labels[i] + '</div></div>';
+    }).join('');
+
+    return '<div class="timeline-steps"><div class="timeline-progress" style="width:' + progressPct + '%"></div>' + stepsHTML + '</div>';
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   INIT ALL NEW FEATURES ON DOMContentLoaded
+   ═══════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function() {
+    initDarkMode();
+    initSmartSearch();
+    initWishlistButtons();
+    initNotificationBell();
+    initStarRating();
+    initPromoCode();
+    initAnimatedSearchBars();
+});

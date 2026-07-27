@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ARS Junction — All 10 Features Demo</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet"/>
+<style>
+/* ── Base ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#FF5722;--accent:#FFC107;--success:#28a745;--danger:#dc3545;
+  --bg:#f5f5f5;--card:#fff;--text:#222;--muted:#777;--border:#eee;
+  --nav:#FF5722;--shadow:rgba(0,0,0,0.1);
+}
+[data-theme="dark"]{
+  --bg:#121212;--card:#1e1e1e;--text:#e0e0e0;--muted:#aaa;--border:#333;
+  --nav:#1a1a2e;--shadow:rgba(0,0,0,0.4);
+}
+html{transition:background 0.3s;}
+body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);transition:background 0.3s,color 0.3s;}
+
+/* ── Navbar ── */
+.navbar{
+  position:sticky;top:0;z-index:1000;
+  background:var(--nav);padding:10px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 14px var(--shadow);
+  transition:background 0.3s;
+}
+.brand{font-size:1.35rem;font-weight:800;color:#fff;letter-spacing:1px;}
+.brand span{color:var(--accent);}
+.nav-right{display:flex;align-items:center;gap:6px;}
+.nav-btn{background:none;border:none;color:#fff;font-size:1.05rem;cursor:pointer;padding:6px 10px;border-radius:50px;position:relative;transition:background 0.2s;}
+.nav-btn:hover{background:rgba(255,255,255,0.15);}
+.badge-count{position:absolute;top:-3px;right:-3px;background:var(--danger);color:#fff;font-size:0.6rem;font-weight:700;padding:1px 5px;border-radius:20px;min-width:18px;text-align:center;border:2px solid var(--nav);}
+.dark-toggle{width:34px;height:34px;border-radius:50%;border:2px solid rgba(255,255,255,0.35);color:#fff;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.85rem;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);}
+.dark-toggle:hover{background:rgba(255,255,255,0.15);border-color:#fff;transform:scale(1.1) rotate(20deg);}
+.cart-btn{position:relative;}
+
+/* ── Section titles ── */
+.section{padding:28px 20px;max-width:1100px;margin:0 auto;}
+.sec-title{font-size:1.1rem;font-weight:800;color:var(--primary);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.sec-title i{font-size:1rem;}
+.feature-tag{font-size:0.65rem;background:var(--primary);color:#fff;padding:2px 8px;border-radius:20px;font-weight:700;margin-left:4px;}
+
+/* ── Feature 5: Smart Search ── */
+.search-wrapper{position:relative;max-width:500px;}
+.grad-search{padding:3px;border-radius:50px;background:linear-gradient(120deg,#FF5722,#a855f7,#ec4899,#3b82f6,#FF5722);background-size:300% 300%;animation:gradMove 5s ease infinite;box-shadow:0 4px 16px rgba(0,0,0,0.1);transition:transform 0.3s;}
+.grad-search:hover,.grad-search:focus-within{transform:scale(1.015);box-shadow:0 8px 26px rgba(168,85,247,0.3);}
+@keyframes gradMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.search-inner{display:flex;align-items:center;background:var(--card);border-radius:46px;padding:7px 8px 7px 18px;gap:8px;transition:background 0.3s;}
+.search-inner input{flex:1;border:none;outline:none;font-size:0.9rem;background:transparent;color:var(--text);}
+.search-inner button{background:linear-gradient(135deg,#FF5722,#e64a19);border:none;color:#fff;font-weight:700;padding:7px 18px;border-radius:50px;cursor:pointer;font-size:0.8rem;}
+.search-dropdown{position:absolute;top:calc(100% + 8px);left:0;right:0;background:var(--card);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,0.15);overflow:hidden;border:1px solid var(--border);z-index:999;display:none;}
+.search-dropdown.open{display:block;animation:dropIn 0.2s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes dropIn{from{opacity:0;transform:translateY(-8px) scale(0.97)}to{opacity:1;transform:none}}
+.sug-item{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.15s;}
+.sug-item:last-child{border-bottom:none;}
+.sug-item:hover{background:rgba(255,87,34,0.06);}
+.sug-img{width:42px;height:42px;border-radius:10px;object-fit:cover;flex-shrink:0;background:var(--border);}
+.sug-emoji{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;background:var(--border);}
+.sug-info{flex:1;}
+.sug-name{font-weight:700;font-size:0.88rem;color:var(--text);}
+.sug-meta{font-size:0.72rem;color:var(--muted);}
+.sug-price{font-weight:800;color:var(--primary);font-size:0.88rem;}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;}
+.dot.veg{background:#28a745}.dot.nonveg{background:#dc3545}
+
+/* ── Feature 4: Food Cards + Wishlist ── */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px;}
+.food-card{background:var(--card);border-radius:18px;overflow:hidden;box-shadow:0 4px 18px var(--shadow);transition:transform 0.3s,box-shadow 0.3s;position:relative;}
+.food-card:hover{transform:translateY(-5px);box-shadow:0 10px 30px rgba(255,87,34,0.15);}
+.food-card-img{width:100%;height:160px;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:3.5rem;background:linear-gradient(135deg,#fff3e0,#fce4ec);}
+.food-badge{position:absolute;top:10px;left:10px;font-size:0.65rem;font-weight:700;padding:3px 9px;border-radius:20px;color:#fff;}
+.food-badge.veg{background:rgba(40,167,69,0.9);}
+.food-badge.nonveg{background:rgba(220,53,69,0.9);}
+/* Wishlist heart */
+.wishlist-btn{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.92);color:#ccc;font-size:0.88rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:10;backdrop-filter:blur(4px);}
+.wishlist-btn:hover{transform:scale(1.15);color:#ff4757;}
+.wishlist-btn.active{color:#ff4757;}
+.wishlist-btn.pop{animation:heartPop 0.4s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes heartPop{0%{transform:scale(1)}40%{transform:scale(1.6)}70%{transform:scale(0.85)}100%{transform:scale(1)}}
+.card-body{padding:13px 15px 14px;}
+.card-title{font-size:0.92rem;font-weight:700;color:var(--text);margin-bottom:3px;}
+.card-desc{font-size:0.75rem;color:var(--muted);margin-bottom:12px;line-height:1.4;}
+.card-footer-row{display:flex;align-items:center;justify-content:space-between;}
+.card-price{font-weight:800;color:var(--primary);font-size:0.95rem;}
+.add-btn{padding:7px 14px;border:none;border-radius:50px;background:linear-gradient(135deg,#FF5722,#e64a19);color:#fff;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 3px 10px rgba(255,87,34,0.3);transition:all 0.22s cubic-bezier(0.34,1.56,0.64,1);}
+.add-btn:hover{transform:translateY(-2px) scale(1.05);box-shadow:0 6px 18px rgba(255,87,34,0.4);}
+.add-btn:active{transform:scale(0.92);}
+.add-btn:hover i{transform:rotate(-15deg) scale(1.2);}
+.add-btn i{transition:transform 0.25s;}
+
+/* ── Feature 1+6: Order Timeline ── */
+.timeline-steps{display:flex;justify-content:space-between;align-items:flex-start;position:relative;padding:0 6px;margin:14px 0;}
+.timeline-steps::before{content:'';position:absolute;top:16px;left:6px;right:6px;height:3px;background:var(--border);z-index:0;}
+.timeline-bar{position:absolute;top:16px;left:6px;height:3px;background:linear-gradient(90deg,#FF5722,#FFC107);z-index:1;transition:width 0.8s cubic-bezier(0.34,1.56,0.64,1);}
+.t-step{display:flex;flex-direction:column;align-items:center;gap:6px;z-index:2;flex:1;}
+.t-icon{width:34px;height:34px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:0.82rem;color:var(--muted);border:3px solid var(--card);box-shadow:0 2px 8px var(--shadow);transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);}
+.t-step.done .t-icon{background:#28a745;color:#fff;}
+.t-step.active .t-icon{background:linear-gradient(135deg,#FF5722,#e64a19);color:#fff;transform:scale(1.18);box-shadow:0 4px 16px rgba(255,87,34,0.45);}
+.t-label{font-size:0.6rem;color:var(--muted);text-align:center;font-weight:600;max-width:55px;line-height:1.2;}
+.t-step.active .t-label,.t-step.done .t-label{color:var(--primary);}
+.order-card{background:var(--card);border-radius:16px;padding:20px;box-shadow:0 4px 18px var(--shadow);margin-bottom:14px;transition:transform 0.2s;}
+.order-card:hover{transform:translateY(-2px);}
+.order-card-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.order-id{font-weight:800;color:var(--primary);}
+.status-pill{font-size:0.7rem;font-weight:700;padding:4px 12px;border-radius:50px;}
+.pill-preparing{background:#fff8e1;color:#f57f17;}
+.pill-delivered{background:#e8f5e9;color:#1b5e20;}
+.reorder-btn{font-size:0.75rem;padding:5px 14px;border-radius:50px;border:2px solid var(--primary);color:var(--primary);background:transparent;font-weight:700;cursor:pointer;transition:all 0.2s;text-decoration:none;}
+.reorder-btn:hover{background:var(--primary);color:#fff;}
+
+/* ── Feature 3: Promo Code ── */
+.promo-wrap{display:flex;gap:8px;align-items:center;background:var(--card);border:2px solid var(--border);border-radius:50px;padding:6px 8px 6px 18px;transition:border-color 0.3s,box-shadow 0.3s;}
+.promo-wrap:focus-within{border-color:var(--primary);box-shadow:0 0 0 4px rgba(255,87,34,0.12);}
+.promo-wrap.valid{border-color:var(--success);box-shadow:0 0 0 4px rgba(40,167,69,0.12);}
+.promo-wrap.invalid{border-color:var(--danger);box-shadow:0 0 0 4px rgba(220,53,69,0.12);animation:shake 0.4s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.promo-input{flex:1;border:none;outline:none;font-size:0.88rem;font-weight:700;background:transparent;letter-spacing:1px;text-transform:uppercase;color:var(--text);}
+.promo-btn{padding:7px 16px;border-radius:50px;border:none;background:linear-gradient(135deg,#FF5722,#e64a19);color:#fff;font-weight:700;font-size:0.8rem;cursor:pointer;transition:all 0.2s;}
+.promo-btn:hover{transform:scale(1.05);}
+.promo-status{font-size:0.8rem;margin-top:8px;font-weight:600;}
+.promo-status.ok{color:var(--success);}
+.promo-status.err{color:var(--danger);}
+
+/* ── Feature 8: Notification Bell ── */
+.notif-panel{background:var(--card);border-radius:18px;box-shadow:0 8px 30px var(--shadow);overflow:hidden;border:1px solid var(--border);}
+.notif-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);}
+.notif-hdr span{font-weight:800;font-size:0.92rem;}
+.mark-read-btn{font-size:0.72rem;color:var(--primary);background:none;border:none;cursor:pointer;font-weight:700;}
+.notif-item{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;}
+.notif-item:hover{background:rgba(255,87,34,0.05);}
+.notif-item.unread{background:rgba(255,87,34,0.03);}
+.notif-item:last-child{border-bottom:none;}
+.notif-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.88rem;}
+.notif-icon.order{background:#fff3e0;color:#FF5722;}
+.notif-icon.promo{background:#e8f5e9;color:#28a745;}
+.notif-icon.system{background:#e3f2fd;color:#2196F3;}
+.notif-title{font-weight:700;font-size:0.82rem;color:var(--text);}
+.notif-msg{font-size:0.73rem;color:var(--muted);margin-top:2px;}
+.notif-time{font-size:0.65rem;color:#bbb;margin-top:3px;}
+.unread-dot{width:7px;height:7px;background:var(--primary);border-radius:50%;flex-shrink:0;margin-top:14px;}
+
+/* ── Feature 2: Star Rating ── */
+.stars-widget{display:flex;gap:5px;}
+.star{font-size:1.5rem;cursor:pointer;color:#ddd;transition:color 0.15s,transform 0.15s;line-height:1;}
+.star:hover,.star.on{color:#FFC107;transform:scale(1.15);}
+
+/* ── Feature 7: Restaurant Stats ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;}
+.stat-card{background:var(--card);border-radius:16px;padding:18px 20px;box-shadow:0 4px 18px var(--shadow);display:flex;align-items:center;gap:14px;transition:transform 0.2s;position:relative;overflow:hidden;}
+.stat-card:hover{transform:translateY(-4px);}
+.stat-card::after{content:'';position:absolute;right:-15px;bottom:-15px;width:70px;height:70px;border-radius:50%;opacity:0.07;}
+.stat-card.orange::after{background:#FF5722}.stat-card.blue::after{background:#2196F3}.stat-card.green::after{background:#4CAF50}.stat-card.purple::after{background:#9C27B0}
+.stat-icon{width:50px;height:50px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;}
+.stat-icon.orange{background:#fff3e0;color:#FF5722}.stat-icon.blue{background:#e3f2fd;color:#2196F3}.stat-icon.green{background:#e8f5e9;color:#4CAF50}.stat-icon.purple{background:#f3e5f5;color:#9C27B0}
+.stat-val{font-size:1.7rem;font-weight:800;color:var(--text);line-height:1;}
+.stat-lbl{font-size:0.72rem;color:var(--muted);margin-top:3px;font-weight:600;}
+.stat-chg{font-size:0.7rem;margin-top:5px;font-weight:700;}
+.stat-chg.up{color:#28a745}.stat-chg.down{color:#dc3545}
+
+/* ── Feature 9: Dark Mode chip ── */
+.dm-label{display:inline-flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--muted);}
+
+/* ── Feature 10: Mobile badge ── */
+.mobile-badge{display:inline-flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--border);border-radius:50px;padding:6px 14px;font-size:0.78rem;color:var(--text);box-shadow:0 2px 8px var(--shadow);}
+
+/* ── Fly to Cart Clone ── */
+.img-clone{position:fixed;z-index:999999;pointer-events:none;object-fit:cover;will-change:top,left,width,height,opacity;transition:top 0.85s cubic-bezier(0.42,0,0.58,1),left 0.85s cubic-bezier(0.42,0,0.58,1),width 0.85s cubic-bezier(0.42,0,0.58,1),height 0.85s cubic-bezier(0.42,0,0.58,1),opacity 0.85s cubic-bezier(0.42,0,0.58,1),border-radius 0.85s ease,transform 0.85s cubic-bezier(0.42,0,0.58,1);}
+
+/* ── Toast ── */
+.toast-box{position:fixed;top:70px;right:20px;z-index:99998;display:flex;flex-direction:column;gap:10px;}
+.toast{background:#1e1e1e;color:#fff;padding:11px 18px;border-radius:12px;font-size:0.82rem;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,0.3);transform:translateX(120%);transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);display:flex;align-items:center;gap:10px;max-width:280px;}
+.toast.show{transform:translateX(0);}
+.toast.success{border-left:4px solid #28a745}.toast.info{border-left:4px solid #2196F3}.toast.love{border-left:4px solid #ff4757}
+
+/* ── Cart badge bounce ── */
+@keyframes badgeBounce{0%{transform:scale(1)}40%{transform:scale(1.9);background:#28a745;box-shadow:0 0 12px #28a745}70%{transform:scale(0.85)}100%{transform:scale(1)}}
+.cart-badge.bounce{animation:badgeBounce 0.55s cubic-bezier(0.34,1.56,0.64,1);}
+
+/* ── Section divider ── */
+.divider{border:none;border-top:2px solid var(--border);margin:0;}
+
+/* ── Wishlist page preview ── */
+.wl-empty{text-align:center;padding:40px 20px;color:var(--muted);}
+.wl-empty i{font-size:3rem;color:#ff4757;display:block;margin-bottom:12px;}
+
+/* ── Mobile Responsive Preview ── */
+.phone-frame{width:240px;border:3px solid var(--border);border-radius:28px;overflow:hidden;box-shadow:0 8px 30px var(--shadow);margin:0 auto;}
+.phone-inner{background:var(--card);padding:0;}
+.phone-nav{background:#FF5722;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;}
+.phone-nav .brand{font-size:0.9rem;}
+.phone-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px;}
+.mini-card{background:var(--bg);border-radius:10px;overflow:hidden;font-size:0.6rem;}
+.mini-card-img{height:55px;background:linear-gradient(135deg,#fff3e0,#fce4ec);display:flex;align-items:center;justify-content:center;font-size:1.6rem;}
+.mini-card-body{padding:6px 8px;}
+.mini-card-title{font-weight:700;font-size:0.6rem;color:var(--text);}
+.mini-card-price{font-size:0.58rem;color:var(--primary);font-weight:700;}
+.mini-add-btn{width:100%;padding:4px;border:none;background:var(--primary);color:#fff;border-radius:6px;font-size:0.55rem;font-weight:700;margin-top:4px;cursor:pointer;}
+
+@media(max-width:768px){
+  .cards-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));}
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .add-btn{padding:6px 10px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAVBAR (Feature 8 + 9) ── -->
+<nav class="navbar">
+  <div class="brand"><span>ARS</span> JUNCTION</div>
+  <div class="nav-right">
+    <!-- Feature 8: Notification Bell -->
+    <div style="position:relative">
+      <button class="nav-btn" id="bell-btn" title="Notifications" onclick="toggleNotifPanel()">
+        <i class="fas fa-bell"></i>
+        <span class="badge-count" id="notif-badge">3</span>
+      </button>
+    </div>
+    <!-- Cart -->
+    <button class="nav-btn cart-btn" title="Cart">
+      <i class="fas fa-shopping-cart"></i>
+      <span class="badge-count cart-badge" id="cart-count">0</span>
+    </button>
+    <!-- Feature 9: Dark Mode -->
+    <button class="dark-toggle" id="dark-toggle" title="Toggle dark mode" onclick="toggleDark()">
+      <i class="fas fa-moon"></i>
+    </button>
+  </div>
+</nav>
+
+<div class="toast-box" id="toast-box"></div>
+
+<!-- ══════════════════════════════════════════════════
+     FEATURE 5: SMART SEARCH
+══════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="sec-title"><i class="fas fa-search"></i> Smart Search<span class="feature-tag">Feature 5</span></div>
+  <div class="search-wrapper">
+    <div class="grad-search">
+      <div class="search-inner">
+        <input type="text" id="smart-input" placeholder="Try typing 'pizza' or 'burger'..." autocomplete="off" oninput="onSearch(this.value)">
+        <button><i class="fas fa-search"></i></button>
+      </div>
+    </div>
+    <div class="search-dropdown" id="search-dd"></div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════
+     FEATURE 4: WISHLIST + FLY TO CART
+══════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="sec-title"><i class="fas fa-heart"></i> Food Cards — Wishlist ❤️ + Fly to Cart 🛒<span class="feature-tag">Feature 4 + Fly Anim</span></div>
+  <div class="cards-grid" id="cards-grid"></div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════
+     FEATURE 1 + 6: ORDER TIMELINE + HISTORY
+══════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="sec-title"><i class="fas fa-receipt"></i> Order Timeline + History<span class="feature-tag">Feature 1 + 6</span></div>
+  <div class="order-card">
+    <div class="order-card-hdr">
+      <div>
+        <div class="order-id">#ORD-1042</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">Dragon Wok • 27 Jul 12:40</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="status-pill pill-preparing"><i class="fas fa-fire me-1"></i> Preparing</span>
+        <span style="font-weight:800;color:var(--text);">₹349</span>
+      </div>
+    </div>
+    <div id="timeline1"></div>
+    <div style="font-size:0.78rem;color:var(--muted);margin-top:10px;"><i class="fas fa-utensils me-1"></i>Kung Pao Chicken × 1, Hakka Noodles × 1</div>
+  </div>
+  <div class="order-card">
+    <div class="order-card-hdr">
+      <div>
+        <div class="order-id">#ORD-1038</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">Pizza Paradise • 26 Jul 19:15</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="status-pill pill-delivered"><i class="fas fa-check me-1"></i> Delivered</span>
+        <span style="font-weight:800;color:var(--text);">₹490</span>
+      </div>
+    </div>
+    <div id="timeline2"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+      <div style="font-size:0.78rem;color:var(--muted);"><i class="fas fa-utensils me-1"></i>Margherita Pizza × 2</div>
+      <button class="reorder-btn" onclick="toast('🔄 Items re-added to cart!','info')"><i class="fas fa-redo me-1"></i> Reorder</button>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════
+     FEATURE 3: PROMO CODE
+══════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="sec-title"><i class="fas fa-tag"></i> Promo Code — Animated Validation<span class="feature-tag">Feature 3</span></div>
+  <div style="max-width:420px;">
+    <div class="promo-wrap" id="promo-wrap">
+      <input class="promo-input" id="promo-input" placeholder="ENTER CODE" oninput="resetPromo()" onkeydown="if(event.key==='Enter')applyPromo()">
+      <button class="promo-btn" onclick="applyPromo()">Apply</button>
+    </div>
+    <div class="promo-status" id="promo-status"></div>
+    <div style="margin-top:10px;font-size:0.75rem;color:var(--muted);">Try: <code style="background:rgba(255,87,34,0.1);color:var(--primary);padding:2px 6px;border-radius:4px;">SAVE20</code> or <code style="background:rgba(255,87,34,0.1);color:var(--primary);padding:2px 6px;border-radius:4px;">ARS10</code> (or anything else for error)</div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════
+     FEATURE 8: NOTIFICATION PANEL
+══════════════════════════════════════════════════ -->
+<div class="section" id="notif-section" style="display:none">
+  <div class="sec-title"><i class="fas fa-bell"></i> Notification Bell Panel<span class="feature-tag">Feature 8</span></div>
+  <div style="max-width:340px;">
+    <div class="notif-panel">
+      <div class="notif-hdr">
+        <span><i class="fas fa-bell" style="margin-right:6px;"></i>Notifications</span>
+        <button class="mark-read-btn" onclick="markAllRead()">Mark all read</button>
+      </div>
+      <div class="notif-item unread">
+        <div class="notif-icon order"><i class="fas fa-receipt"></i></div>
+        <div style="flex:1">
+          <div class="notif-title">Order Preparing!</div>
+          <div class="notif-msg">Your Kung Pao Chicken is being cooked 🔥</div>
+          <div class="notif-time">2 min ago</div>
+        </div>
+        <div class="unread-dot"></div>
+      </div>
+      <div class="notif-item unread">
+        <div class="notif-icon promo"><i class="fas fa-tag"></i></div>
+        <div style="flex:1">
+          <div class="notif-title">New Promo Code!</div>
+          <div class="notif-msg">Use SAVE20 to get 20% off your next order</div>
+          <div class="notif-time">1 hr ago</div>
+        </div>
+        <div class="unread-dot"></div>
+      </div>
+      <div class="notif-item unread">
+        <div class="notif-icon system"><i class="fas fa-info-circle"></i></div>
+        <div style="flex:1">
+          <div class="notif-title">Welcome to ARS Junction!</div>
+          <div class="notif-msg">Discover great food from the best restaurants</div>
+          <div class="notif-time">Yesterday</div>
+        </div>
+        <div class="unread-dot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider" id="notif-divider" style="display:none"/>
+
+<!-- ══════════════════════════════════════════════════
+     FEATURE 2: STAR RATING
+══════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="sec-title"><i class="fas fa-star"></i> Star Rating Widget<span class="feature-tag">Feature 2</span></div>
+  <div style="background:var(--card);border-radius:16px;padding:20px;max-width:400px;box-shadow:0 4px 18px var(--shadow);">
+    <div style="font-weight:700;margin-bottom:4px;">Rate Pizza Paradise</div>
+    <div style="font-size:0.8rem;color:var(--muted);margin-bottom:12px;">How was your order experience?</div>
+    <div class="stars-widget" id="stars"></div>
+    <div id="star-label" style="margin-top:10px;font-size:0.82rem;color:var(--muted);">Click a star to rate</div>
+    <div style="margin-top:12px;">
+      <textarea style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;font-size:0.82rem;color:var(--text);outline:none;resize:none;" rows="2" placeholder="Write your review..."></textarea>
+    </div>
+    <button style="margin-top:10px;padding:8px 20px;border-radius:50px;border:none;background:linear-gradient(135deg,#FF5722,#e64a19);color:#fff;font-weight:700;font-size:0.82rem;cursor:pointer;" onclick="toast('⭐ Review submitted!','success')">Submit Review</button>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════
+     FEATURE 7: RESTAURANT DASHBOARD
+══════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="sec-title"><i class="fas fa-chart-line"></i> Restaurant Dashboard Stats<span class="feature-tag">Feature 7</span></div>
+  <div class="stats-grid">
+    <div class="stat-card orange">
+      <div class="stat-icon orange"><i class="fas fa-receipt"></i></div>
+      <div>
+        <div class="stat-val" id="orders-count">0</div>
+        <div class="stat-lbl">Today's Orders</div>
+        <div class="stat-chg up"><i class="fas fa-arrow-up"></i> +12% vs yesterday</div>
+      </div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-icon blue"><i class="fas fa-rupee-sign"></i></div>
+      <div>
+        <div class="stat-val" id="revenue-count">0</div>
+        <div class="stat-lbl">Revenue Today</div>
+        <div class="stat-chg up"><i class="fas fa-arrow-up"></i> +8.4%</div>
+      </div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-icon green"><i class="fas fa-clock"></i></div>
+      <div>
+        <div class="stat-val">28m</div>
+        <div class="stat-lbl">Avg Delivery Time</div>
+        <div class="stat-chg up"><i class="fas fa-arrow-down"></i> 4m faster</div>
+      </div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-icon purple"><i class="fas fa-star"></i></div>
+      <div>
+        <div class="stat-val">4.7</div>
+        <div class="stat-lbl">Avg Rating</div>
+        <div class="stat-chg up"><i class="fas fa-arrow-up"></i> +0.2 this week</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════
+     FEATURE 9: DARK MODE
+══════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="sec-title"><i class="fas fa-moon"></i> Dark Mode<span class="feature-tag">Feature 9</span></div>
+  <div class="dm-label">
+    <button class="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">
+      <i class="fas fa-moon" id="dm-icon2" style="color:#555;"></i>
+    </button>
+    <span id="dm-status">Click to toggle — persists across page refreshes via localStorage</span>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ══════════════════════════════════════════════════
+     FEATURE 10: MOBILE RESPONSIVE
+══════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="sec-title"><i class="fas fa-mobile-alt"></i> Mobile Responsive Preview<span class="feature-tag">Feature 10</span></div>
+  <div class="phone-frame">
+    <div class="phone-inner">
+      <div class="phone-nav">
+        <div class="brand" style="font-size:0.8rem;"><span>ARS</span> JUNCTION</div>
+        <div style="display:flex;gap:4px;">
+          <button style="background:none;border:none;color:#fff;font-size:0.8rem;cursor:pointer;"><i class="fas fa-bell"></i></button>
+          <button style="background:none;border:none;color:#fff;font-size:0.8rem;cursor:pointer;"><i class="fas fa-shopping-cart"></i></button>
+        </div>
+      </div>
+      <div class="phone-cards">
+        <div class="mini-card">
+          <div class="mini-card-img">🍕</div>
+          <div class="mini-card-body">
+            <div class="mini-card-title">Pizza</div>
+            <div class="mini-card-price">₹299</div>
+            <button class="mini-add-btn">+ Add</button>
+          </div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-img">🍔</div>
+          <div class="mini-card-body">
+            <div class="mini-card-title">Burger</div>
+            <div class="mini-card-price">₹199</div>
+            <button class="mini-add-btn">+ Add</button>
+          </div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-img">🍛</div>
+          <div class="mini-card-body">
+            <div class="mini-card-title">Biryani</div>
+            <div class="mini-card-price">₹349</div>
+            <button class="mini-add-btn">+ Add</button>
+          </div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-img">🍜</div>
+          <div class="mini-card-body">
+            <div class="mini-card-title">Noodles</div>
+            <div class="mini-card-price">₹179</div>
+            <button class="mini-add-btn">+ Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p style="text-align:center;margin-top:12px;font-size:0.78rem;color:var(--muted);">Cards stack into 2-column grid on mobile. Buttons go full-width. Navbar stays clean.</p>
+</div>
+
+<div style="height:60px;"></div>
+
+<script>
+/* ── Data ── */
+var foods = [
+  {id:1,name:'Margherita Pizza',emoji:'🍕',price:199,veg:true,spicy:false,rest:'Pizza Paradise',cat:'Pizza'},
+  {id:2,name:'Crispy Burger',emoji:'🍔',price:199,veg:false,spicy:false,rest:'Burger Junction',cat:'Burger'},
+  {id:3,name:'Butter Chicken',emoji:'🍛',price:299,veg:false,spicy:true,rest:'Spice Garden',cat:'Indian'},
+  {id:4,name:'Hakka Noodles',emoji:'🍜',price:199,veg:true,spicy:false,rest:'Dragon Wok',cat:'Chinese'},
+];
+var wishlist = new Set();
+var cartCount = 0;
+
+/* ── Toast ── */
+function toast(msg, type){
+  var b = document.getElementById('toast-box');
+  var t = document.createElement('div');
+  t.className = 'toast ' + (type||'success');
+  var icons = {success:'fas fa-check-circle',info:'fas fa-info-circle',love:'fas fa-heart'};
+  t.innerHTML = '<i class="'+(icons[type]||icons.success)+'"></i> ' + msg;
+  b.appendChild(t);
+  requestAnimationFrame(function(){t.classList.add('show');});
+  setTimeout(function(){t.classList.remove('show');setTimeout(function(){t.remove();},400);},2600);
+}
+
+/* ── Dark Mode (Feature 9) ── */
+var isDark = localStorage.getItem('ars_theme') === 'dark';
+applyTheme();
+function toggleDark(){
+  isDark = !isDark;
+  localStorage.setItem('ars_theme', isDark ? 'dark' : 'light');
+  applyTheme();
+  toast(isDark ? '🌙 Dark mode ON' : '☀️ Light mode ON', 'info');
+}
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  var icon = document.getElementById('dark-toggle').querySelector('i');
+  var icon2 = document.getElementById('dm-icon2');
+  var status = document.getElementById('dm-status');
+  if(icon) icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+  if(icon2) icon2.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+  if(status) status.textContent = (isDark ? '🌙 Dark mode is ON' : '☀️ Light mode is ON') + ' — saved to localStorage';
+}
+
+/* ── Food Cards (Feature 4) ── */
+function renderCards(){
+  var grid = document.getElementById('cards-grid');
+  grid.innerHTML = foods.map(function(f){
+    var isWL = wishlist.has(f.id);
+    return '<div class="food-card" id="fc-'+f.id+'">' +
+      '<div class="food-card-img">'+f.emoji+'</div>' +
+      '<span class="food-badge '+(f.veg?'veg':'nonveg')+'">'+(f.veg?'Veg':'Non-Veg')+'</span>' +
+      '<button class="wishlist-btn'+(isWL?' active':'')+'" data-id="'+f.id+'" onclick="toggleWishlist('+f.id+',this)">' +
+        '<i class="'+(isWL?'fas':'far')+' fa-heart"></i>' +
+      '</button>' +
+      '<div class="card-body">' +
+        '<div class="card-title">'+f.name+'</div>' +
+        '<div class="card-desc">'+f.rest+' &bull; '+f.cat+(f.spicy?' 🌶️':'')+'</div>' +
+        '<div class="card-footer-row">' +
+          '<div class="card-price">&#8377;'+f.price+'</div>' +
+          '<button class="add-btn" data-id="'+f.id+'" onclick="flyToCart('+f.id+',this)"><i class="fas fa-cart-plus"></i> Add</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+renderCards();
+
+/* ── Wishlist Toggle (Feature 4) ── */
+function toggleWishlist(id, btn){
+  if(wishlist.has(id)){
+    wishlist.delete(id);
+    btn.classList.remove('active');
+    btn.querySelector('i').className = 'far fa-heart';
+    toast('Removed from wishlist','info');
+  } else {
+    wishlist.add(id);
+    btn.classList.add('active');
+    btn.querySelector('i').className = 'fas fa-heart';
+    toast('❤️ Added to wishlist!','love');
+  }
+  btn.classList.add('pop');
+  setTimeout(function(){btn.classList.remove('pop');}, 450);
+}
+
+/* ── Fly to Cart (JeetSaru Method) ── */
+function flyToCart(id, btn){
+  var card = document.getElementById('fc-'+id);
+  var emojiEl = card ? card.querySelector('.food-card-img') : null;
+  var cartEl = document.getElementById('cart-count');
+  if(!emojiEl || !cartEl) return;
+
+  var clone = document.createElement('div');
+  clone.className = 'img-clone';
+  clone.textContent = foods.find(function(f){return f.id===id;}).emoji || '🍕';
+  clone.style.fontSize = '2rem';
+  clone.style.display = 'flex';
+  clone.style.alignItems = 'center';
+  clone.style.justifyContent = 'center';
+  clone.style.background = 'linear-gradient(135deg,#fff3e0,#fce4ec)';
+  clone.style.border = '3px solid #FF5722';
+  clone.style.boxShadow = '0 8px 30px rgba(255,87,34,0.5)';
+
+  var srcRect = emojiEl.getBoundingClientRect();
+  var cartRect = cartEl.getBoundingClientRect();
+
+  Object.assign(clone.style, {
+    top: srcRect.top + 'px', left: srcRect.left + 'px',
+    width: srcRect.width + 'px', height: srcRect.height + 'px',
+    opacity: '1', borderRadius: '14px', transform: 'rotate(0deg)'
+  });
+  document.body.appendChild(clone);
+  void clone.offsetWidth;
+  requestAnimationFrame(function(){
+    Object.assign(clone.style, {
+      top: cartRect.top + 'px', left: cartRect.left + 'px',
+      width: '36px', height: '36px',
+      opacity: '0.1', borderRadius: '50%', transform: 'rotate(360deg)'
+    });
+  });
+  setTimeout(function(){
+    clone.remove();
+    cartCount++;
+    cartEl.textContent = cartCount;
+    cartEl.classList.remove('bounce');
+    void cartEl.offsetWidth;
+    cartEl.classList.add('bounce');
+    setTimeout(function(){cartEl.classList.remove('bounce');}, 600);
+    toast('🛒 Added to cart!','success');
+  }, 880);
+}
+
+/* ── Smart Search (Feature 5) ── */
+var searchTimer;
+function onSearch(q){
+  clearTimeout(searchTimer);
+  var dd = document.getElementById('search-dd');
+  if(q.length < 2){ dd.classList.remove('open'); return; }
+  searchTimer = setTimeout(function(){
+    var results = foods.filter(function(f){
+      return f.name.toLowerCase().includes(q.toLowerCase()) ||
+             f.rest.toLowerCase().includes(q.toLowerCase()) ||
+             f.cat.toLowerCase().includes(q.toLowerCase());
+    });
+    if(results.length === 0){
+      dd.innerHTML = '<div style="padding:18px;text-align:center;color:var(--muted);font-size:0.85rem;"><i class="fas fa-search"></i> No results for "'+q+'"</div>';
+    } else {
+      dd.innerHTML = results.map(function(f){
+        return '<div class="sug-item" onclick="selectFood(\''+f.name+'\')">' +
+          '<div class="sug-emoji">'+f.emoji+'</div>' +
+          '<div class="sug-info">' +
+            '<div class="sug-name"><span class="dot '+(f.veg?'veg':'nonveg')+'"></span>'+f.name+'</div>' +
+            '<div class="sug-meta">'+f.rest+' &bull; '+f.cat+'</div>' +
+          '</div>' +
+          '<div class="sug-price">&#8377;'+f.price+'</div>' +
+        '</div>';
+      }).join('');
+    }
+    dd.classList.add('open');
+  }, 250);
+}
+function selectFood(name){
+  document.getElementById('smart-input').value = name;
+  document.getElementById('search-dd').classList.remove('open');
+  toast('🔍 Showing results for "'+name+'"','info');
+}
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.search-wrapper')) document.getElementById('search-dd').classList.remove('open');
+});
+
+/* ── Order Timeline (Feature 1+6) ── */
+function buildTimeline(status, containerId){
+  var steps = ['pending','confirmed','preparing','on the way','delivered'];
+  var icons = ['fas fa-clock','fas fa-check','fas fa-utensils','fas fa-motorcycle','fas fa-flag-checkered'];
+  var labels = ['Placed','Confirmed','Preparing','On Way','Delivered'];
+  var activeIdx = steps.indexOf(status);
+  var pct = activeIdx >= 0 ? (activeIdx / (steps.length-1)) * 100 : 0;
+  var el = document.getElementById(containerId);
+  el.innerHTML = '<div class="timeline-steps">' +
+    '<div class="timeline-bar" id="tbar-'+containerId+'" style="width:0%"></div>' +
+    steps.map(function(s,i){
+      var cls = i < activeIdx ? 'done' : (i === activeIdx ? 'active' : '');
+      return '<div class="t-step '+cls+'"><div class="t-icon"><i class="'+icons[i]+'"></i></div><div class="t-label">'+labels[i]+'</div></div>';
+    }).join('') + '</div>';
+  setTimeout(function(){
+    var bar = document.getElementById('tbar-'+containerId);
+    if(bar) bar.style.width = pct + '%';
+  }, 200);
+}
+buildTimeline('preparing','timeline1');
+buildTimeline('delivered','timeline2');
+
+/* ── Promo Code (Feature 3) ── */
+var validCodes = {'SAVE20':{msg:'20% discount applied! You save ₹60',discount:60},'ARS10':{msg:'₹10 flat discount applied!',discount:10}};
+function applyPromo(){
+  var wrap = document.getElementById('promo-wrap');
+  var input = document.getElementById('promo-input');
+  var status = document.getElementById('promo-status');
+  var code = input.value.trim().toUpperCase();
+  if(!code){ wrap.classList.add('invalid'); setTimeout(function(){wrap.classList.remove('invalid');},500); return; }
+  wrap.classList.remove('valid','invalid');
+  status.textContent = '';
+  if(validCodes[code]){
+    wrap.classList.add('valid');
+    status.className = 'promo-status ok';
+    status.innerHTML = '<i class="fas fa-check-circle"></i> '+validCodes[code].msg;
+    toast('🎟️ Promo code applied!','success');
+  } else {
+    wrap.classList.add('invalid');
+    status.className = 'promo-status err';
+    status.innerHTML = '<i class="fas fa-times-circle"></i> Invalid code. Try SAVE20 or ARS10';
+  }
+}
+function resetPromo(){
+  var wrap = document.getElementById('promo-wrap');
+  var status = document.getElementById('promo-status');
+  wrap.classList.remove('valid','invalid');
+  status.textContent = '';
+  status.className = 'promo-status';
+}
+
+/* ── Notifications (Feature 8) ── */
+function toggleNotifPanel(){
+  var sec = document.getElementById('notif-section');
+  var div = document.getElementById('notif-divider');
+  var open = sec.style.display !== 'none';
+  sec.style.display = open ? 'none' : 'block';
+  div.style.display = open ? 'none' : 'block';
+  if(!open){
+    document.getElementById('notif-badge').style.display = 'none';
+    document.getElementById('notif-badge').textContent = '0';
+    sec.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+}
+function markAllRead(){
+  document.querySelectorAll('.notif-item.unread').forEach(function(el){el.classList.remove('unread');});
+  document.querySelectorAll('.unread-dot').forEach(function(el){el.remove();});
+  toast('All notifications marked as read','info');
+}
+
+/* ── Star Rating (Feature 2) ── */
+var starsEl = document.getElementById('stars');
+var ratings = ['','Terrible','Poor','Okay','Good','Excellent!'];
+var currentRating = 0;
+for(var s=1;s<=5;s++){
+  (function(n){
+    var st = document.createElement('span');
+    st.className = 'star';
+    st.textContent = '★';
+    st.onmouseenter = function(){
+      document.querySelectorAll('.star').forEach(function(x,i){x.classList.toggle('on',i<n);});
+    };
+    st.onmouseleave = function(){
+      document.querySelectorAll('.star').forEach(function(x,i){x.classList.toggle('on',i<currentRating);});
+    };
+    st.onclick = function(){
+      currentRating = n;
+      document.getElementById('star-label').textContent = '⭐'.repeat(n) + ' ' + ratings[n];
+      document.querySelectorAll('.star').forEach(function(x,i){x.classList.toggle('on',i<n);});
+    };
+    starsEl.appendChild(st);
+  })(s);
+}
+
+/* ── Animated Counter (Feature 7) ── */
+function animateCount(el, target, prefix){
+  var start = 0; var dur = 1200; var step = Math.max(1, Math.round(target/60));
+  var t = setInterval(function(){
+    start = Math.min(start + step, target);
+    el.textContent = (prefix||'') + start;
+    if(start >= target) clearInterval(t);
+  }, dur/60);
+}
+setTimeout(function(){
+  animateCount(document.getElementById('orders-count'), 47, '');
+  animateCount(document.getElementById('revenue-count'), 12480, '₹');
+}, 400);
+</script>
+</body>
+</html>

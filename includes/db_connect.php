@@ -308,40 +308,62 @@ if (empty($host)) {
     }
 }
 
-// Build DSN depending on driver
+// Prepare candidate hosts for Supabase / PostgreSQL IPv4 pooler resolution on Vercel
+$candidate_hosts = [];
+
 if ($driver === 'pgsql') {
-    $port = $port ?: '5432';
-    $dsn = "pgsql:host={$host};port={$port};dbname={$dbname};options='--client_encoding=UTF8'";
+    if (!empty($host) && preg_match('/^db\.([a-z0-9]+)\.supabase\.co$/i', $host, $matches)) {
+        $ref = $matches[1];
+        if (!empty($username) && strpos($username, '.') === false) {
+            $username = $username . '.' . $ref;
+        }
+        // IPv4-compatible pooler hosts across AWS regions for Vercel routing
+        $candidate_hosts = [
+            "aws-0-ap-south-1.pooler.supabase.com",
+            "aws-0-ap-southeast-1.pooler.supabase.com",
+            "aws-0-us-east-1.pooler.supabase.com",
+            "aws-0-ap-northeast-1.pooler.supabase.com",
+            "aws-0-eu-central-1.pooler.supabase.com",
+            $host
+        ];
+    } else {
+        $candidate_hosts = [$host];
+    }
 } else {
-    $port = $port ?: '3306';
-    $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4";
+    $candidate_hosts = [$host];
 }
 
-try {
-    $conn = new CompatiblePDO($dsn, $username, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false,
-    ]);
-    
-    // Set custom statement class
-    $conn->setAttribute(PDO::ATTR_STATEMENT_CLASS, ['CompatiblePDOStatement', [$conn]]);
-} catch (PDOException $e) {
-    // Log the actual connection error details
-    error_log("Database connection failed: " . $e->getMessage());
+$conn = null;
+$last_exception = null;
 
-    // If it is a direct API JSON request, do not die; let the API return a clean JSON error response
-    $requestUri = $_SERVER['REQUEST_URI'] ?? '';
-    $isDirectApi = (strpos($requestUri, 'api/') !== false)
-                && (strpos($requestUri, 'restaurant_router') === false)
-                && (strpos($requestUri, 'admin_router') === false)
-                && (strpos($requestUri, 'delivery_router') === false);
-    if ($isDirectApi) {
-        $conn = null;
+foreach ($candidate_hosts as $current_host) {
+    if (empty($current_host)) continue;
+    
+    if ($driver === 'pgsql') {
+        $port_to_use = $port ?: '5432';
+        $dsn = "pgsql:host={$current_host};port={$port_to_use};dbname={$dbname};options='--client_encoding=UTF8'";
     } else {
-        http_response_code(500);
-        die("Database connection failed. Please try again later.");
+        $port_to_use = $port ?: '3306';
+        $dsn = "mysql:host={$current_host};port={$port_to_use};dbname={$dbname};charset=utf8mb4";
     }
+
+    try {
+        $conn = new CompatiblePDO($dsn, $username, $password, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+            PDO::ATTR_TIMEOUT => 4,
+        ]);
+        $conn->setAttribute(PDO::ATTR_STATEMENT_CLASS, ['CompatiblePDOStatement', [$conn]]);
+        break; // Successfully connected
+    } catch (PDOException $e) {
+        $last_exception = $e;
+    }
+}
+
+if (!$conn && $last_exception) {
+    error_log("Database connection warning: " . $last_exception->getMessage());
+    $conn = null;
 }
 
 class CookieSessionHandler implements SessionHandlerInterface {
