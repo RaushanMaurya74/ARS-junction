@@ -9,7 +9,6 @@
                 <h5 class="mb-3"><span class="text-warning">ARS</span> JUNCTION</h5>
                 <p>Your one-stop destination for delicious food from the best restaurants around you. Order online and enjoy a hassle-free delivery experience.</p>
                 <div class="social-icons">
-                    <a href="#" class="text-light me-2"><i class="fab fa-facebook-f"></i></a>
                     <a href="#" class="text-light me-2"><i class="fab fa-twitter"></i></a>
                     <a href="#" class="text-light me-2"><i class="fab fa-instagram"></i></a>
                     <a href="#" class="text-light"><i class="fab fa-youtube"></i></a>
