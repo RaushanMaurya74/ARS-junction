@@ -1,12 +1,8 @@
 {
   "functions": {
-    "*.php": {
-      "runtime": "vercel-php@0.9.0",
-      "includeFiles": "includes/**"
-    },
     "api/**/*.php": {
       "runtime": "vercel-php@0.9.0",
-      "includeFiles": "includes/**"
+      "includeFiles": "{*.php,includes/**,database/**}"
     }
   },
   "headers": [
@@ -56,14 +52,6 @@
     {
       "src": "/restaurant/(.*)",
       "dest": "/api/restaurant_router.php?__route_path__=$1"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*\\.php)$",
-      "dest": "/$1"
     },
     {
       "src": "/((?!api/).*)",
