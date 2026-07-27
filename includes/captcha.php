@@ -12,6 +12,49 @@ if (session_status() === PHP_SESSION_NONE) {
  * Generates CAPTCHA data (either a base64 encoded PNG image or a math question)
  * @return array Array containing 'type' ('image'|'math') and 'html' (image source / question text)
  */
+/**
+ * Generates an SVG image Data URI for CAPTCHA (requires no PHP extensions)
+ */
+function generate_svg_captcha($code) {
+    $width = 150;
+    $height = 45;
+    $colors = ['#1e293b', '#e64a19', '#0284c7', '#16a34a', '#9333ea', '#c026d3', '#d97706'];
+    
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="'.$width.'" height="'.$height.'" viewBox="0 0 '.$width.' '.$height.'">';
+    $svg .= '<rect width="100%" height="100%" fill="#f8fafc"/>';
+    
+    // Add random noise lines
+    for ($i = 0; $i < 6; $i++) {
+        $x1 = rand(0, $width); $y1 = rand(0, $height);
+        $x2 = rand(0, $width); $y2 = rand(0, $height);
+        $stroke = $colors[rand(0, count($colors) - 1)];
+        $op = sprintf('%.2f', rand(25, 55) / 100);
+        $svg .= '<line x1="'.$x1.'" y1="'.$y1.'" x2="'.$x2.'" y2="'.$y2.'" stroke="'.$stroke.'" stroke-width="1.5" opacity="'.$op.'"/>';
+    }
+    
+    // Add random noise dots
+    for ($i = 0; $i < 30; $i++) {
+        $cx = rand(0, $width); $cy = rand(0, $height); $r = rand(1, 3);
+        $fill = $colors[rand(0, count($colors) - 1)];
+        $op = sprintf('%.2f', rand(20, 45) / 100);
+        $svg .= '<circle cx="'.$cx.'" cy="'.$cy.'" r="'.$r.'" fill="'.$fill.'" opacity="'.$op.'"/>';
+    }
+    
+    // Draw letters with random rotation and positioning
+    $char_width = 24;
+    $start_x = 18;
+    for ($i = 0; $i < strlen($code); $i++) {
+        $x = $start_x + ($i * $char_width);
+        $y = rand(28, 33);
+        $rot = rand(-18, 18);
+        $color = $colors[rand(0, count($colors) - 1)];
+        $svg .= '<text x="'.$x.'" y="'.$y.'" fill="'.$color.'" font-size="22" font-weight="800" font-family="Arial, sans-serif" transform="rotate('.$rot.', '.$x.', '.$y.')">'.$code[$i].'</text>';
+    }
+    
+    $svg .= '</svg>';
+    return 'data:image/svg+xml;base64,' . base64_encode($svg);
+}
+
 function generate_captcha_data() {
     // Generate random 5-character security code
     // Exclude confusing characters: 0, O, 1, I, l
@@ -24,74 +67,10 @@ function generate_captcha_data() {
     
     $_SESSION['captcha_code'] = $code;
 
-    // Try GD image generation if extension is loaded
-    if (extension_loaded('gd')) {
-        try {
-            $width = 150;
-            $height = 45;
-            
-            $image = @imagecreatetruecolor($width, $height);
-            if ($image) {
-                // Background color (very light grey/white)
-                $bg_color = imagecolorallocate($image, 245, 247, 250);
-                imagefill($image, 0, 0, $bg_color);
-                
-                // Add random lines for noise
-                for ($i = 0; $i < 5; $i++) {
-                    $line_color = imagecolorallocate($image, rand(160, 220), rand(160, 220), rand(160, 220));
-                    imageline($image, rand(0, $width), rand(0, $height), rand(0, $width), rand(0, $height), $line_color);
-                }
-                
-                // Add random dots for noise
-                for ($i = 0; $i < 80; $i++) {
-                    $pixel_color = imagecolorallocate($image, rand(130, 210), rand(130, 210), rand(130, 210));
-                    imagesetpixel($image, rand(0, $width), rand(0, $height), $pixel_color);
-                }
-                
-                // Draw the characters
-                $char_width = 22;
-                $start_x = 20;
-                for ($i = 0; $i < strlen($code); $i++) {
-                    // Dark color for text
-                    $char_color = imagecolorallocate($image, rand(15, 95), rand(15, 95), rand(15, 95));
-                    // Built-in GD font size 5 (9x15)
-                    imagechar($image, 5, $start_x + ($i * $char_width), rand(10, 20), $code[$i], $char_color);
-                }
-                
-                // Capture output
-                ob_start();
-                imagepng($image);
-                $image_data = ob_get_clean();
-                
-                // Free memory
-                if (PHP_VERSION_ID < 80000) {
-                    imagedestroy($image);
-                }
-                
-                return [
-                    'type' => 'image',
-                    'html' => 'data:image/png;base64,' . base64_encode($image_data)
-                ];
-            }
-        } catch (Throwable $e) {
-            // Fall through to math captcha fallback
-        }
-    }
-
-    // Fallback: Math challenge
-    $num1 = rand(2, 9);
-    $num2 = rand(2, 9);
-    $ops = ['+', '*'];
-    $op = $ops[rand(0, 1)];
-    
-    $question = "{$num1} {$op} {$num2} = ?";
-    $answer = ($op === '+') ? ($num1 + $num2) : ($num1 * $num2);
-    
-    $_SESSION['captcha_code'] = (string)$answer;
-    
+    // Use SVG CAPTCHA for 100% reliable image rendering on all PHP servers
     return [
-        'type' => 'math',
-        'html' => $question
+        'type' => 'image',
+        'html' => generate_svg_captcha($code)
     ];
 }
 

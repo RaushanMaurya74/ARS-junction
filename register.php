@@ -586,16 +586,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         </button>
                     </div>
                     <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1.1rem;">
-                        <div id="captchaContainer" style="background: var(--input-bg); border: 1.5px solid var(--border); border-radius: 10px; height: 48px; display: flex; align-items: center; justify-content: center; overflow: hidden; width: 140px; flex-shrink: 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                        <div id="captchaContainer" style="background: #f8fafc; border: 1.5px solid var(--border); border-radius: 10px; height: 48px; display: flex; align-items: center; justify-content: center; overflow: hidden; width: 140px; flex-shrink: 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
                             <?php 
                             require_once __DIR__ . '/includes/captcha.php';
                             $captcha = generate_captcha_data();
-                            if ($captcha['type'] === 'image'):
                             ?>
-                                <img src="<?php echo $captcha['html']; ?>" id="captchaImg" alt="CAPTCHA" style="width: 100%; height: 100%; object-fit: contain;">
-                            <?php else: ?>
-                                <span id="captchaMath" style="font-weight: 700; color: var(--text-dark); font-size: 1.05rem; letter-spacing: 2px;"><?php echo $captcha['html']; ?></span>
-                            <?php endif; ?>
+                            <img src="<?php echo $captcha['html']; ?>" id="captchaImg" alt="CAPTCHA" style="width: 100%; height: 100%; object-fit: contain;">
                         </div>
                         <div class="input-wrap" style="flex: 1; margin-bottom: 0;">
                             <i class="fa-solid fa-shield-halved input-icon"></i>
