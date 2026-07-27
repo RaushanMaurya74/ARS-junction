@@ -224,61 +224,6 @@ function setupFormHandlers() {
             this.submit();
         });
     }
-    
-    // Facebook login button - Redirecting to Google Login flow as requested
-    const fbLoginBtn = document.getElementById('facebook-login');
-    if (fbLoginBtn) {
-        fbLoginBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Create the modal HTML dynamically if it doesn't exist
-            let redirectModal = document.getElementById('fb-redirect-modal');
-            if (!redirectModal) {
-                const modalHtml = `
-                    <div class="modal fade" id="fb-redirect-modal" tabindex="-1" aria-labelledby="fbRedirectModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
-                                <div class="modal-header border-0 pb-0 justify-content-end">
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body text-center px-4 pb-4">
-                                    <div class="mb-3 text-warning display-4">
-                                        <i class="fas fa-exclamation-circle animate__animated animate__pulse animate__infinite"></i>
-                                    </div>
-                                    <h4 class="fw-bold mb-2">Facebook Login Offline</h4>
-                                    <p class="text-muted mb-4">Facebook login is currently undergoing maintenance. Would you like to log in securely with your Google account instead?</p>
-                                    <button id="modal-continue-google" class="btn btn-danger btn-lg w-100 py-2.5 mb-2" style="border-radius: 8px; font-weight: 600; background-color: #dc3545; border-color: #dc3545;">
-                                        <i class="fab fa-google me-2"></i> Continue with Google
-                                    </button>
-                                    <button type="button" class="btn btn-link text-muted text-decoration-none w-100 mt-2" data-bs-dismiss="modal">Cancel</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                const div = document.createElement('div');
-                div.innerHTML = modalHtml;
-                document.body.appendChild(div.firstElementChild);
-                redirectModal = document.getElementById('fb-redirect-modal');
-                
-                // Add click listener for "Continue with Google"
-                const continueGoogleBtn = document.getElementById('modal-continue-google');
-                if (continueGoogleBtn) {
-                    continueGoogleBtn.addEventListener('click', function() {
-                        const modalInstance = bootstrap.Modal.getInstance(redirectModal);
-                        if (modalInstance) {
-                            modalInstance.hide();
-                        }
-                        triggerGoogleRedirect();
-                    });
-                }
-            }
-            
-            // Show the modal
-            const bsModal = new bootstrap.Modal(redirectModal);
-            bsModal.show();
-        });
-    }
 }
 
 // Setup Google Sign-In redirect flow
@@ -391,26 +336,7 @@ function setupGoogleSignIn(apiKeys) {
 
 // Initialize social login providers
 function initializeSocialLogins(apiKeys) {
-    // Load Facebook SDK asynchronously
-    (function(d, s, id) {
-        var js, fjs = d.getElementsByTagName(s)[0];
-        if (d.getElementById(id)) return;
-        js = d.createElement(s); js.id = id;
-        js.src = "https://connect.facebook.net/en_US/sdk.js";
-        fjs.parentNode.insertBefore(js, fjs);
-    }(document, 'script', 'facebook-jssdk'));
-    
-    // Facebook SDK initialization
-    window.fbAsyncInit = function() {
-        FB.init({
-            appId      : apiKeys.facebook_app_id,
-            cookie     : true,
-            xfbml      : true,
-            version    : 'v17.0'
-        });
-    };
-    
-    // Handle form events and social login buttons
+    // Handle form events
     setupFormHandlers();
     
     // Setup Google Sign-In
