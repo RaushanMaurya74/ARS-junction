@@ -20,8 +20,8 @@ function generate_svg_captcha($code) {
     $height = 45;
     $colors = ['#1e293b', '#e64a19', '#0284c7', '#16a34a', '#9333ea', '#c026d3', '#d97706'];
     
-    $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="'.$width.'" height="'.$height.'" viewBox="0 0 '.$width.' '.$height.'">';
-    $svg .= '<rect width="100%" height="100%" fill="#f8fafc"/>';
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="'.$width.'" height="'.$height.'" viewBox="0 0 '.$width.' '.$height.'" style="display:block;">';
+    $svg .= '<rect width="100%" height="100%" fill="#f8fafc" rx="8"/>';
     
     // Add random noise lines
     for ($i = 0; $i < 6; $i++) {
@@ -52,7 +52,8 @@ function generate_svg_captcha($code) {
     }
     
     $svg .= '</svg>';
-    return 'data:image/svg+xml;base64,' . base64_encode($svg);
+    // Return raw SVG string for inline embedding (no base64 data URI needed)
+    return $svg;
 }
 
 function generate_captcha_data() {
@@ -67,9 +68,9 @@ function generate_captcha_data() {
     
     $_SESSION['captcha_code'] = $code;
 
-    // Use SVG CAPTCHA for 100% reliable image rendering on all PHP servers
+    // Use inline SVG CAPTCHA - works on all PHP servers including Vercel (no data URI needed)
     return [
-        'type' => 'image',
+        'type' => 'svg',
         'html' => generate_svg_captcha($code)
     ];
 }
