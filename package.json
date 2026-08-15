@@ -1,0 +1,10 @@
+{
+  "name": "ars-junction",
+  "version": "1.0.0",
+  "description": "ARS Junction Food Delivery Platform",
+  "private": true,
+  "dependencies": {
+    "@vercel/speed-insights": "^1.0.12",
+    "@vercel/analytics": "^1.2.2"
+  }
+}
