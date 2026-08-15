@@ -16,11 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'upi_id' => trim($_POST['upi_id']),
         'delivery_fee_default' => number_format((float)$_POST['delivery_fee_default'], 2, '.', ''),
         'tax_rate_default' => number_format((float)$_POST['tax_rate_default'], 2, '.', ''),
-        'facebook_app_id' => trim($_POST['facebook_app_id']),
-        'facebook_app_secret' => trim($_POST['facebook_app_secret']),
         'google_client_id' => trim($_POST['google_client_id']),
         'google_client_secret' => trim($_POST['google_client_secret']),
-        'facebook_login_enabled' => isset($_POST['facebook_login_enabled']) ? '1' : '0',
         'google_login_enabled' => isset($_POST['google_login_enabled']) ? '1' : '0',
         'smtp_host' => trim($_POST['smtp_host']),
         'smtp_port' => trim($_POST['smtp_port']),
@@ -52,11 +49,8 @@ $currency_symbol = get_site_setting('currency_symbol', '₹');
 $upi_id = get_site_setting('upi_id', '7979730721@rapl');
 $delivery_fee_default = get_site_setting('delivery_fee_default', '50.00');
 $tax_rate_default = get_site_setting('tax_rate_default', '5.00');
-$facebook_app_id = get_site_setting('facebook_app_id', 'YOUR_FACEBOOK_APP_ID');
-$facebook_app_secret = get_site_setting('facebook_app_secret', 'YOUR_FACEBOOK_APP_SECRET');
 $google_client_id = get_site_setting('google_client_id', 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com');
 $google_client_secret = get_site_setting('google_client_secret', 'YOUR_GOOGLE_CLIENT_SECRET');
-$facebook_login_enabled = get_site_setting('facebook_login_enabled', '1');
 $google_login_enabled = get_site_setting('google_login_enabled', '1');
 $smtp_host = get_site_setting('smtp_host', 'smtp.gmail.com');
 $smtp_port = get_site_setting('smtp_port', '465');
@@ -162,29 +156,12 @@ $smtp_encryption = get_site_setting('smtp_encryption', 'ssl');
                     </div>
                     <div class="card-body">
                         <div class="row mb-4 border-bottom pb-3">
-                            <div class="col-md-6 mb-3 mb-md-0">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="facebook_login_enabled" name="facebook_login_enabled" value="1" <?php echo ($facebook_login_enabled == '1') ? 'checked' : ''; ?>>
-                                    <label class="form-check-label font-weight-bold text-dark" for="facebook_login_enabled">Enable Facebook Login</label>
-                                    <div class="text-muted small">Toggle to show or hide the Facebook login button on login/register screens.</div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="google_login_enabled" name="google_login_enabled" value="1" <?php echo ($google_login_enabled == '1') ? 'checked' : ''; ?>>
                                     <label class="form-check-label font-weight-bold text-dark" for="google_login_enabled">Enable Google Login</label>
-                                    <div class="text-muted small">Toggle to show or hide the Google sign-in options.</div>
+                                    <div class="text-muted small">Toggle to show or hide the Google sign-in options on login/register screens.</div>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="facebook_app_id" class="form-label font-weight-bold small text-muted">Facebook App ID</label>
-                                <input type="text" class="form-control" id="facebook_app_id" name="facebook_app_id" value="<?php echo htmlspecialchars($facebook_app_id); ?>">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="facebook_app_secret" class="form-label font-weight-bold small text-muted">Facebook App Secret</label>
-                                <input type="password" class="form-control" id="facebook_app_secret" name="facebook_app_secret" value="<?php echo htmlspecialchars($facebook_app_secret); ?>">
                             </div>
                         </div>
                         <div class="row">

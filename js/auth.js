@@ -46,7 +46,7 @@ function togglePasswordVisibility(inputId, toggleBtnId) {
     }
 }
 
-// Social login (Facebook/Google) handler
+// Social login (Google) handler
 function socialLogin(provider, socialId, name, email) {
     // AJAX request to handle social login
     fetch('api/social_login.php', {

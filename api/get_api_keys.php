@@ -14,7 +14,6 @@ header('Content-Type: application/json');
 
 // Define the API keys
 $api_keys = [
-    'facebook_app_id' => get_site_setting('facebook_app_id') ?: getenv('FACEBOOK_APP_ID') ?: '',
     'google_client_id' => get_site_setting('google_client_id') ?: getenv('GOOGLE_CLIENT_ID') ?: '',
 ];
 

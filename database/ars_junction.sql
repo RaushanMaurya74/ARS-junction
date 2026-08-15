@@ -316,7 +316,7 @@ CREATE TABLE `site_settings` (
 
 LOCK TABLES `site_settings` WRITE;
 /*!40000 ALTER TABLE `site_settings` DISABLE KEYS */;
-INSERT INTO `site_settings` VALUES ('currency_symbol','?'),('delivery_fee_default','50.00'),('site_email','officialarsjunction@gmail.com'),('site_name','ARS Junction'),('site_phone','7979730721'),('tax_rate_default','5.00'),('upi_id','7979730721@rapl'),('facebook_app_id','YOUR_FACEBOOK_APP_ID'),('facebook_app_secret','YOUR_FACEBOOK_APP_SECRET'),('google_client_id','YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'),('google_client_secret','YOUR_GOOGLE_CLIENT_SECRET'),('facebook_login_enabled','1'),('google_login_enabled','1');
+INSERT INTO `site_settings` VALUES ('currency_symbol','?'),('delivery_fee_default','50.00'),('site_email','officialarsjunction@gmail.com'),('site_name','ARS Junction'),('site_phone','7979730721'),('tax_rate_default','5.00'),('upi_id','7979730721@rapl'),('google_client_id','YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'),('google_client_secret','YOUR_GOOGLE_CLIENT_SECRET'),('google_login_enabled','1');
 /*!40000 ALTER TABLE `site_settings` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -339,7 +339,7 @@ CREATE TABLE `users` (
   `zip_code` varchar(10) DEFAULT NULL,
   `profile_image` mediumtext DEFAULT NULL,
   `social_id` varchar(100) DEFAULT NULL,
-  `social_type` enum('facebook','google','normal') DEFAULT 'normal',
+  `social_type` enum('google','normal') DEFAULT 'normal',
   `is_admin` tinyint(1) DEFAULT 0,
   `is_delivery_boy` tinyint(1) DEFAULT 0,
   `is_online` tinyint(1) DEFAULT 0,

@@ -1,7 +1,7 @@
 <?php
 chdir(__DIR__);
 /**
- * API endpoint for handling social login (Facebook/Google)
+ * API endpoint for handling social login (Google)
  */
 
 // Include necessary files
@@ -52,7 +52,7 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 }
 
 // Validate provider
-if (!in_array($provider, ['facebook', 'google'])) {
+if ($provider !== 'google') {
     echo json_encode([
         'success' => false,
         'message' => 'Invalid provider'

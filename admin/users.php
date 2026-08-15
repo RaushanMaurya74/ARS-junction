@@ -186,11 +186,10 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
                             <p class="mb-0">
                                 <strong>Login Type:</strong><br>
                                 <?php 
-                                switch($view_user['social_type']) {
-                                    case 'facebook': echo 'Facebook'; break;
-                                    case 'google': echo 'Google'; break;
-                                    default: echo 'Email & Password';
-                                }
+                                 switch($view_user['social_type']) {
+                                     case 'google': echo 'Google'; break;
+                                     default: echo 'Email & Password';
+                                 }
                                 ?>
                             </p>
                         </div>
@@ -460,11 +459,10 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
                                     <td><?php echo !empty($user['phone']) ? $user['phone'] : 'N/A'; ?></td>
                                     <td>
                                         <?php 
-                                        switch($user['social_type']) {
-                                            case 'facebook': echo '<i class="fab fa-facebook text-primary"></i> Facebook'; break;
-                                            case 'google': echo '<i class="fab fa-google text-danger"></i> Google'; break;
-                                            default: echo '<i class="fas fa-envelope"></i> Email';
-                                        }
+                                         switch($user['social_type']) {
+                                             case 'google': echo '<i class="fab fa-google text-danger"></i> Google'; break;
+                                             default: echo '<i class="fas fa-envelope"></i> Email';
+                                         }
                                         ?>
                                     </td>
                                     <td style="white-space: nowrap;">

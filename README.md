@@ -37,9 +37,8 @@ Demo customer:
 
 ## Social Login
 
-Facebook and Google buttons are wired to `api/social_login.php`. Add real provider keys on the server:
+Google Sign-In is wired to `api/social_login.php`. Add real provider keys on the server:
 
-- `FACEBOOK_APP_ID`
 - `GOOGLE_CLIENT_ID`
 
 Without real keys, provider authentication will not complete.

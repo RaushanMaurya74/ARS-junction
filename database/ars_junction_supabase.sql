@@ -40,7 +40,7 @@ CREATE TABLE users (
     zip_code varchar(10) DEFAULT NULL,
     profile_image text DEFAULT NULL,
     social_id varchar(100) DEFAULT NULL,
-    social_type varchar(20) DEFAULT 'normal' CHECK (social_type IN ('facebook', 'google', 'normal')),
+    social_type varchar(20) DEFAULT 'normal' CHECK (social_type IN ('google', 'normal')),
     is_admin smallint DEFAULT 0,
     is_delivery_boy smallint DEFAULT 0,
     is_online smallint DEFAULT 0,
@@ -335,11 +335,8 @@ INSERT INTO site_settings (setting_key, setting_value) VALUES
 ('site_phone','7979730721'),
 ('tax_rate_default','5.00'),
 ('upi_id','7979730721@rapl'),
-('facebook_app_id','YOUR_FACEBOOK_APP_ID'),
-('facebook_app_secret','YOUR_FACEBOOK_APP_SECRET'),
 ('google_client_id','YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'),
 ('google_client_secret','YOUR_GOOGLE_CLIENT_SECRET'),
-('facebook_login_enabled','1'),
 ('google_login_enabled','1');
 
 -- Seeds: contact_messages
