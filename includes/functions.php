@@ -423,6 +423,9 @@ function get_delivery_boy_orders($delivery_boy_id) {
 // Get a site setting by key
 function get_site_setting($key, $default = '') {
     global $conn;
+    if (!$conn) {
+        return $default;
+    }
     try {
         $stmt = $conn->prepare("SELECT setting_value FROM site_settings WHERE setting_key = ?");
         $stmt->execute([$key]);
@@ -436,6 +439,9 @@ function get_site_setting($key, $default = '') {
 // Update a site setting by key
 function update_site_setting($key, $value) {
     global $conn;
+    if (!$conn) {
+        return false;
+    }
     $driver = $conn->getAttribute(PDO::ATTR_DRIVER_NAME);
     if ($driver === 'pgsql') {
         $stmt = $conn->prepare("INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) 
