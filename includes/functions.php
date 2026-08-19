@@ -422,9 +422,6 @@ function get_delivery_boy_orders($delivery_boy_id) {
 
 // Get a site setting by key
 function get_site_setting($key, $default = '') {
-    if (strpos($key, 'facebook') !== false) {
-        return ($key === 'facebook_login_enabled') ? '0' : '';
-    }
     global $conn;
     try {
         $stmt = $conn->prepare("SELECT setting_value FROM site_settings WHERE setting_key = ?");
