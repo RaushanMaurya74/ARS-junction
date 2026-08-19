@@ -1,10 +1,19 @@
 {
-  "name": "ars-junction",
+  "name": "ai-gateway-demo",
   "version": "1.0.0",
-  "description": "ARS Junction Food Delivery Platform",
-  "private": true,
+  "description": "Vercel AI Gateway Text Generation",
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
   "dependencies": {
-    "@vercel/speed-insights": "^1.0.12",
-    "@vercel/analytics": "^1.2.2"
+    "@ai-sdk/openai": "^1.1.9",
+    "ai": "^4.1.41",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
   }
 }
