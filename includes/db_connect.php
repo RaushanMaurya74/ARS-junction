@@ -237,16 +237,20 @@ if (!class_exists('CompatiblePDO')) {
 }
 
 // 1. Check for Environment Variables
-$host = getenv('DB_HOST') ?: getenv('SUPABASE_DB_HOST');
-$port = getenv('DB_PORT') ?: getenv('SUPABASE_DB_PORT');
-$dbname = getenv('DB_NAME') ?: getenv('SUPABASE_DB_NAME');
-$username = getenv('DB_USER') ?: getenv('SUPABASE_DB_USER');
-$password = getenv('DB_PASSWORD') ?: getenv('SUPABASE_DB_PASSWORD');
-$driver = getenv('DB_DRIVER') ?: getenv('SUPABASE_DB_DRIVER') ?: 'mysql';
-
-// If any of the Supabase specific vars are set, default driver to pgsql
 if (getenv('SUPABASE_DB_HOST') || getenv('SUPABASE_DB_PASSWORD')) {
-    $driver = 'pgsql';
+    $host = getenv('SUPABASE_DB_HOST') ?: getenv('DB_HOST');
+    $port = getenv('SUPABASE_DB_PORT') ?: getenv('DB_PORT') ?: '5432';
+    $dbname = getenv('SUPABASE_DB_NAME') ?: getenv('DB_NAME') ?: 'postgres';
+    $username = getenv('SUPABASE_DB_USER') ?: getenv('DB_USER');
+    $password = getenv('SUPABASE_DB_PASSWORD') ?: getenv('DB_PASSWORD');
+    $driver = getenv('SUPABASE_DB_DRIVER') ?: 'pgsql';
+} else {
+    $host = getenv('DB_HOST');
+    $port = getenv('DB_PORT');
+    $dbname = getenv('DB_NAME');
+    $username = getenv('DB_USER');
+    $password = getenv('DB_PASSWORD');
+    $driver = getenv('DB_DRIVER') ?: 'mysql';
 }
 
 // Fallback to mysql if pgsql driver is not loaded in current PHP installation
@@ -361,9 +365,22 @@ foreach ($candidate_hosts as $current_host) {
     }
 }
 
-if (!$conn && $last_exception) {
-    error_log("Database connection warning: " . $last_exception->getMessage());
-    $conn = null;
+if (!$conn) {
+    // Local MySQL Fallback if configured remote DB fails to connect
+    try {
+        $conn = new CompatiblePDO("mysql:host=127.0.0.1;port=3306;dbname=ars_junction;charset=utf8mb4", "root", "", [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+            PDO::ATTR_TIMEOUT => 3,
+        ]);
+        $conn->setAttribute(PDO::ATTR_STATEMENT_CLASS, ['CompatiblePDOStatement', [$conn]]);
+    } catch (PDOException $e) {
+        if ($last_exception) {
+            error_log("Database connection warning: " . $last_exception->getMessage());
+        }
+        $conn = null;
+    }
 }
 
 class CookieSessionHandler implements SessionHandlerInterface {
