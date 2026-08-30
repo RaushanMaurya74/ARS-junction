@@ -112,6 +112,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <!-- Dark mode flash prevention -->
+    <script>(function(){var t=localStorage.getItem('ars_theme')||'light';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);})();</script>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -125,6 +127,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             --border:     #e5e7eb;
             --input-bg:   #f9fafb;
             --white:      #ffffff;
+        }
+
+        [data-theme="dark"] {
+            --text-dark:  #f3f4f6;
+            --text-mid:   #9ca3af;
+            --text-light: #6b7280;
+            --border:     rgba(255, 255, 255, 0.12);
+            --input-bg:   #1f2937;
+            --white:      #111827;
+        }
+
+        [data-theme="dark"] .login-card {
+            box-shadow: 0 25px 60px rgba(0,0,0,.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        [data-theme="dark"] .input-box {
+            background: #1f2937 !important;
+            border-color: rgba(255, 255, 255, 0.14) !important;
+            color: #f3f4f6 !important;
+        }
+
+        [data-theme="dark"] .input-box input {
+            color: #f3f4f6 !important;
+        }
+
+        [data-theme="dark"] .input-box input::placeholder {
+            color: #6b7280 !important;
+        }
+
+        [data-theme="dark"] .divider span {
+            background: #111827 !important;
+            color: #9ca3af !important;
+        }
+
+        [data-theme="dark"] .divider::before {
+            background: rgba(255, 255, 255, 0.12) !important;
         }
 
         html, body {
@@ -699,10 +738,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Loading state on submit (ignore if social login triggered)
     document.querySelector('form').addEventListener('submit', function () {
         const btn = document.getElementById('registerBtn');
-        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Creating Account\u2026';
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Creating Account…';
         btn.style.opacity = '.85';
         btn.disabled = true;
     });
+
+    // Dark Mode Toggle for Register
+    (function(){
+        const btn = document.getElementById('auth-dark-toggle');
+        if (!btn) return;
+        const html = document.documentElement;
+        function sync(t) {
+            btn.innerHTML = t === 'dark' ? '<i class="fas fa-sun" style="color:#ffc107"></i>' : '<i class="fas fa-moon"></i>';
+        }
+        sync(html.getAttribute('data-theme') || 'light');
+        btn.addEventListener('click', function(){
+            const cur = html.getAttribute('data-theme') || 'light';
+            const nxt = cur === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', nxt);
+            html.setAttribute('data-bs-theme', nxt);
+            localStorage.setItem('ars_theme', nxt);
+            sync(nxt);
+        });
+    })();
 </script>
+<button class="dark-mode-toggle" id="auth-dark-toggle" title="Toggle dark mode" aria-label="Toggle dark mode" style="position:fixed;top:20px;right:20px;z-index:999;width:42px;height:42px;background:rgba(255,255,255,0.12);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.22);color:#fff;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.05rem;transition:all .3s;">
+    <i class="fas fa-moon"></i>
+</button>
 </body>
 </html>

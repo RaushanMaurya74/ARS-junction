@@ -24,7 +24,7 @@ RateLimiter::enforceOrBlock($rlRes);
     <!-- Custom CSS -->
     <link href="css/style.css?v=3.0" rel="stylesheet">
     <!-- Dark mode flash prevention -->
-    <script>(function(){var t=localStorage.getItem('ars_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+    <script>(function(){var t=localStorage.getItem('ars_theme')||'light';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);})();</script>
     <?php if (isset($extra_css)): echo $extra_css; endif; ?>
     <!-- Vercel Analytics -->
     <script defer src="/_vercel/insights/script.js"></script>
@@ -38,9 +38,14 @@ RateLimiter::enforceOrBlock($rlRes);
             <img src="images/logo.png" alt="ARS JUNCTION Logo" height="40" class="me-2">
             <span class="text-warning fw-bold">ARS</span> JUNCTION
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+        <div class="d-flex align-items-center gap-2">
+            <button class="dark-mode-toggle d-lg-none" title="Toggle dark mode" aria-label="Toggle dark mode">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
@@ -100,8 +105,8 @@ RateLimiter::enforceOrBlock($rlRes);
                         </span>
                     </a>
                 </li>
-                <!-- Dark Mode Toggle -->
-                <li class="nav-item d-flex align-items-center">
+                <!-- Dark Mode Toggle Desktop -->
+                <li class="nav-item d-none d-lg-flex align-items-center ms-2">
                     <button class="dark-mode-toggle" id="dark-mode-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">
                         <i class="fas fa-moon"></i>
                     </button>

@@ -586,20 +586,35 @@ function initAnimatedSearchBars() {
    FEATURE 9: DARK MODE
    ═══════════════════════════════════════════════════════════════ */
 function initDarkMode() {
-    const toggleBtn = document.getElementById('dark-mode-toggle');
-    if (!toggleBtn) return;
+    const toggleBtns = document.querySelectorAll('.dark-mode-toggle, #dark-mode-toggle');
     const html = document.documentElement;
     const saved = localStorage.getItem('ars_theme') || 'light';
+    
     html.setAttribute('data-theme', saved);
-    toggleBtn.innerHTML = saved === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-    toggleBtn.addEventListener('click', function() {
-        const current = html.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
-        html.setAttribute('data-theme', next);
-        localStorage.setItem('ars_theme', next);
-        this.innerHTML = next === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-        this.style.transform = 'rotate(360deg)';
-        setTimeout(() => { this.style.transform = ''; }, 400);
+    html.setAttribute('data-bs-theme', saved);
+
+    function updateIcons(theme) {
+        toggleBtns.forEach(btn => {
+            btn.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+            btn.setAttribute('title', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+            btn.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+        });
+    }
+
+    updateIcons(saved);
+
+    toggleBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const current = html.getAttribute('data-theme') || 'light';
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            html.setAttribute('data-bs-theme', next);
+            localStorage.setItem('ars_theme', next);
+            updateIcons(next);
+            this.style.transform = 'rotate(360deg)';
+            setTimeout(() => { this.style.transform = ''; }, 400);
+        });
     });
 }
 
