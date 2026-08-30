@@ -1,8 +1,8 @@
 {
   "functions": {
-    "api/**/*.php": {
+    "api/*.php": {
       "runtime": "vercel-php@0.9.0",
-      "includeFiles": "{**/*.php,includes/**,database/**,js/**,css/**,images/**}"
+      "includeFiles": "{**/*.php,api_handlers/**,includes/**,database/**,js/**,css/**,images/**}"
     }
   },
   "headers": [
@@ -42,16 +42,32 @@
       "dest": "/$1/$2"
     },
     {
+      "src": "/api/(.*)",
+      "dest": "/api/api_router.php?__route_path__=$1"
+    },
+    {
       "src": "/admin/(.*)",
       "dest": "/api/admin_router.php?__route_path__=$1"
+    },
+    {
+      "src": "/admin/?$",
+      "dest": "/api/admin_router.php?__route_path__=index.php"
     },
     {
       "src": "/delivery/(.*)",
       "dest": "/api/delivery_router.php?__route_path__=$1"
     },
     {
+      "src": "/delivery/?$",
+      "dest": "/api/delivery_router.php?__route_path__=index.php"
+    },
+    {
       "src": "/restaurant/(.*)",
       "dest": "/api/restaurant_router.php?__route_path__=$1"
+    },
+    {
+      "src": "/restaurant/?$",
+      "dest": "/api/restaurant_router.php?__route_path__=index.php"
     },
     {
       "src": "/((?!api/).*)",
@@ -59,3 +75,4 @@
     }
   ]
 }
+
