@@ -427,7 +427,7 @@ class CookieSessionHandler implements SessionHandlerInterface {
 
     public function write($id, $data): bool {
         if (headers_sent()) {
-            return false;
+            return true;
         }
         $iv_length = openssl_cipher_iv_length('aes-256-cbc');
         $iv = openssl_random_pseudo_bytes($iv_length);
@@ -449,7 +449,7 @@ class CookieSessionHandler implements SessionHandlerInterface {
 
     public function destroy($id): bool {
         if (headers_sent()) {
-            return false;
+            return true;
         }
         $secure = isset($_SERVER['HTTPS']) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
         setcookie($this->cookie_name, '', [
@@ -463,7 +463,7 @@ class CookieSessionHandler implements SessionHandlerInterface {
     }
 
     public function gc($maxlifetime): int|false {
-        return true;
+        return 0;
     }
 }
 
