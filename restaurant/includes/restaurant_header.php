@@ -38,6 +38,8 @@ if (isset($restaurant['is_active']) && $restaurant['is_active'] == 0) {
     <!-- Custom Stylesheet -->
     <link href="../css/restaurant.css" rel="stylesheet">
     <?php if (isset($extra_css)): echo $extra_css; endif; ?>
+    <!-- Vercel Analytics -->
+    <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 

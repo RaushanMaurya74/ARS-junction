@@ -292,6 +292,8 @@ $active_tab = isset($_GET['tab']) && $_GET['tab'] === 'history' ? 'history' : 'a
             100% { opacity: 0.5; }
         }
     </style>
+    <!-- Vercel Analytics -->
+    <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 

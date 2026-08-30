@@ -26,6 +26,8 @@ RateLimiter::enforceOrBlock($rlRes);
     <!-- Dark mode flash prevention -->
     <script>(function(){var t=localStorage.getItem('ars_theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
     <?php if (isset($extra_css)): echo $extra_css; endif; ?>
+    <!-- Vercel Analytics -->
+    <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 

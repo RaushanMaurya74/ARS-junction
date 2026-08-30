@@ -28,6 +28,8 @@ if (!$admin) {
     <!-- Custom CSS -->
     <link href="../css/admin.css" rel="stylesheet">
     <?php if (isset($extra_css)): echo $extra_css; endif; ?>
+    <!-- Vercel Analytics -->
+    <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body id="page-top">
 
