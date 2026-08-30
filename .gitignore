@@ -7,3 +7,5 @@ uploads/emails/*
 scratch/
 .DS_Store
 Thumbs.db
+.env*
+vendor/

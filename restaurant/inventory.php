@@ -179,7 +179,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error_msg = reset($errors);
         }
     }
-    }
 }
 
 // Fetch all suppliers for options dropdown
