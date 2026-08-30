@@ -130,9 +130,12 @@ elseif ($role === 'customer_notif') {
         $unread = intval($stmt->fetch(PDO::FETCH_ASSOC)['cnt'] ?? 0);
 
         // Latest 10 notifications
+        $timeCol = ($conn->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql')
+            ? "TO_CHAR(created_at, 'DD Mon HH24:MI') AS time_fmt"
+            : "DATE_FORMAT(created_at, '%d %b %H:%i') AS time_fmt";
+
         $stmt2 = $conn->prepare(
-            "SELECT notif_id, type, title, message, is_read, link,
-                    DATE_FORMAT(created_at, '%d %b %H:%i') AS time_fmt
+            "SELECT notif_id, type, title, message, is_read, link, {$timeCol}
              FROM notifications WHERE user_id = ?
              ORDER BY created_at DESC LIMIT 10"
         );
