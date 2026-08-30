@@ -253,6 +253,14 @@ if (getenv('SUPABASE_DB_HOST') || getenv('SUPABASE_DB_PASSWORD')) {
     $driver = getenv('DB_DRIVER') ?: 'mysql';
 }
 
+$host = trim((string)$host);
+$port = trim((string)$port);
+$dbname = trim((string)$dbname);
+$username = trim((string)$username);
+$password = trim((string)$password);
+$driver = trim((string)$driver);
+
+
 // Fallback to mysql if pgsql driver is not loaded in current PHP installation
 if ($driver === 'pgsql' && !in_array('pgsql', PDO::getAvailableDrivers())) {
     $driver = 'mysql';
@@ -418,6 +426,9 @@ class CookieSessionHandler implements SessionHandlerInterface {
     }
 
     public function write($id, $data): bool {
+        if (headers_sent()) {
+            return false;
+        }
         $iv_length = openssl_cipher_iv_length('aes-256-cbc');
         $iv = openssl_random_pseudo_bytes($iv_length);
         $encrypted = openssl_encrypt($data, 'aes-256-cbc', $this->key, 0, $iv);
@@ -437,6 +448,9 @@ class CookieSessionHandler implements SessionHandlerInterface {
     }
 
     public function destroy($id): bool {
+        if (headers_sent()) {
+            return false;
+        }
         $secure = isset($_SERVER['HTTPS']) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
         setcookie($this->cookie_name, '', [
             'expires' => time() - 3600,
