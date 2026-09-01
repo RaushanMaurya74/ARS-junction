@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([$code, $discount_type, $discount_value, $min_order_amount, $max_discount_amount, $is_active]);
                 $success_msg = "Promo code '{$code}' added successfully.";
             } catch (PDOException $e) {
-                if ($e->getCode() == 23000) {
+                if (in_array($e->getCode(), ['23000', '23505'])) {
                     $error_msg = "Promo code '{$code}' already exists.";
                 } else {
                     error_log("Error adding promo code: " . $e->getMessage());
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([$code, $discount_type, $discount_value, $min_order_amount, $max_discount_amount, $is_active, $promo_id]);
                 $success_msg = "Promo code '{$code}' updated successfully.";
             } catch (PDOException $e) {
-                if ($e->getCode() == 23000) {
+                if (in_array($e->getCode(), ['23000', '23505'])) {
                     $error_msg = "Promo code '{$code}' already exists on another record.";
                 } else {
                     error_log("Error updating promo code: " . $e->getMessage());

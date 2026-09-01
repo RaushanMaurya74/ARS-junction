@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $provider = isset($_POST['provider']) ? clean_input($_POST['provider']) : null;
 $social_id = isset($_POST['social_id']) ? clean_input($_POST['social_id']) : null;
 $name = isset($_POST['name']) ? clean_input($_POST['name']) : null;
-$email = isset($_POST['email']) ? clean_input($_POST['email']) : null;
+$email = isset($_POST['email']) ? trim($_POST['email']) : null;
 
 // Validate required parameters
 if (!$provider || !$social_id || !$name || !$email) {

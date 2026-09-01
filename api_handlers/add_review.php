@@ -36,9 +36,10 @@ $user_id = $_SESSION['user_id'];
 if (!has_user_reviewed($user_id, $restaurant_id)) {
     $stmt = $conn->prepare("INSERT INTO reviews (user_id, restaurant_id, rating, comment) VALUES (?, ?, ?, ?)");
     $stmt->execute([$user_id, $restaurant_id, $rating, $comment]);
+    header('Location: ../restaurant_details.php?id=' . $restaurant_id . '&review=success#reviews');
+} else {
+    header('Location: ../restaurant_details.php?id=' . $restaurant_id . '&review=duplicate#reviews');
 }
-
-header('Location: ../restaurant_details.php?id=' . $restaurant_id . '#reviews');
 exit;
 ?>
 

@@ -1,6 +1,7 @@
 <?php
 // Start session and check authentication before outputting headers
 require_once 'includes/db_connect.php';
+require_once 'includes/functions.php';
 require_once 'includes/auth.php';
 
 // Redirect if not logged in
@@ -161,8 +162,8 @@ $extra_js = '<script src="js/auth.js"></script>';
                     </form>
                     <?php endif; ?>
                     
-                    <h5 class="mb-1"><?php echo $user['name']; ?></h5>
-                    <p class="text-muted small"><?php echo $user['email']; ?></p>
+                    <h5 class="mb-1"><?php echo htmlspecialchars($user['name'], ENT_QUOTES); ?></h5>
+                    <p class="text-muted small"><?php echo htmlspecialchars($user['email'], ENT_QUOTES); ?></p>
                     
                     <div class="d-grid gap-2 mt-3">
                         <a href="order_tracking.php" class="btn btn-outline-primary">My Orders</a>
@@ -191,11 +192,11 @@ $extra_js = '<script src="js/auth.js"></script>';
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="name" class="form-label">Full Name</label>
-                                <input type="text" class="form-control" id="name" name="name" value="<?php echo $user['name']; ?>" required>
+                                <input type="text" class="form-control" id="name" name="name" value="<?php echo htmlspecialchars($user['name'], ENT_QUOTES); ?>" required>
                             </div>
                             <div class="col-md-6">
                                 <label for="email" class="form-label">Email Address</label>
-                                <input type="email" class="form-control" id="email" value="<?php echo $user['email']; ?>" disabled>
+                                <input type="email" class="form-control" id="email" value="<?php echo htmlspecialchars($user['email'], ENT_QUOTES); ?>" disabled>
                                 <div class="form-text">Email cannot be changed.</div>
                             </div>
                         </div>

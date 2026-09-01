@@ -26,6 +26,7 @@ function authenticate_user($email, $password) {
             $_SESSION['user_email'] = $user['email'];
             $_SESSION['is_admin'] = $user['is_admin'];
             $_SESSION['is_delivery_boy'] = $user['is_delivery_boy'];
+            $_SESSION['is_restaurant_owner'] = $user['is_restaurant_owner'] ?? 0;
             return true;
         } else {
             // Record failed attempt in RateLimiter for exponential backoff
@@ -55,10 +56,12 @@ function is_admin() {
     return isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1;
 }
 
-function require_admin() {
-    if (!is_admin()) {
-        header("Location: ../index.php");
-        exit;
+if (!function_exists('require_admin')) {
+    function require_admin() {
+        if (!is_admin()) {
+            header("Location: ../index.php");
+            exit;
+        }
     }
 }
 
@@ -82,6 +85,7 @@ function social_login($name, $email, $social_id, $social_type) {
         $_SESSION['user_email'] = $user['email'];
         $_SESSION['is_admin'] = $user['is_admin'];
         $_SESSION['is_delivery_boy'] = $user['is_delivery_boy'];
+        $_SESSION['is_restaurant_owner'] = $user['is_restaurant_owner'] ?? 0;
 
         return array('success' => true, 'user_id' => $user['user_id'], 'new_user' => false);
     } else {
@@ -98,19 +102,34 @@ function social_login($name, $email, $social_id, $social_type) {
             $_SESSION['user_email'] = $user['email'];
             $_SESSION['is_admin'] = $user['is_admin'];
             $_SESSION['is_delivery_boy'] = $user['is_delivery_boy'];
+            $_SESSION['is_restaurant_owner'] = $user['is_restaurant_owner'] ?? 0;
 
             return array('success' => true, 'user_id' => $user['user_id'], 'new_user' => false);
         } else {
             $placeholder_password = password_hash(generate_random_password(), PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("INSERT INTO users (name, email, password, social_id, social_type) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$name, $email, $placeholder_password, $social_id, $social_type]);
-            $user_id = $conn->lastInsertId();
+            $driver = $conn->getAttribute(PDO::ATTR_DRIVER_NAME);
+            if ($driver === 'pgsql') {
+                $stmt = $conn->prepare("INSERT INTO users (name, email, password, social_id, social_type, is_admin, is_delivery_boy, is_restaurant_owner) VALUES (?, ?, ?, ?, ?, 0, 0, 0) RETURNING user_id");
+                $stmt->execute([$name, $email, $placeholder_password, $social_id, $social_type]);
+                $user_id = (int)$stmt->fetchColumn();
+            } else {
+                $stmt = $conn->prepare("INSERT INTO users (name, email, password, social_id, social_type, is_admin, is_delivery_boy, is_restaurant_owner) VALUES (?, ?, ?, ?, ?, 0, 0, 0)");
+                $stmt->execute([$name, $email, $placeholder_password, $social_id, $social_type]);
+                $user_id = (int)$conn->lastInsertId();
+            }
+
+            if ($user_id <= 0) {
+                $stmt_find = $conn->prepare("SELECT user_id FROM users WHERE email = ?");
+                $stmt_find->execute([$email]);
+                $user_id = (int)$stmt_find->fetchColumn();
+            }
 
             $_SESSION['user_id'] = $user_id;
             $_SESSION['user_name'] = $name;
             $_SESSION['user_email'] = $email;
             $_SESSION['is_admin'] = 0;
             $_SESSION['is_delivery_boy'] = 0;
+            $_SESSION['is_restaurant_owner'] = 0;
 
             return array('success' => true, 'user_id' => $user_id, 'new_user' => true);
         }

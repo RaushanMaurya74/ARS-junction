@@ -27,6 +27,14 @@ $item_id = $validated['item_id'];
 $quantity = $validated['quantity'];
 
 try {
+    // Verify the item exists and is available before adding
+    $check = $conn->prepare("SELECT item_id FROM menu_items WHERE item_id = ? AND is_available = 1");
+    $check->execute([$item_id]);
+    if (!$check->fetch()) {
+        echo json_encode(['success' => false, 'message' => 'This item is no longer available.']);
+        exit;
+    }
+
     // Check if item already exists in cart
     $stmt = $conn->prepare("SELECT cart_id, quantity FROM cart WHERE user_id = ? AND item_id = ?");
     $stmt->execute([$user_id, $item_id]);

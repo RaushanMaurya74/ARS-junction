@@ -33,14 +33,14 @@ $reviews = admin_get_all_reviews(500, 0);
                     <tbody>
                     <?php foreach ($reviews as $review): ?>
                         <tr>
-                            <td><?php echo $review['user_name']; ?></td>
-                            <td><?php echo $review['restaurant_name']; ?></td>
+                            <td><?php echo htmlspecialchars($review['user_name'] ?? ''); ?></td>
+                            <td><?php echo htmlspecialchars($review['restaurant_name'] ?? ''); ?></td>
                             <td>
                                 <?php for ($i = 1; $i <= 5; $i++): ?>
                                     <i class="<?php echo $i <= $review['rating'] ? 'fas' : 'far'; ?> fa-star text-warning"></i>
                                 <?php endfor; ?>
                             </td>
-                            <td><?php echo $review['comment']; ?></td>
+                            <td><?php echo htmlspecialchars($review['comment'] ?? ''); ?></td>
                             <td><?php echo date('M d, Y', strtotime($review['created_at'])); ?></td>
                             <td>
                                 <form method="post" onsubmit="return confirm('Delete this review?');">

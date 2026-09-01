@@ -54,15 +54,15 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
                         <div class="bg-warning text-dark d-inline-block rounded-circle p-3 mb-2" style="font-size: 2.5rem; width: 80px; height: 80px; line-height: 50px;">
                             <i class="fas fa-truck"></i>
                         </div>
-                        <h5 class="mb-0"><?php echo $view_boy['name']; ?></h5>
+                        <h5 class="mb-0"><?php echo htmlspecialchars($view_boy['name'], ENT_QUOTES); ?></h5>
                         <span class="badge bg-warning text-dark">Active Delivery Boy</span>
                     </div>
-                    <p class="mb-2"><strong>Email:</strong> <?php echo $view_boy['email']; ?></p>
-                    <p class="mb-2"><strong>Phone:</strong> <?php echo !empty($view_boy['phone']) ? $view_boy['phone'] : 'N/A'; ?></p>
-                    <p class="mb-2"><strong>Address:</strong> <?php echo !empty($view_boy['address']) ? $view_boy['address'] : 'N/A'; ?></p>
-                    <p class="mb-2"><strong>City:</strong> <?php echo !empty($view_boy['city']) ? $view_boy['city'] : 'N/A'; ?></p>
-                    <p class="mb-2"><strong>State:</strong> <?php echo !empty($view_boy['state']) ? $view_boy['state'] : 'N/A'; ?></p>
-                    <p class="mb-0"><strong>ZIP Code:</strong> <?php echo !empty($view_boy['zip_code']) ? $view_boy['zip_code'] : 'N/A'; ?></p>
+                    <p class="mb-2"><strong>Email:</strong> <?php echo htmlspecialchars($view_boy['email'], ENT_QUOTES); ?></p>
+                    <p class="mb-2"><strong>Phone:</strong> <?php echo !empty($view_boy['phone']) ? htmlspecialchars($view_boy['phone'], ENT_QUOTES) : 'N/A'; ?></p>
+                    <p class="mb-2"><strong>Address:</strong> <?php echo !empty($view_boy['address']) ? htmlspecialchars($view_boy['address'], ENT_QUOTES) : 'N/A'; ?></p>
+                    <p class="mb-2"><strong>City:</strong> <?php echo !empty($view_boy['city']) ? htmlspecialchars($view_boy['city'], ENT_QUOTES) : 'N/A'; ?></p>
+                    <p class="mb-2"><strong>State:</strong> <?php echo !empty($view_boy['state']) ? htmlspecialchars($view_boy['state'], ENT_QUOTES) : 'N/A'; ?></p>
+                    <p class="mb-0"><strong>ZIP Code:</strong> <?php echo !empty($view_boy['zip_code']) ? htmlspecialchars($view_boy['zip_code'], ENT_QUOTES) : 'N/A'; ?></p>
                 </div>
             </div>
         </div>
@@ -175,15 +175,14 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
                         ?>
                         <tr>
                             <td>#<?php echo $boy['user_id']; ?></td>
-                            <td>
-                                <strong><?php echo $boy['name']; ?></strong>
+                            <td><strong><?php echo htmlspecialchars($boy['name'], ENT_QUOTES); ?></strong>
                                 <div class="mt-1">
                                     <span class="badge bg-primary"><?php echo $act_count; ?> Active Deliveries</span>
                                     <span class="badge bg-success"><?php echo $comp_count; ?> Completed</span>
                                 </div>
                             </td>
-                            <td><?php echo $boy['email']; ?></td>
-                            <td><?php echo !empty($boy['phone']) ? $boy['phone'] : 'N/A'; ?></td>
+                            <td><?php echo htmlspecialchars($boy['email'], ENT_QUOTES); ?></td>
+                            <td><?php echo !empty($boy['phone']) ? htmlspecialchars($boy['phone'], ENT_QUOTES) : 'N/A'; ?></td>
                             <td><?php echo !empty($boy['created_at']) ? date('M d, Y', strtotime($boy['created_at'])) : 'N/A'; ?></td>
                             <td>
                                 <a href="delivery_boys.php?view=<?php echo $boy['user_id']; ?>" class="btn btn-sm btn-info">

@@ -82,11 +82,21 @@ if (!empty($user['zip_code'])) {
     }
 }
 
-// Calculate tax (5% of subtotal)
-$tax = $cart_subtotal * 0.05;
+// Calculate tax (5% of subtotal) — round to 2 decimal places, matching place_order.php
+$tax = round($cart_subtotal * 0.05, 2);
 
 // Calculate total
-$total = $cart_subtotal + $delivery_fee + $tax - $discount_amount;
+$total = round($cart_subtotal + $delivery_fee + $tax - $discount_amount, 2);
+
+// Check if user's default pincode is serviceable (for pre-warning on page load)
+$pincode_warning = '';
+if (!empty($user['zip_code'])) {
+    $stmt_pin_check = $conn->prepare("SELECT 1 FROM delivery_pincodes WHERE pincode = ? AND is_active = 1");
+    $stmt_pin_check->execute([$user['zip_code']]);
+    if (!$stmt_pin_check->fetch()) {
+        $pincode_warning = 'Your saved pincode (' . htmlspecialchars($user['zip_code'], ENT_QUOTES) . ') is not in our delivery area. Please enter a different delivery address below.';
+    }
+}
 
 // Extra JS
 $extra_js = '<script src="js/cart.js"></script>';
@@ -101,6 +111,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <section class="mb-5">
     <div class="container">
         <h1 class="mb-4">Checkout</h1>
+        
+        <?php if (!empty($pincode_warning)): ?>
+        <div class="alert alert-warning d-flex align-items-start mb-4" role="alert">
+            <i class="fas fa-map-marker-alt me-2 mt-1"></i>
+            <span><?php echo $pincode_warning; ?></span>
+        </div>
+        <?php endif; ?>
         
         <div class="row">
             <div class="col-lg-8">

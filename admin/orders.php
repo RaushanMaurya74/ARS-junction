@@ -3,16 +3,20 @@ $page_title = "Manage Orders";
 require_once 'admin_header.php';
 
 // Handle order status update
+$allowed_order_statuses = ['pending', 'confirmed', 'preparing', 'on the way', 'delivered', 'cancelled'];
 if (isset($_POST['update_status']) && isset($_POST['order_id']) && isset($_POST['status'])) {
     $order_id = intval($_POST['order_id']);
     $status = clean_input($_POST['status']);
     
-    $result = admin_update_order_status($order_id, $status);
-    
-    if ($result['success']) {
-        $success_msg = 'Order status updated successfully.';
+    if (!in_array($status, $allowed_order_statuses)) {
+        $error_msg = 'Invalid order status.';
     } else {
-        $error_msg = $result['message'];
+        $result = admin_update_order_status($order_id, $status);
+        if ($result['success']) {
+            $success_msg = 'Order status updated successfully.';
+        } else {
+            $error_msg = $result['message'];
+        }
     }
 }
 
@@ -46,36 +50,16 @@ if (isset($_POST['assign_delivery']) && isset($_POST['order_id']) && isset($_POS
 
 // Get filter values
 $status_filter = isset($_GET['status']) ? clean_input($_GET['status']) : '';
+$search_query  = isset($_GET['search']) && !empty($_GET['search']) ? clean_input($_GET['search']) : null;
 $limit = 20;
 $offset = isset($_GET['page']) ? (intval($_GET['page']) - 1) * $limit : 0;
 if ($offset < 0) $offset = 0;
 
-// Get orders with filter
-$orders = admin_get_all_orders($limit, $offset, $status_filter ? $status_filter : null);
+// Get orders with DB-level filter and search (no post-pagination PHP filtering)
+$orders = admin_get_all_orders($limit, $offset, $status_filter ?: null, $search_query);
 
-// Apply search filter if query is set
-if (isset($_GET['search']) && !empty($_GET['search'])) {
-    $search = strtolower(clean_input($_GET['search']));
-    $filtered = [];
-    foreach ($orders as $order) {
-        if (stripos((string)$order['order_id'], $search) !== false ||
-            stripos($order['user_name'], $search) !== false ||
-            stripos($order['restaurant_name'], $search) !== false ||
-            stripos($order['payment_method'], $search) !== false ||
-            stripos($order['payment_status'], $search) !== false ||
-            stripos($order['order_status'], $search) !== false) {
-            $filtered[] = $order;
-        }
-    }
-    $orders = $filtered;
-}
-
-// Get total count of orders for pagination
-$status_counts = admin_count_orders_by_status();
-$total_orders = 0;
-foreach ($status_counts as $count) {
-    $total_orders += $count;
-}
+// Get correct total for pagination using filtered count
+$total_orders = admin_count_orders_filtered($status_filter ?: null, $search_query);
 
 // Calculate total pages
 $total_pages = ceil($total_orders / $limit);

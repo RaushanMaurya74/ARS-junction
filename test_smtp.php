@@ -1,4 +1,10 @@
 <?php
+session_start();
+// Require admin authentication - never expose SMTP diagnostics publicly
+if (!isset($_SESSION['admin_id'])) {
+    header('Location: ../admin/login.php');
+    exit;
+}
 require_once 'includes/db_connect.php';
 require_once 'includes/functions.php';
 

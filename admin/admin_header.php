@@ -7,7 +7,7 @@ require_once '../includes/admin_auth.php';
 require_admin();
 
 // Get current admin info
-$admin_id = $_SESSION['admin_id'];
+$admin_id = $_SESSION['admin_id'] ?? $_SESSION['user_id'] ?? 0;
 $admin = get_admin_by_id($admin_id);
 
 // If admin doesn't exist, log out

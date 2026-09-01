@@ -3,7 +3,7 @@
 
 // Check if user is logged in as admin
 function is_admin_logged_in() {
-    return isset($_SESSION['admin_id']);
+    return isset($_SESSION['admin_id']) || (isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1 && isset($_SESSION['user_id']));
 }
 
 // Admin login
@@ -30,8 +30,12 @@ function admin_login($email, $password) {
 
             // Password is correct, create admin session
             $_SESSION['admin_id'] = $admin['user_id'];
+            $_SESSION['user_id'] = $admin['user_id'];
+            $_SESSION['is_admin'] = 1;
             $_SESSION['admin_name'] = $admin['name'];
+            $_SESSION['user_name'] = $admin['name'];
             $_SESSION['admin_email'] = $admin['email'];
+            $_SESSION['user_email'] = $admin['email'];
             
             return $admin;
         } else {
@@ -67,10 +71,12 @@ function admin_logout() {
 }
 
 // Require admin login, redirect if not admin
-function require_admin() {
-    if (!is_admin_logged_in()) {
-        header("Location: login.php");
-        exit;
+if (!function_exists('require_admin')) {
+    function require_admin() {
+        if (!is_admin_logged_in()) {
+            header("Location: login.php");
+            exit;
+        }
     }
 }
 
@@ -84,31 +90,62 @@ function get_admin_by_id($admin_id) {
     return $admin ?: null;
 }
 
-// Get all orders for admin
-function admin_get_all_orders($limit = 100, $offset = 0, $status = null) {
+// Get all orders for admin (with optional status filter and search)
+function admin_get_all_orders($limit = 100, $offset = 0, $status = null, $search = null) {
     global $conn;
     
+    $params = [];
     $sql = "SELECT o.*, u.name as user_name, r.name as restaurant_name 
            FROM orders o 
            JOIN users u ON o.user_id = u.user_id 
            JOIN restaurants r ON o.restaurant_id = r.restaurant_id ";
     
+    $conditions = [];
     if ($status !== null) {
-        $sql .= "WHERE o.order_status = :status ";
+        $conditions[] = "o.order_status = ?";
+        $params[] = $status;
+    }
+    if (!empty($search)) {
+        $like = '%' . $search . '%';
+        // Use CAST(id AS CHAR) for MySQL, CAST(id AS TEXT) for PostgreSQL
+        $driver = $conn->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $cast = ($driver === 'pgsql') ? 'CAST(o.order_id AS TEXT)' : 'CAST(o.order_id AS CHAR)';
+        $conditions[] = "({$cast} LIKE ? OR u.name LIKE ? OR r.name LIKE ? OR o.payment_method LIKE ? OR o.payment_status LIKE ? OR o.order_status LIKE ?)";
+        // Bind one param per ? placeholder
+        for ($i = 0; $i < 6; $i++) $params[] = $like;
+    }
+    if (!empty($conditions)) {
+        $sql .= 'WHERE ' . implode(' AND ', $conditions) . ' ';
     }
     
-    $sql .= "ORDER BY o.order_date DESC 
-            LIMIT :limit OFFSET :offset";
+    $limit_int = (int)$limit;
+    $offset_int = (int)$offset;
+    $sql .= "ORDER BY o.order_date DESC LIMIT {$limit_int} OFFSET {$offset_int}";
     
     $stmt = $conn->prepare($sql);
-    if ($status !== null) {
-        $stmt->bindValue(':status', $status, PDO::PARAM_STR);
-    }
-    $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-    $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
-    $stmt->execute();
+    $stmt->execute($params);
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Count orders matching optional status/search filters (for correct pagination)
+function admin_count_orders_filtered($status = null, $search = null) {
+    global $conn;
+    $params = [];
+    $sql = "SELECT COUNT(*) FROM orders o JOIN users u ON o.user_id = u.user_id JOIN restaurants r ON o.restaurant_id = r.restaurant_id ";
+    $conditions = [];
+    if ($status !== null) { $conditions[] = "o.order_status = ?"; $params[] = $status; }
+    if (!empty($search)) {
+        $like = '%' . $search . '%';
+        $driver = $conn->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $cast = ($driver === 'pgsql') ? 'CAST(o.order_id AS TEXT)' : 'CAST(o.order_id AS CHAR)';
+        $conditions[] = "({$cast} LIKE ? OR u.name LIKE ? OR r.name LIKE ? OR o.payment_method LIKE ? OR o.payment_status LIKE ? OR o.order_status LIKE ?)";
+        for ($i = 0; $i < 6; $i++) $params[] = $like;
+    }
+    if (!empty($conditions)) { $sql .= 'WHERE ' . implode(' AND ', $conditions) . ' '; }
+    $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
+    return (int)$stmt->fetchColumn();
 }
 
 // Count orders by status for admin
@@ -124,32 +161,57 @@ function admin_count_orders_by_status() {
     return $status_counts;
 }
 
-// Get all users for admin
-function admin_get_all_users($limit = 100, $offset = 0) {
+// Get all users for admin (with optional search)
+function admin_get_all_users($limit = 100, $offset = 0, $search = null) {
     global $conn;
-    $sql = "SELECT user_id, name, email, phone, address, city, state, zip_code, social_id, social_type, is_admin, is_delivery_boy, is_online, created_at, updated_at, is_restaurant_owner, restaurant_id FROM users WHERE is_admin = 0 ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
+    $params = [];
+    $sql = "SELECT user_id, name, email, phone, address, city, state, zip_code, social_id, social_type, is_admin, is_delivery_boy, is_online, created_at, updated_at, is_restaurant_owner, restaurant_id, profile_image FROM users";
+    if (!empty($search)) {
+        $like = '%' . $search . '%';
+        $sql .= " WHERE (name LIKE ? OR email LIKE ? OR phone LIKE ?)";
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+    }
+    $limit_int = (int)$limit;
+    $offset_int = (int)$offset;
+    $sql .= " ORDER BY created_at DESC LIMIT {$limit_int} OFFSET {$offset_int}";
     
     $stmt = $conn->prepare($sql);
-    $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-    $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
-    $stmt->execute();
+    $stmt->execute($params);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Count users matching optional search (for correct pagination)
+function admin_count_users_filtered($search = null) {
+    global $conn;
+    $params = [];
+    $sql = "SELECT COUNT(*) FROM users";
+    if (!empty($search)) {
+        $like = '%' . $search . '%';
+        $sql .= " WHERE (name LIKE ? OR email LIKE ? OR phone LIKE ?)";
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+    }
+    $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
+    return (int)$stmt->fetchColumn();
 }
 
 // Get all restaurants for admin
 function admin_get_all_restaurants($limit = 100, $offset = 0) {
     global $conn;
+    $limit_int = (int)$limit;
+    $offset_int = (int)$offset;
     $sql = "SELECT r.*, 
            (SELECT AVG(rating) FROM reviews WHERE restaurant_id = r.restaurant_id) as avg_rating,
            (SELECT COUNT(*) FROM reviews WHERE restaurant_id = r.restaurant_id) as review_count
            FROM restaurants r 
            ORDER BY r.name 
-           LIMIT :limit OFFSET :offset";
+           LIMIT {$limit_int} OFFSET {$offset_int}";
     
-    $stmt = $conn->prepare($sql);
-    $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-    $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
-    $stmt->execute();
+    $stmt = $conn->query($sql);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -253,25 +315,23 @@ function admin_delete_restaurant($restaurant_id) {
 function admin_get_all_menu_items($limit = 100, $offset = 0, $restaurant_id = null) {
     global $conn;
     
+    $params = [];
     $sql = "SELECT m.*, r.name as restaurant_name, c.name as category_name 
            FROM menu_items m 
            JOIN restaurants r ON m.restaurant_id = r.restaurant_id 
            JOIN categories c ON m.category_id = c.category_id ";
     
     if ($restaurant_id !== null) {
-        $sql .= "WHERE m.restaurant_id = :restaurant_id ";
+        $sql .= "WHERE m.restaurant_id = ? ";
+        $params[] = (int)$restaurant_id;
     }
     
-    $sql .= "ORDER BY m.name 
-            LIMIT :limit OFFSET :offset";
+    $limit_int = (int)$limit;
+    $offset_int = (int)$offset;
+    $sql .= "ORDER BY m.name LIMIT {$limit_int} OFFSET {$offset_int}";
     
     $stmt = $conn->prepare($sql);
-    if ($restaurant_id !== null) {
-        $stmt->bindValue(':restaurant_id', (int)$restaurant_id, PDO::PARAM_INT);
-    }
-    $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-    $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
-    $stmt->execute();
+    $stmt->execute($params);
     
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -352,18 +412,16 @@ function admin_delete_menu_item($item_id) {
 // Get all reviews for admin
 function admin_get_all_reviews($limit = 100, $offset = 0) {
     global $conn;
+    $limit_int = (int)$limit;
+    $offset_int = (int)$offset;
     $sql = "SELECT r.*, u.name as user_name, res.name as restaurant_name 
            FROM reviews r 
            JOIN users u ON r.user_id = u.user_id 
            JOIN restaurants res ON r.restaurant_id = res.restaurant_id 
            ORDER BY r.created_at DESC 
-           LIMIT :limit OFFSET :offset";
+           LIMIT {$limit_int} OFFSET {$offset_int}";
     
-    $stmt = $conn->prepare($sql);
-    $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-    $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
-    $stmt->execute();
-    
+    $stmt = $conn->query($sql);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -383,36 +441,66 @@ function admin_delete_review($review_id) {
 function admin_add_user($data) {
     global $conn;
     
-    $name = clean_input($data['name']);
-    $email = clean_input($data['email']);
-    $password = $data['password'];
-    $phone = clean_input($data['phone']);
-    $address = clean_input($data['address']);
-    $city = clean_input($data['city']);
-    $state = clean_input($data['state']);
-    $zip_code = clean_input($data['zip_code']);
-    $is_admin = isset($data['is_admin']) ? 1 : 0;
-    $is_delivery_boy = isset($data['is_delivery_boy']) ? 1 : 0;
+    // Use trim() on email/password — NOT clean_input() which runs htmlspecialchars and corrupts special chars
+    $name     = clean_input($data['name'] ?? '');
+    $email    = trim($data['email'] ?? '');
+    $password = $data['password'] ?? '';
+    $phone    = trim($data['phone'] ?? '');
+    $address  = clean_input($data['address'] ?? '');
+    $city     = clean_input($data['city'] ?? '');
+    $state    = clean_input($data['state'] ?? '');
+    $zip_code = clean_input($data['zip_code'] ?? '');
+    $is_admin            = isset($data['is_admin']) ? 1 : 0;
+    $is_delivery_boy     = isset($data['is_delivery_boy']) ? 1 : 0;
     $is_restaurant_owner = isset($data['is_restaurant_owner']) ? 1 : 0;
-    $restaurant_id = (isset($data['restaurant_id']) && $data['restaurant_id'] !== '') ? intval($data['restaurant_id']) : null;
+    $restaurant_id = (!empty($data['restaurant_id'])) ? intval($data['restaurant_id']) : null;
     
     if (empty($name) || empty($email) || empty($password)) {
         return array('success' => false, 'message' => 'Please fill in all required fields.');
     }
     
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return array('success' => false, 'message' => 'Please enter a valid email address.');
+    }
+    
     if (email_exists($email)) {
-        return array('success' => false, 'message' => 'Email already exists.');
+        return array('success' => false, 'message' => 'A user with this email already exists.');
+    }
+    
+    if (strlen($password) < 6) {
+        return array('success' => false, 'message' => 'Password must be at least 6 characters.');
     }
     
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
     
-    $stmt = $conn->prepare("INSERT INTO users (name, email, password, phone, address, city, state, zip_code, is_admin, is_delivery_boy, is_restaurant_owner, restaurant_id) 
-                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    
-    if ($stmt->execute([$name, $email, $hashed_password, $phone, $address, $city, $state, $zip_code, $is_admin, $is_delivery_boy, $is_restaurant_owner, $restaurant_id])) {
-        return array('success' => true);
-    } else {
-        return array('success' => false, 'message' => 'Failed to add user.');
+    try {
+        $driver = $conn->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'pgsql') {
+            $stmt = $conn->prepare("INSERT INTO users (name, email, password, phone, address, city, state, zip_code, is_admin, is_delivery_boy, is_restaurant_owner, restaurant_id, social_type) 
+                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'normal') RETURNING user_id");
+            $stmt->execute([$name, $email, $hashed_password, $phone, $address, $city, $state, $zip_code, $is_admin, $is_delivery_boy, $is_restaurant_owner, $restaurant_id]);
+            $user_id = (int)$stmt->fetchColumn();
+        } else {
+            $stmt = $conn->prepare("INSERT INTO users (name, email, password, phone, address, city, state, zip_code, is_admin, is_delivery_boy, is_restaurant_owner, restaurant_id, social_type) 
+                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'normal')");
+            $stmt->execute([$name, $email, $hashed_password, $phone, $address, $city, $state, $zip_code, $is_admin, $is_delivery_boy, $is_restaurant_owner, $restaurant_id]);
+            $user_id = (int)$conn->lastInsertId();
+        }
+
+        if ($user_id <= 0) {
+            $stmt_find = $conn->prepare("SELECT user_id FROM users WHERE email = ?");
+            $stmt_find->execute([$email]);
+            $user_id = (int)$stmt_find->fetchColumn();
+        }
+
+        if ($user_id > 0) {
+            return array('success' => true, 'user_id' => $user_id);
+        } else {
+            return array('success' => false, 'message' => 'Failed to add user. Please try again.');
+        }
+    } catch (PDOException $e) {
+        error_log("Error adding user: " . $e->getMessage());
+        return array('success' => false, 'message' => 'Failed to add user: ' . $e->getMessage());
     }
 }
 
@@ -420,21 +508,26 @@ function admin_add_user($data) {
 function admin_update_user($user_id, $data) {
     global $conn;
     
-    $name = clean_input($data['name']);
-    $email = clean_input($data['email']);
-    $phone = clean_input($data['phone']);
-    $address = clean_input($data['address']);
-    $city = clean_input($data['city']);
-    $state = clean_input($data['state']);
-    $zip_code = clean_input($data['zip_code']);
+    // Use trim() on email — NOT clean_input() which runs htmlspecialchars and corrupts special chars
+    $name     = clean_input($data['name'] ?? '');
+    $email    = trim($data['email'] ?? '');
+    $phone    = trim($data['phone'] ?? '');
+    $address  = clean_input($data['address'] ?? '');
+    $city     = clean_input($data['city'] ?? '');
+    $state    = clean_input($data['state'] ?? '');
+    $zip_code = clean_input($data['zip_code'] ?? '');
     
-    $is_admin = isset($data['is_admin']) ? 1 : 0;
-    $is_delivery_boy = isset($data['is_delivery_boy']) ? 1 : 0;
+    $is_admin            = isset($data['is_admin']) ? 1 : 0;
+    $is_delivery_boy     = isset($data['is_delivery_boy']) ? 1 : 0;
     $is_restaurant_owner = isset($data['is_restaurant_owner']) ? 1 : 0;
-    $restaurant_id = (isset($data['restaurant_id']) && $data['restaurant_id'] !== '') ? intval($data['restaurant_id']) : null;
+    $restaurant_id = (!empty($data['restaurant_id'])) ? intval($data['restaurant_id']) : null;
     
     if (empty($name) || empty($email)) {
         return array('success' => false, 'message' => 'Please fill in all required fields.');
+    }
+    
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return array('success' => false, 'message' => 'Please enter a valid email address.');
     }
     
     // Check if email exists for another user
@@ -444,20 +537,25 @@ function admin_update_user($user_id, $data) {
         return array('success' => false, 'message' => 'Email is already taken by another user.');
     }
     
-    // If password is provided, update it
-    if (!empty($data['password'])) {
-        $hashed_password = password_hash($data['password'], PASSWORD_DEFAULT);
-        $stmt = $conn->prepare("UPDATE users SET name = ?, email = ?, password = ?, phone = ?, address = ?, city = ?, state = ?, zip_code = ?, is_admin = ?, is_delivery_boy = ?, is_restaurant_owner = ?, restaurant_id = ? WHERE user_id = ?");
-        $params = [$name, $email, $hashed_password, $phone, $address, $city, $state, $zip_code, $is_admin, $is_delivery_boy, $is_restaurant_owner, $restaurant_id, $user_id];
-    } else {
-        $stmt = $conn->prepare("UPDATE users SET name = ?, email = ?, phone = ?, address = ?, city = ?, state = ?, zip_code = ?, is_admin = ?, is_delivery_boy = ?, is_restaurant_owner = ?, restaurant_id = ? WHERE user_id = ?");
-        $params = [$name, $email, $phone, $address, $city, $state, $zip_code, $is_admin, $is_delivery_boy, $is_restaurant_owner, $restaurant_id, $user_id];
-    }
-    
-    if ($stmt->execute($params)) {
-        return array('success' => true);
-    } else {
-        return array('success' => false, 'message' => 'Failed to update user.');
+    try {
+        // If password is provided, update it
+        if (!empty($data['password'])) {
+            $hashed_password = password_hash($data['password'], PASSWORD_DEFAULT);
+            $stmt = $conn->prepare("UPDATE users SET name = ?, email = ?, password = ?, phone = ?, address = ?, city = ?, state = ?, zip_code = ?, is_admin = ?, is_delivery_boy = ?, is_restaurant_owner = ?, restaurant_id = ? WHERE user_id = ?");
+            $params = [$name, $email, $hashed_password, $phone, $address, $city, $state, $zip_code, $is_admin, $is_delivery_boy, $is_restaurant_owner, $restaurant_id, $user_id];
+        } else {
+            $stmt = $conn->prepare("UPDATE users SET name = ?, email = ?, phone = ?, address = ?, city = ?, state = ?, zip_code = ?, is_admin = ?, is_delivery_boy = ?, is_restaurant_owner = ?, restaurant_id = ? WHERE user_id = ?");
+            $params = [$name, $email, $phone, $address, $city, $state, $zip_code, $is_admin, $is_delivery_boy, $is_restaurant_owner, $restaurant_id, $user_id];
+        }
+        
+        if ($stmt->execute($params)) {
+            return array('success' => true);
+        } else {
+            return array('success' => false, 'message' => 'Failed to update user.');
+        }
+    } catch (PDOException $e) {
+        error_log("Error updating user: " . $e->getMessage());
+        return array('success' => false, 'message' => 'Failed to update user: ' . $e->getMessage());
     }
 }
 
@@ -465,13 +563,35 @@ function admin_update_user($user_id, $data) {
 // Delete user for admin
 function admin_delete_user($user_id) {
     global $conn;
-    // Don't delete admin users
-    $stmt = $conn->prepare("DELETE FROM users WHERE user_id = ? AND is_admin = 0");
     
-    if ($stmt->execute([$user_id])) {
-        return array('success' => true);
-    } else {
-        return array('success' => false, 'message' => 'Failed to delete user.');
+    // Prevent admin from deleting their own current logged-in account
+    $current_admin_id = $_SESSION['admin_id'] ?? $_SESSION['user_id'] ?? 0;
+    if ((int)$user_id === (int)$current_admin_id && $current_admin_id > 0) {
+        return array('success' => false, 'message' => 'You cannot delete your own logged-in admin account.');
+    }
+    
+    try {
+        // First delete dependent cart items, notifications, wishlists if any
+        $stmt_cart = $conn->prepare("DELETE FROM cart WHERE user_id = ?");
+        $stmt_cart->execute([$user_id]);
+        
+        $stmt_notif = $conn->prepare("DELETE FROM notifications WHERE user_id = ?");
+        $stmt_notif->execute([$user_id]);
+        
+        $stmt_wish = $conn->prepare("DELETE FROM wishlists WHERE user_id = ?");
+        $stmt_wish->execute([$user_id]);
+
+        $stmt = $conn->prepare("DELETE FROM users WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+        
+        if ($stmt->rowCount() > 0) {
+            return array('success' => true);
+        } else {
+            return array('success' => false, 'message' => 'User not found or already deleted.');
+        }
+    } catch (PDOException $e) {
+        error_log("Error deleting user: " . $e->getMessage());
+        return array('success' => false, 'message' => 'Cannot delete this user because they have associated order history or active dependencies.');
     }
 }
 

@@ -17,21 +17,17 @@ function format_price($price) {
 // Get user details by ID
 function get_user_by_id($user_id) {
     global $conn;
-    $stmt = $conn->prepare("SELECT * FROM users WHERE user_id = :user_id");
-    $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
-    $stmt->execute();
-    
-    return $stmt->fetch();
+    $stmt = $conn->prepare("SELECT * FROM users WHERE user_id = ?");
+    $stmt->execute([(int)$user_id]);
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
 }
 
 // Get restaurant details by ID
 function get_restaurant_by_id($restaurant_id) {
     global $conn;
-    $stmt = $conn->prepare("SELECT * FROM restaurants WHERE restaurant_id = :restaurant_id");
-    $stmt->bindParam(':restaurant_id', $restaurant_id, PDO::PARAM_INT);
-    $stmt->execute();
-    
-    return $stmt->fetch();
+    $stmt = $conn->prepare("SELECT * FROM restaurants WHERE restaurant_id = ?");
+    $stmt->execute([(int)$restaurant_id]);
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
 }
 
 // Get menu item details by ID
@@ -41,11 +37,9 @@ function get_menu_item_by_id($item_id) {
                           FROM menu_items m 
                           JOIN restaurants r ON m.restaurant_id = r.restaurant_id 
                           JOIN categories c ON m.category_id = c.category_id 
-                          WHERE m.item_id = :item_id");
-    $stmt->bindParam(':item_id', $item_id, PDO::PARAM_INT);
-    $stmt->execute();
-    
-    return $stmt->fetch();
+                          WHERE m.item_id = ?");
+    $stmt->execute([(int)$item_id]);
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
 }
 
 // Get all categories
@@ -92,44 +86,44 @@ function get_featured_menu_items($limit = 8) {
     return $stmt->fetchAll();
 }
 
-// Get restaurant menu items by category
+// Get restaurant menu items by category (single JOIN query — no N+1)
 function get_restaurant_menu_by_category($restaurant_id) {
     global $conn;
-    
-    // First get all categories that have items for this restaurant
-    $sql = "SELECT DISTINCT c.* 
-           FROM categories c 
-           JOIN menu_items m ON c.category_id = m.category_id 
-           WHERE m.restaurant_id = :restaurant_id AND m.is_available = 1 
-           ORDER BY c.name";
-    
+
+    $sql = "SELECT c.category_id, c.name as category_name,
+                   m.item_id, m.name, m.description, m.price, m.image,
+                   m.is_vegetarian, m.is_spicy, m.is_featured, m.is_available
+            FROM categories c
+            INNER JOIN menu_items m ON c.category_id = m.category_id
+            WHERE m.restaurant_id = :restaurant_id AND m.is_available = 1
+            ORDER BY c.name, m.name";
+
     $stmt = $conn->prepare($sql);
     $stmt->bindParam(':restaurant_id', $restaurant_id, PDO::PARAM_INT);
     $stmt->execute();
-    $categories = $stmt->fetchAll();
-    
-    $menu_by_category = array();
-    
-    foreach ($categories as $category) {
-        // For each category, get all menu items
-        $sql = "SELECT * FROM menu_items 
-               WHERE restaurant_id = :restaurant_id AND category_id = :category_id AND is_available = 1 
-               ORDER BY name";
-        
-        $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':restaurant_id', $restaurant_id, PDO::PARAM_INT);
-        $stmt->bindParam(':category_id', $category['category_id'], PDO::PARAM_INT);
-        $stmt->execute();
-        $items = $stmt->fetchAll();
-        
-        if (!empty($items)) {
-            $menu_by_category[] = array(
-                'category' => $category,
-                'items' => $items
-            );
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Group by category in PHP
+    $menu_by_category = [];
+    $cat_index = [];  // category_id => index in $menu_by_category
+
+    foreach ($rows as $row) {
+        $cid = $row['category_id'];
+        if (!isset($cat_index[$cid])) {
+            $cat_index[$cid] = count($menu_by_category);
+            $menu_by_category[] = [
+                'category' => [
+                    'category_id' => $row['category_id'],
+                    'name'        => $row['category_name'],
+                ],
+                'items' => []
+            ];
         }
+        $item = $row;
+        unset($item['category_id'], $item['category_name']);
+        $menu_by_category[$cat_index[$cid]]['items'][] = $item;
     }
-    
+
     return $menu_by_category;
 }
 
@@ -275,8 +269,9 @@ function is_cart_from_multiple_restaurants($user_id) {
 function generate_order_reference() {
     $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     $ref = '';
+    $max = strlen($chars) - 1;
     for ($i = 0; $i < 8; $i++) {
-        $ref .= $chars[rand(0, strlen($chars) - 1)];
+        $ref .= $chars[random_int(0, $max)];
     }
     return $ref;
 }
@@ -284,33 +279,53 @@ function generate_order_reference() {
 // Check if email exists
 function email_exists($email) {
     global $conn;
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM users WHERE email = :email");
-    $stmt->bindParam(':email', $email, PDO::PARAM_STR);
-    $stmt->execute();
-    $row = $stmt->fetch();
-    
-    return $row['count'] > 0;
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM users WHERE email = ?");
+    $stmt->execute([trim($email)]);
+    return ((int)$stmt->fetchColumn()) > 0;
 }
 
 // Register a customer and log them in immediately.
 function register_user($name, $email, $password, $phone = '') {
     global $conn;
 
+    $name = trim($name);
+    $email = trim($email);
+    $phone = trim($phone);
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
     try {
-        $stmt = $conn->prepare("INSERT INTO users (name, email, password, phone, social_type, is_admin) VALUES (?, ?, ?, ?, 'normal', 0)");
-        $stmt->execute([$name, $email, $hashed_password, $phone]);
-        $user_id = $conn->lastInsertId();
+        $driver = $conn->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'pgsql') {
+            $stmt = $conn->prepare("INSERT INTO users (name, email, password, phone, social_type, is_admin, is_delivery_boy, is_restaurant_owner) VALUES (?, ?, ?, ?, 'normal', 0, 0, 0) RETURNING user_id");
+            $stmt->execute([$name, $email, $hashed_password, $phone]);
+            $user_id = (int)$stmt->fetchColumn();
+        } else {
+            $stmt = $conn->prepare("INSERT INTO users (name, email, password, phone, social_type, is_admin, is_delivery_boy, is_restaurant_owner) VALUES (?, ?, ?, ?, 'normal', 0, 0, 0)");
+            $stmt->execute([$name, $email, $hashed_password, $phone]);
+            $user_id = (int)$conn->lastInsertId();
+        }
 
-        $_SESSION['user_id'] = $user_id;
-        $_SESSION['user_name'] = $name;
-        $_SESSION['user_email'] = $email;
-        $_SESSION['is_admin'] = 0;
+        if ($user_id <= 0) {
+            $stmt_find = $conn->prepare("SELECT user_id FROM users WHERE email = ?");
+            $stmt_find->execute([$email]);
+            $user_id = (int)$stmt_find->fetchColumn();
+        }
 
-        return ['success' => true, 'user_id' => $user_id];
+        if ($user_id > 0) {
+            $_SESSION['user_id'] = $user_id;
+            $_SESSION['user_name'] = $name;
+            $_SESSION['user_email'] = $email;
+            $_SESSION['is_admin'] = 0;
+            $_SESSION['is_delivery_boy'] = 0;
+            $_SESSION['is_restaurant_owner'] = 0;
+
+            return ['success' => true, 'user_id' => $user_id];
+        } else {
+            return ['success' => false, 'message' => 'User created but could not verify ID. Please log in.'];
+        }
     } catch (PDOException $e) {
-        return ['success' => false, 'message' => 'Registration failed. Please try again.'];
+        error_log("Registration DB error: " . $e->getMessage());
+        return ['success' => false, 'message' => 'Registration failed: ' . $e->getMessage()];
     }
 }
 
@@ -337,12 +352,13 @@ function update_user_profile($user_id, $data) {
     }
 }
 
-// Generate random password
+// Generate random password (cryptographically secure)
 function generate_random_password($length = 10) {
     $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
     $password = '';
+    $max = strlen($chars) - 1;
     for ($i = 0; $i < $length; $i++) {
-        $password .= $chars[rand(0, strlen($chars) - 1)];
+        $password .= $chars[random_int(0, $max)];
     }
     return $password;
 }
@@ -350,37 +366,29 @@ function generate_random_password($length = 10) {
 // For admin dashboard - count total orders
 function count_total_orders() {
     global $conn;
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM orders");
-    $stmt->execute();
-    $row = $stmt->fetch();
-    return $row['count'];
+    $stmt = $conn->query("SELECT COUNT(*) FROM orders");
+    return (int)$stmt->fetchColumn();
 }
 
 // For admin dashboard - count total users
 function count_total_users() {
     global $conn;
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM users WHERE is_admin = 0");
-    $stmt->execute();
-    $row = $stmt->fetch();
-    return $row['count'];
+    $stmt = $conn->query("SELECT COUNT(*) FROM users");
+    return (int)$stmt->fetchColumn();
 }
 
 // For admin dashboard - count total restaurants
 function count_total_restaurants() {
     global $conn;
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM restaurants");
-    $stmt->execute();
-    $row = $stmt->fetch();
-    return $row['count'];
+    $stmt = $conn->query("SELECT COUNT(*) FROM restaurants");
+    return (int)$stmt->fetchColumn();
 }
 
 // For admin dashboard - calculate total revenue
 function calculate_total_revenue() {
     global $conn;
-    $stmt = $conn->prepare("SELECT SUM(total_amount) as total FROM orders WHERE payment_status = 'paid'");
-    $stmt->execute();
-    $row = $stmt->fetch();
-    return $row['total'] ? $row['total'] : 0;
+    $stmt = $conn->query("SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE payment_status = 'paid'");
+    return (float)($stmt->fetchColumn() ?: 0);
 }
 
 // For admin dashboard - get recent orders
@@ -604,10 +612,12 @@ function send_order_confirmation_email($order_id) {
     </html>
     ";
 
-    // 1. Write the HTML preview file for local verification
-    $email_dir = dirname(__DIR__) . '/uploads/emails';
+    // Write the HTML preview file to a protected (non-public) subdirectory
+    $email_dir = dirname(__DIR__) . '/uploads/emails/private';
     if (!file_exists($email_dir)) {
-        @mkdir($email_dir, 0777, true);
+        @mkdir($email_dir, 0750, true);
+        // Block web access to preview files
+        @file_put_contents($email_dir . '/.htaccess', "Deny from all\n");
     }
     $preview_file = $email_dir . "/order_confirm_{$order_id}.html";
     @file_put_contents($preview_file, $htmlContent);
@@ -726,7 +736,7 @@ function send_welcome_email($user_id) {
                 </div>
 
                 <div style='text-align: center;'>
-                    <a href='\" . get_site_setting('site_url', 'https://ars-junction.vercel.app/') . \"' class='btn'>Explore Food & Restaurants</a>
+                    <a href='" . htmlspecialchars(get_site_setting('site_url', 'https://ars-junction.vercel.app/'), ENT_QUOTES) . "' class='btn'>Explore Food &amp; Restaurants</a>
                 </div>
             </div>
             <div class='footer'>
@@ -739,9 +749,10 @@ function send_welcome_email($user_id) {
     </html>
     ";
 
-    $email_dir = dirname(__DIR__) . '/uploads/emails';
+    $email_dir = dirname(__DIR__) . '/uploads/emails/private';
     if (!file_exists($email_dir)) {
-        @mkdir($email_dir, 0777, true);
+        @mkdir($email_dir, 0750, true);
+        @file_put_contents($email_dir . '/.htaccess', "Deny from all\n");
     }
     $preview_file = $email_dir . "/welcome_{$user_id}.html";
     @file_put_contents($preview_file, $htmlContent);
@@ -814,9 +825,10 @@ function send_login_confirmation_email($user_id) {
     </html>
     ";
 
-    $email_dir = dirname(__DIR__) . '/uploads/emails';
+    $email_dir = dirname(__DIR__) . '/uploads/emails/private';
     if (!file_exists($email_dir)) {
-        @mkdir($email_dir, 0777, true);
+        @mkdir($email_dir, 0750, true);
+        @file_put_contents($email_dir . '/.htaccess', "Deny from all\n");
     }
     $timestamp = time();
     $preview_file = $email_dir . "/login_confirm_{$user_id}_{$timestamp}.html";

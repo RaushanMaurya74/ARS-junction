@@ -37,30 +37,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get users
+// Get users with DB-level search
 $limit = 20;
 $offset = isset($_GET['page']) ? (intval($_GET['page']) - 1) * $limit : 0;
 if ($offset < 0) $offset = 0;
 
-$users = admin_get_all_users($limit, $offset);
+$search_query = isset($_GET['search']) && !empty($_GET['search']) ? clean_input($_GET['search']) : null;
+$users = admin_get_all_users($limit, $offset, $search_query);
 
-// Apply search filter if query is set
-if (isset($_GET['search']) && !empty($_GET['search'])) {
-    $search = strtolower(clean_input($_GET['search']));
-    $filtered = [];
-    foreach ($users as $user) {
-        if (stripos($user['name'], $search) !== false ||
-            stripos($user['email'], $search) !== false ||
-            stripos($user['phone'], $search) !== false ||
-            stripos($user['city'], $search) !== false) {
-            $filtered[] = $user;
-        }
-    }
-    $users = $filtered;
-}
-
-// Get total count of users for pagination
-$total_users = count_total_users();
+// Get correct total for pagination using filtered count
+$total_users = admin_count_users_filtered($search_query);
 $total_pages = ceil($total_users / $limit);
 $current_page = floor($offset / $limit) + 1;
 
@@ -442,9 +428,9 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
                             <tbody>
                                 <?php foreach($users as $user): ?>
                                 <tr>
-                                    <td>#<?php echo $user['user_id']; ?></td>
+                                    <td>#<?php echo (int)$user['user_id']; ?></td>
                                     <td>
-                                        <?php echo $user['name']; ?>
+                                        <?php echo htmlspecialchars($user['name'] ?? ''); ?>
                                         <?php if ($user['is_admin']): ?>
                                             <span class="badge bg-danger">Admin</span>
                                         <?php endif; ?>
@@ -455,8 +441,8 @@ if (isset($_GET['view']) && is_numeric($_GET['view'])) {
                                             <span class="badge bg-success">Owner</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td><?php echo $user['email']; ?></td>
-                                    <td><?php echo !empty($user['phone']) ? $user['phone'] : 'N/A'; ?></td>
+                                    <td><?php echo htmlspecialchars($user['email'] ?? ''); ?></td>
+                                    <td><?php echo !empty($user['phone']) ? htmlspecialchars($user['phone']) : 'N/A'; ?></td>
                                     <td>
                                         <?php 
                                          switch($user['social_type']) {

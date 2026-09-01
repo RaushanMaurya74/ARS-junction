@@ -14,8 +14,8 @@ $email = '';
 
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $email = clean_input($_POST['email']);
-    $password = $_POST['password'];
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
     
     // Authenticate admin
     unset($_SESSION['admin_login_error']);

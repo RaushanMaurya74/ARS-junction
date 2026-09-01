@@ -63,10 +63,11 @@ function send_otp_email($email, $name, $otp) {
     </html>
     ";
 
-    // Write file copy for fallback/preview
-    $email_dir = __DIR__ . '/uploads/emails';
+    // Write file copy for fallback/preview (protected from web access)
+    $email_dir = __DIR__ . '/uploads/emails/private';
     if (!file_exists($email_dir)) {
-        @mkdir($email_dir, 0777, true);
+        @mkdir($email_dir, 0750, true);
+        @file_put_contents($email_dir . '/.htaccess', "Deny from all\n");
     }
     $timestamp = time();
     $preview_file = $email_dir . "/otp_reset_{$timestamp}.html";
@@ -118,7 +119,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 
                 if ($user) {
                     // Generate OTP
-                    $otp = mt_rand(100000, 999999);
+                    $otp = random_int(100000, 999999);
                     $_SESSION['reset_otp_email'] = $email;
                     $_SESSION['reset_otp_code'] = $otp;
                     $_SESSION['reset_otp_expiry'] = time() + 900; // 15 mins
@@ -153,7 +154,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $error = 'OTP has expired. Please request a new one.';
                 $_SESSION['reset_step'] = 1;
                 $step = 1;
-            } elseif ($entered_otp != $_SESSION['reset_otp_code']) {
+            } elseif ((string)$entered_otp !== (string)$_SESSION['reset_otp_code']) {
                 $error = 'Invalid OTP. Please try again.';
             } else {
                 $_SESSION['reset_otp_verified'] = true;

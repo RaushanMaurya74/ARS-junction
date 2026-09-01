@@ -5,11 +5,17 @@ require_once '../includes/functions.php';
 
 header('Content-Type: application/json');
 
-// Run auto-assignment of expired pending orders globally on all poll events
-try {
-    auto_assign_confirmed_orders();
-} catch (Exception $e) {
-    // Suppress background assignment exceptions so as not to break notifications response
+// Run auto-assignment at most once every 60 seconds to prevent DB overload
+// (Previously ran on every 5-second poll, causing N×M queries per minute)
+$now = time();
+$last_assign = $_SESSION['_last_auto_assign'] ?? 0;
+if (($now - $last_assign) >= 60) {
+    try {
+        auto_assign_confirmed_orders();
+        $_SESSION['_last_auto_assign'] = $now;
+    } catch (Exception $e) {
+        // Suppress background assignment exceptions so as not to break notifications response
+    }
 }
 
 $role = isset($_GET['role']) ? clean_input($_GET['role']) : '';

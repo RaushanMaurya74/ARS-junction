@@ -12,7 +12,9 @@ if (!is_logged_in()) {
 }
 
 $code = isset($_POST['code']) ? trim(clean_input($_POST['code'])) : '';
-$subtotal = isset($_POST['subtotal']) ? floatval($_POST['subtotal']) : 0.0;
+
+// Always calculate subtotal server-side from the actual cart, never trust client input
+$subtotal = calculate_cart_total($_SESSION['user_id']);
 
 if (empty($code)) {
     // Clear applied promo code if empty code is passed
