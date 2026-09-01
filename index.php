@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="mb-2">
                             <span class="rating">
                                 <?php
-                                $rating = isset($restaurant['avg_rating']) ? round($restaurant['avg_rating'], 1) : 0;
+                                $rating = !empty($restaurant['avg_rating']) ? round((float)$restaurant['avg_rating'], 1) : 0;
                                 for($i = 1; $i <= 5; $i++) {
                                     if($i <= $rating) {
                                         echo '<i class="fas fa-star"></i>';

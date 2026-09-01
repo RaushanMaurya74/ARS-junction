@@ -62,10 +62,14 @@ set_exception_handler(function ($exception) {
     exit;
 });
 
-// Custom Error Handler (converts PHP errors to ErrorExceptions so they are caught by the exception handler)
+// Custom Error Handler (converts severe PHP errors to ErrorExceptions while logging notices/deprecations)
 set_error_handler(function ($severity, $message, $file, $line) {
     if (!(error_reporting() & $severity)) {
-        // This error code is not included in error_reporting
+        return;
+    }
+    // Do not throw ErrorException on non-fatal notices or deprecations in production
+    if ($severity === E_DEPRECATED || $severity === E_USER_DEPRECATED || $severity === E_NOTICE || $severity === E_USER_NOTICE || $severity === E_WARNING) {
+        error_log("PHP Warning/Notice/Deprecation: {$message} in {$file} on line {$line}");
         return;
     }
     throw new ErrorException($message, 0, $severity, $file, $line);

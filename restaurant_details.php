@@ -42,8 +42,8 @@ $sql = "SELECT AVG(rating) as avg_rating, COUNT(*) as count FROM reviews WHERE r
 $stmt = $conn->prepare($sql);
 $stmt->execute([$restaurant_id]);
 if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $avg_rating = round($row['avg_rating'], 1);
-    $review_count = $row['count'];
+    $avg_rating = !empty($row['avg_rating']) ? round((float)$row['avg_rating'], 1) : 0;
+    $review_count = (int)($row['count'] ?? 0);
 }
 
 // Extra JS
